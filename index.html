@@ -65,6 +65,12 @@ tr:hover td{background:#F0F9FF}
 .btn-red{background:#FEE2E2;color:#991B1B;border-color:#FECACA}.btn-red:hover{background:#FECACA}
 .btn-purple{background:#EDE9FE;color:#5B21B6;border-color:#A78BFA}.btn-purple:hover{background:#C4B5FD}
 .arow{display:flex;gap:4px;flex-wrap:wrap}
+/* Clients table: compact uniform rows + stacked action buttons of equal width */
+#ctbody td{vertical-align:middle;line-height:1.4}
+#ctbody td.cact{padding:6px 10px}
+.arow-v{display:flex;flex-direction:column;gap:3px;min-width:74px}
+.arow-v .btn{padding:3px 8px;font-size:11.8px;text-align:center;width:100%;font-weight:600}
+.tcell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hidden{display:none}
 .alert-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:5px;font-size:13.8px}
 .awc{background:#FEF2F2;border:.5px solid #FECACA}.atc{background:#FFF7ED;border:.5px solid #FED7AA}.aov{background:#FEFCE8;border:.5px solid #FDE68A}
@@ -395,7 +401,6 @@ tr:hover td{background:#F0F9FF}
   <div class="header-right">
     <button class="hbtn hbtn-accent" id="btn-new-client" onclick="om('madd')">+ Nuevo cliente</button>
     <button class="hbtn" id="btn-techs" onclick="om('mtechs')" style="background:#7C3AED;border-color:#A78BFA;color:#FFF">👷 <span id="techs-btn-label">Techs</span></button>
-    <button class="hbtn" onclick="exportAllTechAppts()" style="background:#7C3AED;border-color:#A78BFA;color:#FFF">&#128197; .ics</button>
     <select class="hbtn" id="qsel" onchange="ra();renderQDropdown()" style="cursor:pointer;min-width:90px"></select>
     <button class="hbtn" id="lang-btn" onclick="toggleLang()" style="background:#F59E0B;border-color:#F59E0B;font-weight:600">EN 🌐</button>
     <button class="hbtn" id="btn-backup" onclick="downloadBackup()" style="background:#16A34A;border-color:#16A34A;font-weight:600" title="Download backup">💾 Backup</button>
@@ -1695,7 +1700,7 @@ function rc(){
   const fd=document.getElementById('fday').value;
   let f=C.filter(c=>{
     if(s&&!c.name.toLowerCase().includes(s))return false;
-    if(ff&&!c.freq.toLowerCase().includes(ff.toLowerCase()))return false;
+    if(ff&&c.freq!==ff)return false;
     if(fs&&c.status!==fs)return false;
     if(fd&&c.day!==fd)return false;
     return true;
@@ -1708,21 +1713,26 @@ function rc(){
   document.getElementById('ctbody').innerHTML=page.map((c,i)=>{
     const isAB=c.week==='A&B';
     const nameStyle=isAB?'font-weight:600;color:#3B82F6;font-style:italic':'font-weight:600;color:var(--brand)';
+    const notesAttr=(c.notes||'').replace(/"/g,'&quot;');
+    const sanAttr=(c.san||'').replace(/"/g,'&quot;');
+    const emailAttr=(c.email||'').replace(/"/g,'&quot;');
+    const addrAttr=(c.addr||'').replace(/"/g,'&quot;');
+    const noteSub=c.notes?`<div class="tcell" style="font-size:11.5px;color:var(--muted);max-width:170px;margin-top:2px" title="${notesAttr}">${c.notes}</div>`:'';
     return`<tr>
       <td style="font-size:12.6px;color:var(--muted);text-align:center">${st2+i+1}</td>
-      <td><span style="${nameStyle}">${c.name}</span>${c.notes?`<br><span style="font-size:11.5px;color:var(--muted)">${c.notes.substring(0,45)}</span>`:''}</td>
-      <td style="font-size:13.2px">${c.phone}</td>
-      <td style="font-size:12.6px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.email||'—'}</td>
-      <td style="font-size:12.6px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.addr}</td>
+      <td><div style="${nameStyle}">${c.name}</div>${noteSub}</td>
+      <td style="font-size:13.2px;white-space:nowrap">${c.phone}</td>
+      <td class="tcell" style="font-size:12.6px;color:var(--muted);max-width:140px" title="${emailAttr}">${c.email||'—'}</td>
+      <td class="tcell" style="font-size:12.6px;max-width:170px" title="${addrAttr}">${c.addr}</td>
       <td>${fb(c.freq)}</td>
-      <td style="font-size:13.2px">${dln(c.day)}</td>
+      <td style="font-size:13.2px;white-space:nowrap">${dln(c.day)}</td>
       <td style="text-align:center">${c.week==='A&B'?'<span class="wb-ab">A+B</span>':c.week==='A'?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>'}</td>
-      <td style="font-size:12.6px">${c.san||'—'}</td>
-      <td style="font-size:12.6px">${c.lwc||'—'}</td>
-      <td style="font-size:12.6px;${od(c.nwc)&&!c.wcN?'color:#DC2626;font-weight:600':''}">${c.nwc||'—'}</td>
-      <td style="font-size:12.6px;max-width:120px">${c.notes||'—'}</td>
+      <td class="tcell" style="font-size:12.6px;max-width:110px" title="${sanAttr}">${c.san||'—'}</td>
+      <td style="font-size:12.6px;white-space:nowrap">${c.lwc||'—'}</td>
+      <td style="font-size:12.6px;white-space:nowrap;${od(c.nwc)&&!c.wcN?'color:#DC2626;font-weight:600':''}">${c.nwc||'—'}</td>
+      <td class="tcell" style="font-size:12.6px;max-width:140px" title="${notesAttr}">${c.notes||'—'}</td>
       <td>${sb(c.status)}</td>
-      <td><div class="arow">
+      <td class="cact"><div class="arow-v">
         <button class="btn" onclick="vc(${c.id})">${t('view')}</button>
         <button class="btn btn-amber" onclick="openEdit(${c.id})">${t('edit')}</button>
         <button class="btn ${c.status==='paused'?'btn-green':'btn-amber'}" onclick="tp(${c.id})">${c.status==='paused'?t('activate'):t('pause')}</button>
@@ -3203,24 +3213,107 @@ function updateCloudIndicator(connected,error){
 }
 
 /* ── DAY MAP ROUTE (Leaflet + OpenStreetMap, no API key needed) ── */
-const GEO_CACHE_VERSION='v2';
+// v3: added St Louis bounding-box validation + ZIP→city injection + ZIP-centroid fallback.
+// Bumping the cache key invalidates v2 entries that may have geocoded to wrong cities (e.g. Wright City → NYC).
+const GEO_CACHE_VERSION='v3';
 let GEO_CACHE={};
 try{
   const raw=JSON.parse(localStorage.getItem('aspen_geo_cache')||'{}');
   if(raw._v===GEO_CACHE_VERSION){delete raw._v;GEO_CACHE=raw;}
 }catch(e){}
-let _routeClients=[],_leafletMap=null,_routePoints=[],_failedAddrs=[];
+let _routeClients=[],_leafletMap=null,_routePoints=[],_failedAddrs=[],_approxAddrs=[];
 function _saveGeoCache(){try{localStorage.setItem('aspen_geo_cache',JSON.stringify({...GEO_CACHE,_v:GEO_CACHE_VERSION}));}catch(e){}}
+
+// ─── St Louis metro service area (generous box: ~100mi around downtown STL) ───
+// Anything outside this box is treated as a wrong geocode (e.g. "Archer Rd" matching NYC instead of Wright City MO).
+const STL_BBOX={minLat:37.5, maxLat:39.7, minLon:-91.8, maxLon:-89.3};
+function _inServiceArea(lat,lon){
+  return typeof lat==='number'&&typeof lon==='number'&&
+         lat>=STL_BBOX.minLat&&lat<=STL_BBOX.maxLat&&
+         lon>=STL_BBOX.minLon&&lon<=STL_BBOX.maxLon;
+}
+
+// ─── ZIP → "City, ST" lookup for STL metro area ───
+// Used to inject the correct city name when the source address omits it (e.g. "11233 Archer Rd 63390" → adds "Wright City, MO").
+const ZIP_TO_CITY={
+  // Missouri (St Louis County / City)
+  '63005':'Chesterfield, MO','63010':'Arnold, MO','63011':'Ballwin, MO','63017':'Chesterfield, MO',
+  '63021':'Ballwin, MO','63025':'Eureka, MO','63026':'Fenton, MO','63031':'Florissant, MO',
+  '63033':'Florissant, MO','63034':'Florissant, MO','63038':'Glencoe, MO','63040':'Grover, MO',
+  '63042':'Hazelwood, MO','63043':'Maryland Heights, MO','63044':'Bridgeton, MO','63049':'High Ridge, MO',
+  '63050':'Hillsboro, MO','63051':'House Springs, MO','63052':'Imperial, MO','63069':'Pacific, MO',
+  '63074':'Saint Ann, MO','63088':'Valley Park, MO',
+  // Missouri (City of St Louis + inner suburbs)
+  '63101':'Saint Louis, MO','63102':'Saint Louis, MO','63103':'Saint Louis, MO','63104':'Saint Louis, MO',
+  '63105':'Clayton, MO','63108':'Saint Louis, MO','63109':'Saint Louis, MO','63110':'Saint Louis, MO',
+  '63111':'Saint Louis, MO','63112':'Saint Louis, MO','63113':'Saint Louis, MO','63114':'Saint Louis, MO',
+  '63115':'Saint Louis, MO','63116':'Saint Louis, MO','63117':'Richmond Heights, MO','63118':'Saint Louis, MO',
+  '63119':'Webster Groves, MO','63120':'Saint Louis, MO','63121':'Saint Louis, MO','63122':'Kirkwood, MO',
+  '63123':'Saint Louis, MO','63124':'Ladue, MO','63125':'Saint Louis, MO','63126':'Saint Louis, MO',
+  '63127':'Sappington, MO','63128':'Saint Louis, MO','63129':'Saint Louis, MO','63130':'University City, MO',
+  '63131':'Town and Country, MO','63132':'Saint Louis, MO','63134':'Berkeley, MO','63135':'Ferguson, MO',
+  '63136':'Saint Louis, MO','63137':'Saint Louis, MO','63138':'Saint Louis, MO','63139':'Saint Louis, MO',
+  '63140':'Hazelwood, MO','63141':'Creve Coeur, MO','63143':'Maplewood, MO','63144':'Brentwood, MO',
+  '63146':'Maryland Heights, MO','63147':'Saint Louis, MO',
+  // Missouri (St Charles / Warren / Lincoln Counties)
+  '63301':'Saint Charles, MO','63303':'Saint Charles, MO','63304':'Saint Charles, MO',
+  '63341':'Defiance, MO','63346':'Foristell, MO','63348':'Lake Saint Louis, MO',
+  '63366':"O'Fallon, MO",'63367':'Lake Saint Louis, MO','63368':"O'Fallon, MO",
+  '63376':'Saint Peters, MO','63385':'Wentzville, MO','63390':'Wright City, MO',
+  // Illinois (Metro East)
+  '62002':'Alton, IL','62010':'Bethalto, IL','62024':'Edwardsville, IL','62025':'Edwardsville, IL',
+  '62034':'Glen Carbon, IL','62040':'Granite City, IL','62084':'Roxana, IL','62095':'Wood River, IL',
+  '62205':'East Saint Louis, IL','62208':'Fairview Heights, IL','62220':'Belleville, IL',
+  '62221':'Belleville, IL','62223':'Belleville, IL','62225':'Belleville, IL','62226':'Belleville, IL',
+  '62232':'Caseyville, IL','62234':'Collinsville, IL','62236':'Columbia, IL','62243':'Freeburg, IL',
+  '62249':'Highland, IL','62254':'Lebanon, IL','62258':'Mascoutah, IL','62269':"O'Fallon, IL",
+  '62294':'Troy, IL'
+};
+
+// ─── Approximate ZIP centroid (lat, lon) for the metro area ───
+// Used as a final fallback when an address can't be resolved to a street-level match.
+// The marker will appear in the right ZIP — flagged as "approximate" in the UI.
+const ZIP_CENTROID={
+  '63005':[38.6587,-90.6299],'63010':[38.4408,-90.4135],'63011':[38.5959,-90.5460],'63017':[38.6587,-90.5740],
+  '63021':[38.5895,-90.5559],'63025':[38.5048,-90.6223],'63026':[38.5051,-90.4540],'63031':[38.7867,-90.3309],
+  '63033':[38.7728,-90.2797],'63034':[38.8128,-90.2660],'63038':[38.5836,-90.6736],'63040':[38.5840,-90.6620],
+  '63042':[38.7867,-90.3631],'63043':[38.7170,-90.4546],'63044':[38.7506,-90.4290],'63049':[38.4708,-90.5366],
+  '63050':[38.2614,-90.5641],'63051':[38.4258,-90.5707],'63052':[38.3814,-90.4060],'63069':[38.4842,-90.7590],
+  '63074':[38.7247,-90.3835],'63088':[38.5512,-90.4898],
+  '63101':[38.6300,-90.1950],'63102':[38.6353,-90.1840],'63103':[38.6386,-90.2152],'63104':[38.6132,-90.2115],
+  '63105':[38.6406,-90.3265],'63108':[38.6446,-90.2624],'63109':[38.5944,-90.2900],'63110':[38.6253,-90.2546],
+  '63111':[38.5639,-90.2487],'63112':[38.6601,-90.2935],'63113':[38.6529,-90.2367],'63114':[38.6822,-90.3653],
+  '63115':[38.6812,-90.2452],'63116':[38.5915,-90.2665],'63117':[38.6290,-90.3279],'63118':[38.5969,-90.2274],
+  '63119':[38.5953,-90.3473],'63120':[38.6962,-90.2611],'63121':[38.7095,-90.2920],'63122':[38.5837,-90.4041],
+  '63123':[38.5526,-90.3413],'63124':[38.6378,-90.3851],'63125':[38.5217,-90.2841],'63126':[38.5483,-90.3829],
+  '63127':[38.5553,-90.4015],'63128':[38.5147,-90.4040],'63129':[38.4747,-90.3231],'63130':[38.6593,-90.3290],
+  '63131':[38.6235,-90.4669],'63132':[38.6677,-90.3836],'63134':[38.7367,-90.3293],'63135':[38.7470,-90.2811],
+  '63136':[38.7392,-90.2526],'63137':[38.7551,-90.2094],'63138':[38.7935,-90.1842],'63139':[38.6178,-90.2966],
+  '63140':[38.7798,-90.3676],'63141':[38.6661,-90.4422],'63143':[38.6195,-90.3338],'63144':[38.6195,-90.3490],
+  '63146':[38.6948,-90.4673],'63147':[38.6920,-90.2148],
+  '63301':[38.7903,-90.5168],'63303':[38.7682,-90.5601],'63304':[38.7000,-90.5944],'63341':[38.6396,-90.7806],
+  '63346':[38.7530,-90.8520],'63348':[38.7800,-90.7900],'63366':[38.7806,-90.7081],'63367':[38.7853,-90.7855],
+  '63368':[38.7706,-90.7300],'63376':[38.7844,-90.6298],'63385':[38.8170,-90.8530],'63390':[38.8275,-91.0210],
+  '62002':[38.8950,-90.1842],'62010':[38.9070,-90.0526],'62024':[38.7894,-89.9530],'62025':[38.8113,-89.9530],
+  '62034':[38.7464,-89.9787],'62040':[38.7106,-90.1487],'62084':[38.8447,-90.0540],'62095':[38.8616,-90.0891],
+  '62205':[38.6260,-90.1487],'62208':[38.5884,-90.0134],'62220':[38.5230,-89.9904],'62221':[38.5170,-89.9180],
+  '62223':[38.5530,-90.0088],'62225':[38.5470,-89.8550],'62226':[38.5474,-89.9818],'62232':[38.6403,-90.0286],
+  '62234':[38.6700,-89.9854],'62236':[38.4453,-90.2017],'62243':[38.4253,-89.9079],'62249':[38.7336,-89.6763],
+  '62254':[38.6042,-89.6856],'62258':[38.4900,-89.7886],'62269':[38.5904,-89.9120],'62294':[38.7298,-89.8987]
+};
+
+function _zipCentroid(zip){
+  if(!zip)return null;
+  const c=ZIP_CENTROID[zip];
+  return c?{lat:c[0],lon:c[1],src:'zip-center',approximate:true}:null;
+}
 
 // Guess state from ZIP code (St Louis metro area focus)
 function _stateFromZip(zip){
   const z=parseInt(zip,10);
   if(isNaN(z))return null;
-  // Illinois: 60000-62999
   if(z>=60000&&z<63000)return 'IL';
-  // Missouri: 63000-65999
   if(z>=63000&&z<66000)return 'MO';
-  // Kansas: 66000-67999
   if(z>=66000&&z<68000)return 'KS';
   return null;
 }
@@ -3239,28 +3332,39 @@ function _cleanAddr(a){
     .replace(/\bTer\.?(?=\s|,|$)/gi,'Terrace')
     .replace(/\bPkwy\.?(?=\s|,|$)/gi,'Parkway')
     .replace(/\bHwy\.?(?=\s|,|$)/gi,'Highway')
+    .replace(/\bN\.?(?=\s|,|$)/g,'North')
+    .replace(/\bS\.?(?=\s|,|$)/g,'South')
+    .replace(/\bE\.?(?=\s|,|$)/g,'East')
+    .replace(/\bW\.?(?=\s|,|$)/g,'West')
     .replace(/\s+/g,' ').trim();
 }
 
-// Normalize to "street, city?, STATE ZIP, USA" for best geocoder match
+// Normalize to "street, City, STATE ZIP, USA" — injecting city from ZIP when missing.
 function _normAddr(a){
   if(!a)return null;
   let s=_cleanAddr(a);
   const zip=_extractZip(s);
   const stateFromZip=zip?_stateFromZip(zip):null;
-  // Remove any existing state abbreviation/name so we don't fight with wrong one
+  const cityState=zip?ZIP_TO_CITY[zip]:null;
+  // Strip any existing state token (we'll re-insert correctly)
   const hasState=/\b(MO|IL|KS|Missouri|Illinois|Kansas)\b/.test(s);
   if(zip&&stateFromZip){
-    // Force the correct state before the zip
     if(hasState){
       s=s.replace(/\b(MO|IL|KS|Missouri|Illinois|Kansas)\b/g,stateFromZip);
     } else {
-      // Insert state right before zip: "... 63108" -> "... MO 63108"
       s=s.replace(new RegExp('\\b'+zip+'\\b'), stateFromZip+' '+zip);
     }
   } else if(!hasState){
-    // No zip, no state — default to MO (St Louis region)
     s+=', MO';
+  }
+  // If we have a known ZIP and the address doesn't already contain that city, inject it before the state.
+  if(cityState){
+    const cityName=cityState.split(',')[0].trim();
+    const cityRe=new RegExp('\\b'+cityName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+    if(!cityRe.test(s)){
+      // Insert city before "STATE ZIP"
+      s=s.replace(new RegExp('\\s*,?\\s*'+stateFromZip+'\\s+'+zip), ', '+cityState+' '+zip);
+    }
   }
   return s+', USA';
 }
@@ -3281,10 +3385,12 @@ async function _geocodeCensus(addr){
   return null;
 }
 
-// FALLBACK: Nominatim (OpenStreetMap) — 1 req/sec limit
+// FALLBACK: Nominatim (OpenStreetMap) — biased to STL metro via viewbox; 1 req/sec limit
 async function _geocodeNominatim(addr){
   try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q='+encodeURIComponent(addr),
+    // viewbox = left,top,right,bottom (lon,lat,lon,lat) — biases results toward STL but doesn't strictly limit
+    const vb='-91.8,39.7,-89.3,37.5';
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&viewbox='+vb+'&q='+encodeURIComponent(addr),
       {headers:{'Accept-Language':'en-US,en'}});
     if(!r.ok)return null;
     const d=await r.json();
@@ -3293,25 +3399,50 @@ async function _geocodeNominatim(addr){
   return null;
 }
 
-// Main geocode: tries Census first, falls back to Nominatim. Does NOT cache nulls (always retries failures).
+// Validate-then-accept helper: returns the result only if it's inside the STL service area.
+function _accept(result){
+  if(!result)return null;
+  return _inServiceArea(result.lat,result.lon)?result:null;
+}
+
+// Main geocode: Census → Nominatim (city-injected) → Nominatim (street+zip) → ZIP centroid (approximate).
+// Every candidate is bounding-box validated; out-of-area results are rejected (this fixes the "Wright City → NYC" bug).
 async function _geocode(rawAddr, forceRefresh){
   if(!rawAddr)return null;
   const k=String(rawAddr).trim().toLowerCase();
-  if(!forceRefresh && GEO_CACHE[k] && GEO_CACHE[k].lat) return GEO_CACHE[k];
+  // Honor cache only if cached coords are inside the service area (purge stale bad entries automatically)
+  if(!forceRefresh && GEO_CACHE[k] && GEO_CACHE[k].lat){
+    if(_inServiceArea(GEO_CACHE[k].lat,GEO_CACHE[k].lon)) return GEO_CACHE[k];
+    delete GEO_CACHE[k];
+  }
   const norm=_normAddr(rawAddr);
   if(!norm)return null;
-  // Try Census first (no rate limit, very accurate for US)
-  let result=await _geocodeCensus(norm);
-  // Fallback: Nominatim with normalized address
-  if(!result) result=await _geocodeNominatim(norm);
-  // Last resort: Nominatim with just street + zip (drop extra words)
-  if(!result){
-    const zip=_extractZip(norm);
-    if(zip){
-      const simple=norm.split(',')[0]+' '+zip+' USA';
-      result=await _geocodeNominatim(simple);
-    }
+  const zip=_extractZip(norm);
+
+  // 1) Census geocoder (most accurate for US addresses)
+  let result=_accept(await _geocodeCensus(norm));
+
+  // 2) Nominatim with full normalized address (city + state + zip injected)
+  if(!result) result=_accept(await _geocodeNominatim(norm));
+
+  // 3) Nominatim with simplified street + city + zip (some addresses have unit/apt noise)
+  if(!result && zip && ZIP_TO_CITY[zip]){
+    const street=norm.split(',')[0].trim();
+    const simple=street+', '+ZIP_TO_CITY[zip]+' '+zip+', USA';
+    result=_accept(await _geocodeNominatim(simple));
   }
+
+  // 4) Nominatim with just street + zip
+  if(!result && zip){
+    const simple=norm.split(',')[0]+' '+zip+' USA';
+    result=_accept(await _geocodeNominatim(simple));
+  }
+
+  // 5) Final fallback: ZIP centroid — marker appears in the correct ZIP, flagged as approximate
+  if(!result && zip){
+    result=_zipCentroid(zip);
+  }
+
   if(result){
     GEO_CACHE[k]=result;
     _saveGeoCache();
@@ -3366,9 +3497,15 @@ async function openDayMap(dayKey,wt,event){
 function _renderRouteList(dc){
   document.getElementById('mdaymap-list').innerHTML=dc.map((c,i)=>{
     const failed=_failedAddrs.indexOf(i)>=0;
-    const bg=failed?'background:#FEE2E2;':'';
-    const badgeC=failed?'#DC2626':'#2563EB';
-    const errLine=failed?`<div style="font-size:11px;color:#DC2626;font-weight:600;margin-top:3px">⚠ ${LANG==='es'?'No se localizó':'Could not locate'}</div>`:'';
+    const approx=_approxAddrs.indexOf(i)>=0;
+    let bg='', badgeC='#2563EB', errLine='';
+    if(failed){
+      bg='background:#FEE2E2;'; badgeC='#DC2626';
+      errLine=`<div style="font-size:11px;color:#DC2626;font-weight:600;margin-top:3px">⚠ ${LANG==='es'?'No se localizó':'Could not locate'}</div>`;
+    } else if(approx){
+      bg='background:#FEF3C7;'; badgeC='#D97706';
+      errLine=`<div style="font-size:11px;color:#B45309;font-weight:600;margin-top:3px">📍 ${LANG==='es'?'Ubicación aproximada (centro del ZIP)':'Approximate location (ZIP centroid)'}</div>`;
+    }
     return `<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;cursor:pointer;${bg}" onclick="focusRoutePoint(${i})">
       <span style="background:${badgeC};color:#fff;min-width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${i+1}</span>
       <div style="flex:1;min-width:0">
@@ -3384,7 +3521,7 @@ function _renderRouteList(dc){
 async function _drawMap(dc){
   const ct=document.getElementById('mdaymap-container');
   if(_leafletMap){_leafletMap.remove();_leafletMap=null;}
-  ct.innerHTML='';_failedAddrs=[];
+  ct.innerHTML='';_failedAddrs=[];_approxAddrs=[];
   if(dc.length===0){ct.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">Sin clientes</div>';return;}
   _leafletMap=L.map(ct).setView([38.65,-90.3],10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_leafletMap);
@@ -3395,7 +3532,8 @@ async function _drawMap(dc){
     if(uncached)pg.textContent=`${LANG==='es'?'Buscando':'Geocoding'} ${i+1}/${dc.length}: ${c.name}...`;
     const co=await _geocode(c.addr||'');
     if(co){
-      pts.push({c,coords:co,idx:i});
+      pts.push({c,coords:co,idx:i,approximate:!!co.approximate});
+      if(co.approximate)_approxAddrs.push(i);
     } else {
       _failedAddrs.push(i);
     }
@@ -3404,8 +3542,10 @@ async function _drawMap(dc){
   }
   _spreadOverlapping(pts);
   pts.forEach(p=>{
-    L.marker([p.coords.lat,p.coords.lon],{icon:_numIcon(p.idx+1)}).addTo(_leafletMap)
-      .bindPopup(`<b>${p.idx+1}. ${p.c.name}</b><br>${p.c.addr||''}<br>📞 ${p.c.phone||''}<br><small style="color:#888">via ${p.coords.src||'?'}</small>`);
+    const color=p.approximate?'#D97706':'#2563EB';
+    const approxLabel=p.approximate?`<br><small style="color:#B45309;font-weight:600">📍 ${LANG==='es'?'Aproximado (centro del ZIP)':'Approximate (ZIP centroid)'}</small>`:'';
+    L.marker([p.coords.lat,p.coords.lon],{icon:_numIcon(p.idx+1,color)}).addTo(_leafletMap)
+      .bindPopup(`<b>${p.idx+1}. ${p.c.name}</b><br>${p.c.addr||''}<br>📞 ${p.c.phone||''}${approxLabel}<br><small style="color:#888">via ${p.coords.src||'?'}</small>`);
   });
   if(pts.length>1){
     const ll=pts.map(p=>[p.coords.lat,p.coords.lon]);
@@ -3415,15 +3555,20 @@ async function _drawMap(dc){
     _leafletMap.setView([pts[0].coords.lat,pts[0].coords.lon],13);
   }
   _routePoints=pts;
-  _renderRouteList(dc); // redraw list to highlight failures
-  const miss=_failedAddrs.length;
-  if(miss>0){
-    const names=_failedAddrs.map(i=>dc[i].name).join(', ');
-    pg.innerHTML=`<span style="color:#DC2626">⚠ ${LANG==='es'?'No se localizaron':'Could not geocode'} ${miss} ${LANG==='es'?'dirección(es)':'address(es)'}: ${names}</span>`;
-  } else {
-    pg.innerHTML=`<span style="color:#16A34A">✓ ${LANG==='es'?'Todas las direcciones localizadas':'All addresses located'} (${pts.length}/${dc.length})</span>`;
-    setTimeout(()=>{pg.style.display='none';},2500);
+  _renderRouteList(dc); // redraw list to highlight failures + approximations
+  const miss=_failedAddrs.length, approx=_approxAddrs.length, exact=pts.length-approx;
+  const parts=[];
+  if(exact>0)parts.push(`<span style="color:#16A34A">✓ ${exact} ${LANG==='es'?'exactas':'exact'}</span>`);
+  if(approx>0){
+    const an=_approxAddrs.map(i=>dc[i].name).join(', ');
+    parts.push(`<span style="color:#B45309" title="${an}">📍 ${approx} ${LANG==='es'?'aproximadas (ZIP)':'approximate (ZIP)'}</span>`);
   }
+  if(miss>0){
+    const fn=_failedAddrs.map(i=>dc[i].name).join(', ');
+    parts.push(`<span style="color:#DC2626" title="${fn}">⚠ ${miss} ${LANG==='es'?'no localizadas':'unlocated'}: ${fn}</span>`);
+  }
+  pg.innerHTML=parts.join(' &nbsp;·&nbsp; ');
+  if(miss===0&&approx===0)setTimeout(()=>{pg.style.display='none';},2500);
   setTimeout(()=>{if(_leafletMap)_leafletMap.invalidateSize();},100);
 }
 function focusRoutePoint(i){
