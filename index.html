@@ -71,6 +71,7 @@ tr:hover td{background:#F0F9FF}
 .arow-v{display:flex;flex-direction:column;gap:3px;min-width:74px}
 .arow-v .btn{padding:3px 8px;font-size:11.8px;text-align:center;width:100%;font-weight:600}
 .tcell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .hidden{display:none}
 .alert-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:5px;font-size:13.8px}
 .awc{background:#FEF2F2;border:.5px solid #FECACA}.atc{background:#FFF7ED;border:.5px solid #FED7AA}.aov{background:#FEFCE8;border:.5px solid #FDE68A}
@@ -467,15 +468,25 @@ tr:hover td{background:#F0F9FF}
     <div class="card-head">
       <span class="card-title">Clientes (<span id="ccount">0</span>)</span>
       <div class="fbar">
-        <input type="text" id="srch" placeholder="Buscar nombre..." oninput="rc()" style="width:150px">
+        <input type="text" id="srch" placeholder="Buscar nombre, dirección, teléfono..." oninput="rc()" style="width:220px">
         <select id="ffreq" onchange="rc()"><option value="">Frecuencia</option><option value="weekly">Semanal</option><option value="biweekly">Bi-semanal</option></select>
         <select id="fstat" onchange="rc()"><option value="">Estado</option><option value="active">Activo</option><option value="paused">Pausado</option><option value="cancelled">Cancelado</option></select>
         <select id="fday" onchange="rc()"><option value="">Día</option><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
+        <button class="btn" onclick="exportClientsCSV()" title="Export to CSV">📊 CSV</button>
+        <button class="btn" onclick="openPricingConfig()" title="Pricing config">💲 <span id="pricing-btn-label">Precios</span></button>
       </div>
+    </div>
+    <!-- Bulk-action toolbar (shown when rows are selected) -->
+    <div id="bulk-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 12px;margin:0 16px 10px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-weight:600;color:var(--brand)"><span id="bulk-count">0</span> <span id="bulk-label">seleccionados</span></span>
+      <button class="btn btn-amber" onclick="bulkAction('pause')">⏸ Pausar</button>
+      <button class="btn btn-green" onclick="bulkAction('activate')">▶ Activar</button>
+      <button class="btn btn-red" onclick="bulkAction('cancel')">✕ Cancelar</button>
+      <button class="btn" onclick="bulkClear()" style="margin-left:auto">Limpiar selección</button>
     </div>
     <div class="tw">
       <table>
-        <thead><tr id="clients-thead"><th>#</th><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Frec.</th><th>Día</th><th>Sem.</th><th>Sanitizador</th><th>Últ. C.A.</th><th>Próx. C.A.</th><th>Notas</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <thead><tr id="clients-thead"><th><input type="checkbox" id="bulk-all" onchange="bulkToggleAll(this)" title="Select all"></th><th>#</th><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Frec.</th><th>Día</th><th>Sem.</th><th>Sanitizador</th><th>Últ. C.A.</th><th>Próx. C.A.</th><th>Notas</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody id="ctbody"></tbody>
       </table>
     </div>
@@ -780,7 +791,19 @@ tr:hover td{background:#F0F9FF}
   <div class="edit-field"><label>Semana</label>
     <select id="edit-week"><option value="A">A</option><option value="B">B</option><option value="A&B">A&B (semanal)</option></select>
   </div>
-  <div class="edit-field"><label>Sanitizador</label><input id="edit-san"></div>
+  <div class="edit-field"><label>Sanitizador</label>
+    <select id="edit-san" onchange="document.getElementById('edit-san-other').style.display=this.value==='__other__'?'block':'none'">
+      <option value="">—</option>
+      <option value="Chlorine">Chlorine</option>
+      <option value="Frog @ ease">Frog @ ease</option>
+      <option value="Blu-Salt">Blu-Salt</option>
+      <option value="Inclear-Salt">Inclear-Salt</option>
+      <option value="BluFusion-Salt">BluFusion-Salt</option>
+      <option value="Swim Blu-Salt">Swim Blu-Salt</option>
+      <option value="__other__">Otro / Other...</option>
+    </select>
+    <input id="edit-san-other" placeholder="Sanitizador personalizado" style="margin-top:4px;display:none">
+  </div>
   <div class="edit-field"><label>Último C.A.</label><input id="edit-lwc" type="date"></div>
   <div class="edit-field"><label>Próximo C.A.</label><input id="edit-nwc" type="date"></div>
   <div class="edit-field"><label>Estado</label>
@@ -1079,7 +1102,10 @@ function rebuildUI(){
   document.getElementById('lang-btn').textContent=LANG==='es'?'EN 🌐':'ES 🌐';
   // Update clients table header
   const cth=document.getElementById('clients-thead');
-  if(cth)cth.innerHTML=`<th>#</th><th>${t('clients')}</th><th>${t('phone')}</th><th>${t('email')}</th><th>${t('address')}</th><th>${t('freq')}</th><th>${t('dayLabel')}</th><th>${t('sem')}</th><th>${t('sanitizer')}</th><th>${t('lastWC')}</th><th>${t('nextWC')}</th><th>${t('notes')}</th><th>${t('status')}</th><th>${t('actions')}</th>`;
+  if(cth)cth.innerHTML=`<th><input type="checkbox" id="bulk-all" onchange="bulkToggleAll(this)" title="Select all"></th><th>#</th><th>${t('clients')}</th><th>${t('phone')}</th><th>${t('email')}</th><th>${t('address')}</th><th>${t('freq')}</th><th>${t('dayLabel')}</th><th>${t('sem')}</th><th>${t('sanitizer')}</th><th>${t('lastWC')}</th><th>${t('nextWC')}</th><th>${t('notes')}</th><th>${t('status')}</th><th>${t('actions')}</th>`;
+  // Bulk-bar label
+  const bulkLbl=document.getElementById('bulk-label');if(bulkLbl)bulkLbl.textContent=LANG==='es'?'seleccionados':'selected';
+  const pricingBtn=document.getElementById('pricing-btn-label');if(pricingBtn)pricingBtn.textContent=LANG==='es'?'Precios':'Pricing';
   // Filters
   const srch=document.getElementById('srch');if(srch)srch.placeholder=t('searchName');
   const ffreq=document.getElementById('ffreq');if(ffreq){ffreq.options[0].text=t('frequency');ffreq.options[1].text=t('weeklyLabel');ffreq.options[2].text=t('biweeklyLabel');}
@@ -1302,11 +1328,14 @@ const R=[
 {id:64,name:"Wheeler, Laura",phone:"618-531-0173",addr:"3264 Whispering Pines Dr. 62221",email:"lrw@gaea.us",freq:"biweekly",week:"A",day:"Mon",san:"",lwc:"2025-09-05",nwc:"2026-03-05",notes:"",status:"active"},
 {id:65,name:"Wise, Elton",phone:"562-230-6234",addr:"4367 Delmar Blvd. 63108",email:"",freq:"weekly",week:"A&B",day:"Mon",san:"swim Blu-salt",lwc:"",nwc:"",notes:"",status:"active"},
 {id:66,name:"Yokubat, Elaine",phone:"636-795-7833",addr:"1615 Baxter Forest Ridge Ct 63005",email:"eyokubat@earthlink.net",freq:"weekly",week:"A&B",day:"Wed",san:"",lwc:"2025-09-16",nwc:"2026-03-16",notes:"",status:"active"},
-{id:67,name:"Connelly, Merribeth",phone:"214-755-0482",addr:"1615 Holly Drive",email:"patconnelly86@gmail.com",freq:"biweekly",week:"B",day:"Tue",san:"",lwc:"2025-09-01",nwc:"2026-03-01",notes:"",status:"active"},
 ];
-// Remove duplicates by id
-const seen=new Set();
-const CLIENTS_BASE=R.filter(c=>{if(seen.has(c.id))return false;seen.add(c.id);return true;});
+// Remove duplicates by id AND by normalized name (defends against accidental copy-paste)
+const seenIds=new Set(), seenNames=new Set();
+const CLIENTS_BASE=R.filter(c=>{
+  const nk=String(c.name||'').toLowerCase().trim();
+  if(seenIds.has(c.id)||seenNames.has(nk))return false;
+  seenIds.add(c.id);seenNames.add(nk);return true;
+});
 
 let C=JSON.parse(JSON.stringify(CLIENTS_BASE));
 let BL={},VL={},TAPPTS={};
@@ -1314,11 +1343,28 @@ let TECHS=[{name:'Jarred',phone:''},{name:'Alberto',phone:''}];
 let pg=0;const PS=20;
 let vf='all',ctab='dash',calWeek='AB',allExp=false;
 
-/* ── PRICING ── */
-const QRATE_WEEKLY=650;    // $650 per quarter (weekly clients)
-const QRATE_BIWEEKLY=410;  // $410 per quarter (bi-weekly clients)
-function clientQRate(cl){return cl.week==='A&B'||cl.freq==='weekly'?QRATE_WEEKLY:QRATE_BIWEEKLY;}
+/* ── PRICING (configurable via localStorage; defaults to original values) ── */
+const PRICING_KEY='aspen_pricing';
+const PRICING_DEFAULTS={weekly:650, biweekly:410};
+function getPricing(){
+  try{const p=JSON.parse(localStorage.getItem(PRICING_KEY)||'{}');
+    return {weekly:Number(p.weekly)||PRICING_DEFAULTS.weekly, biweekly:Number(p.biweekly)||PRICING_DEFAULTS.biweekly};
+  }catch(e){dbgWarn('getPricing',e);return {...PRICING_DEFAULTS};}
+}
+function clientQRate(cl){const p=getPricing();return cl.week==='A&B'||cl.freq==='weekly'?p.weekly:p.biweekly;}
 function clientAnnualRate(cl){return clientQRate(cl)*4;}
+async function openPricingConfig(){
+  const p=getPricing();
+  const wkRaw=await showPrompt(LANG==='es'?`Tarifa trimestral SEMANAL (USD)\nActual: $${p.weekly}`:`Quarterly WEEKLY rate (USD)\nCurrent: $${p.weekly}`,String(p.weekly),{type:'number'});
+  if(wkRaw==null)return;
+  const biRaw=await showPrompt(LANG==='es'?`Tarifa trimestral BI-SEMANAL (USD)\nActual: $${p.biweekly}`:`Quarterly BI-WEEKLY rate (USD)\nCurrent: $${p.biweekly}`,String(p.biweekly),{type:'number'});
+  if(biRaw==null)return;
+  const w=Number(wkRaw), b=Number(biRaw);
+  if(!isFinite(w)||w<=0||!isFinite(b)||b<=0){showToast(LANG==='es'?'Valores inválidos':'Invalid values','err');return;}
+  localStorage.setItem(PRICING_KEY,JSON.stringify({weekly:w,biweekly:b}));
+  showToast(LANG==='es'?`Precios actualizados: Sem $${w} / Bi-sem $${b}`:`Pricing updated: Wk $${w} / Bi-wk $${b}`,'ok');
+  ra();
+}
 function fmtUSD(n){return'$'+Math.round(n).toLocaleString('en-US');}
 
 const QM={'Q1 2026':[1,2,3],'Q2 2026':[4,5,6],'Q3 2026':[7,8,9],'Q4 2026':[10,11,12]};
@@ -1347,7 +1393,119 @@ function getCurrentYearQuarters(){
 const DAYS=['Mon','Tue','Wed','Thu','Fri'];
 function getDN(){return[t('mon'),t('tue'),t('wed'),t('thu'),t('fri')];}
 const td=()=>new Date().toISOString().split('T')[0];
-const od=d=>d&&new Date(d)<new Date();
+
+// ─── Core helpers (used throughout) ───────────────────────────────────────────
+// HTML escape — use anywhere user-provided fields go into innerHTML/template strings.
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Parse ISO date (YYYY-MM-DD) as LOCAL midnight, not UTC. Fixes the timezone off-by-one bug
+// where new Date('2026-04-26') becomes 2026-04-25 19:00 in Central Time.
+function parseLocalDate(s){
+  if(!s)return null;
+  const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m)return null;
+  return new Date(+m[1], +m[2]-1, +m[3]);
+}
+// Today at local midnight (used for overdue comparisons)
+function todayLocal(){const d=new Date();d.setHours(0,0,0,0);return d;}
+// Days between two YYYY-MM-DD strings (positive = future, negative = past)
+function daysBetween(a,b){
+  const da=parseLocalDate(a), db=b?parseLocalDate(b):todayLocal();
+  if(!da||!db)return null;
+  return Math.round((da-db)/86400000);
+}
+// Overdue check (timezone-safe)
+const od=d=>{const dt=parseLocalDate(d);return dt && dt<todayLocal();};
+
+// Debug logging — toggle DEBUG=true in localStorage to silence in production
+const DEBUG=(()=>{try{return localStorage.getItem('aspen_debug')==='1';}catch(e){return false;}})();
+const dbg=DEBUG?console.log.bind(console,'[aspen]'):()=>{};
+const dbgWarn=(...a)=>{if(DEBUG)console.warn('[aspen]',...a);};
+const dbgErr=(...a)=>console.error('[aspen]',...a);  // errors always logged
+
+// ─── Toast / confirm system (replaces alert/confirm/prompt) ───────────────────
+function showToast(msg,type){
+  let host=document.getElementById('toast-host');
+  if(!host){host=document.createElement('div');host.id='toast-host';
+    host.style.cssText='position:fixed;top:18px;right:18px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:inherit';
+    document.body.appendChild(host);}
+  const colors={ok:['#16A34A','#FFF'],err:['#DC2626','#FFF'],warn:['#D97706','#FFF'],info:['#2563EB','#FFF']};
+  const [bg,fg]=colors[type||'info'];
+  const el=document.createElement('div');
+  el.style.cssText=`background:${bg};color:${fg};padding:10px 14px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:14px;font-weight:500;max-width:340px;pointer-events:auto;cursor:pointer;animation:toast-in .25s ease`;
+  el.textContent=msg;
+  el.onclick=()=>el.remove();
+  host.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},type==='err'?5500:3500);
+}
+// Promise-based confirmation modal (replaces blocking confirm())
+function showConfirm(message,opts){
+  return new Promise(resolve=>{
+    const o=opts||{};
+    const okText=o.okText||(LANG==='es'?'Aceptar':'OK');
+    const cancelText=o.cancelText||(LANG==='es'?'Cancelar':'Cancel');
+    const danger=!!o.danger;
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;animation:toast-in .15s ease';
+    const box=document.createElement('div');
+    box.style.cssText='background:#fff;border-radius:12px;padding:18px 20px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:inherit';
+    box.innerHTML=`<div style="font-size:14.5px;color:#111827;line-height:1.5;white-space:pre-line;margin-bottom:14px">${esc(message)}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="cf-cancel" style="padding:8px 16px;border:1px solid #D1D5DB;background:#fff;border-radius:7px;cursor:pointer;font-weight:500;font-family:inherit">${esc(cancelText)}</button>
+        <button id="cf-ok" style="padding:8px 16px;border:none;background:${danger?'#DC2626':'#2563EB'};color:#fff;border-radius:7px;cursor:pointer;font-weight:600;font-family:inherit">${esc(okText)}</button>
+      </div>`;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    const close=v=>{overlay.remove();resolve(v);};
+    box.querySelector('#cf-ok').onclick=()=>close(true);
+    box.querySelector('#cf-cancel').onclick=()=>close(false);
+    overlay.onclick=e=>{if(e.target===overlay)close(false);};
+    setTimeout(()=>box.querySelector('#cf-ok').focus(),50);
+  });
+}
+// Promise-based prompt (replaces blocking prompt())
+function showPrompt(message,defaultValue,opts){
+  return new Promise(resolve=>{
+    const o=opts||{};
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px';
+    const box=document.createElement('div');
+    box.style.cssText='background:#fff;border-radius:12px;padding:18px 20px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:inherit';
+    box.innerHTML=`<div style="font-size:14.5px;color:#111827;line-height:1.5;white-space:pre-line;margin-bottom:10px">${esc(message)}</div>
+      <input id="pr-input" type="${o.type||'text'}" value="${esc(defaultValue||'')}" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-family:inherit;font-size:14px;margin-bottom:14px;box-sizing:border-box">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="pr-cancel" style="padding:8px 16px;border:1px solid #D1D5DB;background:#fff;border-radius:7px;cursor:pointer;font-weight:500;font-family:inherit">${esc(LANG==='es'?'Cancelar':'Cancel')}</button>
+        <button id="pr-ok" style="padding:8px 16px;border:none;background:#2563EB;color:#fff;border-radius:7px;cursor:pointer;font-weight:600;font-family:inherit">${esc(LANG==='es'?'Aceptar':'OK')}</button>
+      </div>`;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    const input=box.querySelector('#pr-input');
+    const close=v=>{overlay.remove();resolve(v);};
+    box.querySelector('#pr-ok').onclick=()=>close(input.value);
+    box.querySelector('#pr-cancel').onclick=()=>close(null);
+    input.onkeydown=e=>{if(e.key==='Enter')close(input.value);if(e.key==='Escape')close(null);};
+    setTimeout(()=>{input.focus();input.select();},50);
+  });
+}
+
+// ─── Undo stack ──────────────────────────────────────────────────────────────
+let _undoStack=[];
+function pushUndo(label,fn){
+  _undoStack.push({label,fn,t:Date.now()});
+  if(_undoStack.length>10)_undoStack.shift();
+  showUndoToast(label);
+}
+function showUndoToast(label){
+  let host=document.getElementById('undo-host');
+  if(host)host.remove();
+  host=document.createElement('div');host.id='undo-host';
+  host.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;background:#1F2937;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;align-items:center;gap:14px;font-size:14px;font-family:inherit;animation:toast-in .25s ease';
+  host.innerHTML=`<span>${esc(label)}</span><button style="background:#374151;border:none;color:#fff;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-family:inherit">↶ ${LANG==='es'?'Deshacer':'Undo'}</button>`;
+  host.querySelector('button').onclick=()=>{const a=_undoStack.pop();if(a){a.fn();ra();saveData();showToast(LANG==='es'?'Deshecho':'Undone','ok');}host.remove();};
+  document.body.appendChild(host);
+  setTimeout(()=>{if(host.parentNode){host.style.opacity='0';host.style.transition='opacity .4s';setTimeout(()=>host.remove(),400);}},6000);
+}
+
+const od_ORIGINAL_REPLACED_BY_ABOVE=null; // sentinel: see od above
 function getDL(){return{Mon:t('mon'),Tue:t('tue'),Wed:t('wed'),Thu:t('thu'),Fri:t('fri')};}
 const dln=d=>getDL()[d]||d||'—';
 const fb=f=>{const fl=(f||'').toLowerCase();return fl==='weekly'?`<span class="badge bweekly">${t('weeklyLabel')}</span>`:`<span class="badge bbiw">${t('biweeklyLabel')}</span>`;}
@@ -1394,15 +1552,15 @@ function addTechnician(){
   const nameEl=document.getElementById('new-tech-name');
   const phoneEl=document.getElementById('new-tech-phone');
   const name=nameEl.value.trim();
-  if(!name){alert(LANG==='es'?'Ingresa el nombre del técnico':'Enter technician name');return;}
-  if(TECHS.find(t2=>t2.name.toLowerCase()===name.toLowerCase())){alert(LANG==='es'?'Ese técnico ya existe':'That technician already exists');return;}
+  if(!name){showToast(LANG==='es'?'Ingresa el nombre del técnico':'Enter technician name');return;}
+  if(TECHS.find(t2=>t2.name.toLowerCase()===name.toLowerCase())){showToast(LANG==='es'?'Ese técnico ya existe':'That technician already exists');return;}
   TECHS.push({name,phone:phoneEl.value.trim()});
   nameEl.value='';phoneEl.value='';
   renderTechsList();refreshTechDataLists();saveData();
 }
-function removeTechnician(idx){
+async function removeTechnician(idx){
   const tk=TECHS[idx];
-  if(!confirm((LANG==='es'?'¿Eliminar a ':'Remove ')+tk.name+'?'))return;
+  if(!await showConfirm((LANG==='es'?'¿Eliminar a ':'Remove ')+tk.name+'?',{danger:true}))return;
   TECHS.splice(idx,1);
   renderTechsList();refreshTechDataLists();saveData();
 }
@@ -1527,12 +1685,12 @@ function rd(){
 function showMetricPopup(type){
   let title="",rows=[];
   const open=id=>document.getElementById("mpop").classList.remove("open");
-  if(type==="active"){title=t("active");rows=C.filter(c=>c.status==="active").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val">${c.week==="A&B"?"<span class=\"wb-ab\">A+B</span>":c.week==="A"?"<span class=\"wb-a\">A</span>":"<span class=\"wb-b\">B</span>"} ${dln(c.day)}</span></div>`);}
-  else if(type==="weekly"){title=t("weekly");rows=C.filter(c=>c.status==="active"&&c.week==="A&B").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val">${dln(c.day)}</span></div>`);}
-  else if(type==="biweekly"){title=t("biweekly");rows=C.filter(c=>c.status==="active"&&c.week!=="A&B").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val">${dln(c.day)} ${t('sem')}${c.week}</span></div>`);}
-  else if(type==="paused"){title=t("paused");rows=C.filter(c=>c.status==="paused").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val">${(c.notes||"").substring(0,30)}</span></div>`);}
-  else if(type==="wc"){title=t("wcPending");rows=C.filter(c=>c.wcN).map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val">${t("last")}: ${c.lwc||"\u2014"}</span></div>`);}
-  else if(type==="tech"){title=t("techVisits");rows=C.filter(c=>c.techP&&c.techS!=="done").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val">${(c.techI||"").substring(0,30)}</span></div>`);}
+  if(type==="active"){title=t("active");rows=C.filter(c=>c.status==="active").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${c.week==="A&B"?"<span class=\"wb-ab\">A+B</span>":c.week==="A"?"<span class=\"wb-a\">A</span>":"<span class=\"wb-b\">B</span>"} ${dln(c.day)}</span></div>`);}
+  else if(type==="weekly"){title=t("weekly");rows=C.filter(c=>c.status==="active"&&c.week==="A&B").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${dln(c.day)}</span></div>`);}
+  else if(type==="biweekly"){title=t("biweekly");rows=C.filter(c=>c.status==="active"&&c.week!=="A&B").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${dln(c.day)} ${t('sem')}${c.week}</span></div>`);}
+  else if(type==="paused"){title=t("paused");rows=C.filter(c=>c.status==="paused").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${(c.notes||"").substring(0,30)}</span></div>`);}
+  else if(type==="wc"){title=t("wcPending");rows=C.filter(c=>c.wcN).map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${t("last")}: ${c.lwc||"\u2014"}</span></div>`);}
+  else if(type==="tech"){title=t("techVisits");rows=C.filter(c=>c.techP&&c.techS!=="done").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${(c.techI||"").substring(0,30)}</span></div>`);}
   else if(type==="unpaid"){
     const curQ=document.getElementById("qsel")?document.getElementById("qsel").value:'';
     title=t('unpaidInvoices')+' — '+curQ;
@@ -1544,13 +1702,13 @@ function showMetricPopup(type){
       withInv.forEach(c=>{
         const b=BL[c.id][curQ];
         const amt=b.a?'$'+parseFloat(b.a).toFixed(2):'';
-        rows.push(`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');showQPanel('${curQ}',${c.id})">${c.name}</span><span class="mpop-val" style="color:var(--rust)">${b.i||''}${amt?' · '+amt:''} <span class="badge bpending" style="font-size:10px;padding:1px 5px;vertical-align:middle">Pendiente</span></span></div>`);
+        rows.push(`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');showQPanel('${curQ}',${c.id})">${esc(c.name)}</span><span class="mpop-val" style="color:var(--rust)">${b.i||''}${amt?' · '+amt:''} <span class="badge bpending" style="font-size:10px;padding:1px 5px;vertical-align:middle">Pendiente</span></span></div>`);
       });
     }
     if(noInv.length>0){
       rows.push(`<div style="padding:8px 0 4px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);margin-bottom:4px">${t('noInvRegistered')} (${noInv.length})</div>`);
       noInv.forEach(c=>{
-        rows.push(`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${c.name}</span><span class="mpop-val" style="color:var(--muted)">${dln(c.day)} · ${t('sem')}${c.week}</span></div>`);
+        rows.push(`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val" style="color:var(--muted)">${dln(c.day)} · ${t('sem')}${c.week}</span></div>`);
       });
     }
   }
@@ -1560,28 +1718,72 @@ function showMetricPopup(type){
 }
 function openEdit(id){
   const c=C.find(x=>x.id===id);if(!c)return;
-  ["edit-id","edit-name","edit-phone","edit-email","edit-addr","edit-san","edit-lwc","edit-nwc","edit-notes"].forEach((fid,i)=>{document.getElementById(fid).value=[id,c.name,c.phone,c.email||"",c.addr,c.san||"",c.lwc||"",c.nwc||"",c.notes||""][i];});
+  ["edit-id","edit-name","edit-phone","edit-email","edit-addr","edit-lwc","edit-nwc","edit-notes"].forEach((fid,i)=>{document.getElementById(fid).value=[id,c.name,c.phone,c.email||"",c.addr,c.lwc||"",c.nwc||"",c.notes||""][i];});
   document.getElementById("edit-freq").value=c.freq;
   document.getElementById("edit-day").value=c.day||"Mon";
   document.getElementById("edit-week").value=c.week||"A";
   document.getElementById("edit-status").value=c.status;
+  // Sanitizer: try to match an existing dropdown option (case-insensitive, ignoring hyphens/spaces),
+  // otherwise drop the raw text into the "Other" input
+  const sanSel=document.getElementById("edit-san"), sanOther=document.getElementById("edit-san-other");
+  const norm=s=>String(s||'').toLowerCase().replace(/[\s\-]+/g,'');
+  const cur=String(c.san||'').trim();
+  let matched=false;
+  if(cur){
+    for(const opt of sanSel.options){
+      if(opt.value && opt.value!=='__other__' && norm(opt.value)===norm(cur)){
+        sanSel.value=opt.value; matched=true; break;
+      }
+    }
+  }
+  if(!cur){sanSel.value=''; sanOther.value=''; sanOther.style.display='none';}
+  else if(matched){sanOther.value=''; sanOther.style.display='none';}
+  else {sanSel.value='__other__'; sanOther.value=cur; sanOther.style.display='block';}
   cm("mdet");om("medit");
 }
+// ─── Input validators ─────────────────────────────────────────────────────────
+function validatePhone(p){if(!p)return true;return /^[\d().\-+\s]{7,}$/.test(p);}
+function validateEmail(e){if(!e)return true;return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);}
+function validateZip(z){if(!z)return true;return /^\d{5}(-\d{4})?$/.test(z);}
+function validateDate(d){if(!d)return true;return /^\d{4}-\d{2}-\d{2}$/.test(d);}
+
 function saveEdit(){
   const id=parseInt(document.getElementById("edit-id").value);
   const c=C.find(x=>x.id===id);if(!c)return;
+  // Read new values
+  const newPhone=document.getElementById("edit-phone").value.trim();
+  const newEmail=document.getElementById("edit-email").value.trim();
+  const newAddr=document.getElementById("edit-addr").value.trim();
+  const newLwc=document.getElementById("edit-lwc").value;
+  const newNwc=document.getElementById("edit-nwc").value;
+  // Validate
+  const errors=[];
+  if(!validatePhone(newPhone))errors.push(LANG==='es'?'Teléfono inválido':'Invalid phone');
+  if(!validateEmail(newEmail))errors.push(LANG==='es'?'Email inválido':'Invalid email');
+  if(!validateDate(newLwc))errors.push(LANG==='es'?'Fecha "Último C.A." inválida':'Invalid "Last W.C." date');
+  if(!validateDate(newNwc))errors.push(LANG==='es'?'Fecha "Próx. C.A." inválida':'Invalid "Next W.C." date');
+  // Soft warn for missing ZIP (geocoding falls back to city centroid only when ZIP present)
+  const zipMatch=newAddr.match(/\b(\d{5})\b/);
+  if(newAddr && !zipMatch)showToast(LANG==='es'?'⚠ La dirección no tiene ZIP: el mapa de ruta no podrá ubicarla con precisión':'⚠ Address has no ZIP — route map cannot place it accurately','warn');
+  if(errors.length){showToast(errors.join(' · '),'err');return;}
+  // Snapshot for undo
+  const prev=JSON.parse(JSON.stringify({name:c.name,phone:c.phone,email:c.email,addr:c.addr,freq:c.freq,day:c.day,week:c.week,san:c.san,lwc:c.lwc,nwc:c.nwc,status:c.status,notes:c.notes}));
   c.name=document.getElementById("edit-name").value.trim()||c.name;
-  c.phone=document.getElementById("edit-phone").value;
-  c.email=document.getElementById("edit-email").value;
-  c.addr=document.getElementById("edit-addr").value;
+  c.phone=newPhone;
+  c.email=newEmail;
+  c.addr=newAddr;
   c.freq=document.getElementById("edit-freq").value;
   c.day=document.getElementById("edit-day").value;
   c.week=document.getElementById("edit-week").value;
-  c.san=document.getElementById("edit-san").value;
-  c.lwc=document.getElementById("edit-lwc").value;
-  c.nwc=document.getElementById("edit-nwc").value;
+  const sanV=document.getElementById("edit-san").value;
+  c.san=(sanV==='__other__')?document.getElementById("edit-san-other").value.trim():sanV;
+  c.lwc=newLwc;
+  c.nwc=newNwc;
   c.status=document.getElementById("edit-status").value;
   c.notes=document.getElementById("edit-notes").value;
+  c.lastModified=Date.now();
+  pushUndo((LANG==='es'?'Cliente editado: ':'Client edited: ')+c.name,()=>{Object.assign(c,prev);c.lastModified=Date.now();});
+  saveData();
   cm("medit");ra();
 }
 function showQPanel(q,cid){
@@ -1591,13 +1793,13 @@ function showQPanel(q,cid){
   const stLabel=t('status');const paidLbl=t('statusPaid');const pendLbl=t('pendienteDePago');
   const invLbl=t('numFactura');const amtLbl=t('monto');const noInvLbl=t('sinFactura');
   const editLbl=t('editarFactura');const regLbl=t('registrarFactura');const editBtn=t('edit');const viewLbl=t('verFicha');
-  let body=`<div style="background:var(--warm2);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:16.1px;font-weight:600;color:var(--brand)">${c.name}</div><div style="font-size:13.8px;margin-top:4px">${c.phone}${c.email?' · '+c.email:''}</div><div style="font-size:13.8px;color:var(--muted)">${c.addr}</div></div>`;
+  let body=`<div style="background:var(--warm2);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:16.1px;font-weight:600;color:var(--brand)">${esc(c.name)}</div><div style="font-size:13.8px;margin-top:4px">${esc(c.phone)}${c.email?' · '+esc(c.email):''}</div><div style="font-size:13.8px;color:var(--muted)">${esc(c.addr)}</div></div>`;
   body+=`<div style="font-size:13.8px;color:var(--muted);margin-bottom:8px;font-weight:600">${t('invoice')} ${q}</div>`;
   if(b){
     body+=`<div class="mpop-row"><span style="color:var(--muted)">${stLabel}</span><span>${b.s==='paid'?`<span class="badge bpaid">${paidLbl}</span>`:`<span class="badge bpending">${pendLbl}</span>`}</span></div>`;
-    body+=`<div class="mpop-row"><span style="color:var(--muted)">${invLbl}</span><span style="font-weight:600">${b.i}</span></div>`;
+    body+=`<div class="mpop-row"><span style="color:var(--muted)">${invLbl}</span><span style="font-weight:600">${esc(b.i)}</span></div>`;
     if(b.a)body+=`<div class="mpop-row"><span style="color:var(--muted)">${amtLbl}</span><span style="font-weight:600;color:var(--brand)">$${parseFloat(b.a).toLocaleString('en-US',{minimumFractionDigits:2})}</span></div>`;
-    if(b.n)body+=`<div class="mpop-row"><span style="color:var(--muted)">${t('notes')}</span><span style="font-size:12.6px">${b.n}</span></div>`;
+    if(b.n)body+=`<div class="mpop-row"><span style="color:var(--muted)">${t('notes')}</span><span style="font-size:12.6px">${esc(b.n)}</span></div>`;
   } else {
     body+=`<div style="color:var(--muted);font-size:14.4px;padding:8px 0">${noInvLbl}</div>`;
   }
@@ -1615,10 +1817,10 @@ function showQSummaryPopup(q){
   document.getElementById("mpop-title").innerHTML=`${t("billingQ")} ${q}`;
   let html=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"><div style="background:var(--warm2);border-radius:8px;padding:10px;text-align:center"><div style="font-size:12.6px;color:var(--muted)">${t('facturados')}</div><div style="font-size:25.3px;font-weight:600;color:var(--brand)">${withBill.length}</div></div><div style="background:#DCFCE7;border-radius:8px;padding:10px;text-align:center"><div style="font-size:12.6px;color:#166534">${t('pagados')}</div><div style="font-size:25.3px;font-weight:600;color:#16A34A">${paid.length}</div></div><div style="background:#FEF9C3;border-radius:8px;padding:10px;text-align:center"><div style="font-size:12.6px;color:#854D0E">${t('pendientes')}</div><div style="font-size:25.3px;font-weight:600;color:var(--rust)">${pending.length}</div></div></div>`;
   if(totalAmt>0)html+=`<div style="font-size:14.9px;font-weight:600;color:var(--brand);margin-bottom:10px">${t('total')} ${t('cobrado')}: $${totalAmt.toLocaleString("en-US",{minimumFractionDigits:2})}</div>`;
-  const mkrows=(arr,badge)=>arr.map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');showQPanel('${q}',${c.id})">${c.name}</span><span class="mpop-val">${badge} <span style="font-size:12.6px;color:var(--muted)">${BL[c.id]&&BL[c.id][q]?BL[c.id][q].i:""}</span></span></div>`).join("");
+  const mkrows=(arr,badge)=>arr.map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');showQPanel('${q}',${c.id})">${esc(c.name)}</span><span class="mpop-val">${badge} <span style="font-size:12.6px;color:var(--muted)">${BL[c.id]&&BL[c.id][q]?BL[c.id][q].i:""}</span></span></div>`).join("");
   if(paid.length>0)html+=`<div style="font-size:12.6px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">${t('pagados')} (${paid.length})</div><div style="max-height:160px;overflow-y:auto">${mkrows(paid,`<span class="badge bpaid">${t('statusPaid')}</span>`)}</div>`;
   if(pending.length>0)html+=`<div style="font-size:12.6px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-top:10px;margin-bottom:5px">${t('pendientes')} (${pending.length})</div><div style="max-height:160px;overflow-y:auto">${mkrows(pending,`<span class="badge bpending">${t('statusPending')}</span>`)}</div>`;
-  if(noBill.length>0)html+=`<div style="font-size:12.6px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-top:10px;margin-bottom:5px">${t('noInvoice')} (${noBill.length})</div><div style="max-height:120px;overflow-y:auto">${noBill.map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');oinv(${c.id},'${q}')">${c.name} <span style="font-size:11.5px;color:var(--muted)">+ ${t('register')}</span></span><span class="mpop-val">${dln(c.day)}</span></div>`).join("")}</div>`;
+  if(noBill.length>0)html+=`<div style="font-size:12.6px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-top:10px;margin-bottom:5px">${t('noInvoice')} (${noBill.length})</div><div style="max-height:120px;overflow-y:auto">${noBill.map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');oinv(${c.id},'${q}')">${esc(c.name)} <span style="font-size:11.5px;color:var(--muted)">+ ${t('register')}</span></span><span class="mpop-val">${dln(c.day)}</span></div>`).join("")}</div>`;
   document.getElementById("mpop-body").innerHTML=html;
   document.getElementById("mpop").classList.add("open");
 }
@@ -1632,8 +1834,8 @@ function renderUnpaidList(){
   const ul=document.getElementById("unpaid-list");
   if(!unpaid.length&&!noinv.length){ul.innerHTML=`<div style="padding:12px 16px;font-size:14.4px;color:var(--muted)">${t('allPaid')}</div>`;return;}
   let html="";
-  if(unpaid.length>0){html+=`<div style="padding:6px 14px 4px;font-size:12.1px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${t('withInvPending')} (${unpaid.length})</div>`;html+=unpaid.map(c=>{const b=BL[c.id][q];return`<div class="unpaid-row" onclick="showQPanel('${q}',${c.id})"><span class="unpaid-name">${c.name}</span><span class="unpaid-q">${dln(c.day)} \u00b7 ${t('sem')}${c.week}</span><span class="unpaid-inv">${b.i}${b.a?" \u00b7 $"+parseFloat(b.a).toFixed(2):""}</span><span class="badge bpending" style="margin-left:8px">${t('pendienteDePago')}</span></div>`;}).join("");}
-  if(noinv.length>0){html+=`<div style="padding:8px 14px 4px;font-size:12.1px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${t('noInvRegistered')} (${noinv.length})</div>`;html+=noinv.map(c=>`<div class="unpaid-row" onclick="oinv(${c.id},'${q}')"><span class="unpaid-name">${c.name}</span><span class="unpaid-q">${dln(c.day)} \u00b7 ${t('sem')}${c.week}</span><span class="unpaid-inv" style="color:var(--muted)">${t('noRecord')}</span><button class="btn btn-brand" style="font-size:12.1px;margin-left:auto;padding:3px 8px" onclick="event.stopPropagation();oinv(${c.id},'${q}')">${t('invoice')}</button></div>`).join("");}
+  if(unpaid.length>0){html+=`<div style="padding:6px 14px 4px;font-size:12.1px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${t('withInvPending')} (${unpaid.length})</div>`;html+=unpaid.map(c=>{const b=BL[c.id][q];return`<div class="unpaid-row" onclick="showQPanel('${q}',${c.id})"><span class="unpaid-name">${esc(c.name)}</span><span class="unpaid-q">${dln(c.day)} \u00b7 ${t('sem')}${c.week}</span><span class="unpaid-inv">${b.i}${b.a?" \u00b7 $"+parseFloat(b.a).toFixed(2):""}</span><span class="badge bpending" style="margin-left:8px">${t('pendienteDePago')}</span></div>`;}).join("");}
+  if(noinv.length>0){html+=`<div style="padding:8px 14px 4px;font-size:12.1px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${t('noInvRegistered')} (${noinv.length})</div>`;html+=noinv.map(c=>`<div class="unpaid-row" onclick="oinv(${c.id},'${q}')"><span class="unpaid-name">${esc(c.name)}</span><span class="unpaid-q">${dln(c.day)} \u00b7 ${t('sem')}${c.week}</span><span class="unpaid-inv" style="color:var(--muted)">${t('noRecord')}</span><button class="btn btn-brand" style="font-size:12.1px;margin-left:auto;padding:3px 8px" onclick="event.stopPropagation();oinv(${c.id},'${q}')">${t('invoice')}</button></div>`).join("");}
   ul.innerHTML=html;
 }
 
@@ -1642,7 +1844,7 @@ function printUnpaidList(){
   const active=C.filter(c=>c.status==="active");
   const unpaid=active.filter(c=>{const b=BL[c.id]&&BL[c.id][q];return b&&b.s!=="paid";});
   const noinv=active.filter(c=>!(BL[c.id]&&BL[c.id][q]));
-  if(!unpaid.length&&!noinv.length){alert(t('allPaid'));return;}
+  if(!unpaid.length&&!noinv.length){showToast(t('allPaid'));return;}
 
   let html=`<div class="print-page-title">📋 ${t('unpaidInvoices')} — ${q}</div>`;
 
@@ -1653,11 +1855,11 @@ function printUnpaidList(){
       const b=BL[c.id][q];
       html+=`<tr>
         <td class="pct-num">${i+1}</td>
-        <td><span class="pct-name">${c.name}</span></td>
+        <td><span class="pct-name">${esc(c.name)}</span></td>
         <td style="font-size:10px">${dln(c.day)}</td>
         <td style="font-size:10px;text-align:center">${c.week}</td>
-        <td class="pct-phone">${c.phone||'—'}</td>
-        <td class="pct-addr">${c.addr||'—'}</td>
+        <td class="pct-phone">${esc(c.phone)||'—'}</td>
+        <td class="pct-addr">${esc(c.addr)||'—'}</td>
         <td style="font-size:10px;font-weight:600">${b.i||'—'}</td>
         <td style="font-size:10px;font-weight:700;color:#1E40AF">${b.a?'$'+parseFloat(b.a).toFixed(2):'—'}</td>
         <td><span style="background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact">${t('pendienteDePago')}</span></td>
@@ -1674,11 +1876,11 @@ function printUnpaidList(){
     noinv.forEach((c,i)=>{
       html+=`<tr>
         <td class="pct-num">${i+1}</td>
-        <td><span class="pct-name">${c.name}</span></td>
+        <td><span class="pct-name">${esc(c.name)}</span></td>
         <td style="font-size:10px">${dln(c.day)}</td>
         <td style="font-size:10px;text-align:center">${c.week}</td>
-        <td class="pct-phone">${c.phone||'—'}</td>
-        <td class="pct-addr">${c.addr||'—'}</td>
+        <td class="pct-phone">${esc(c.phone)||'—'}</td>
+        <td class="pct-addr">${esc(c.addr)||'—'}</td>
       </tr>`;
     });
     html+=`</tbody></table>`;
@@ -1698,8 +1900,18 @@ function rc(){
   const ff=document.getElementById('ffreq').value;
   const fs=document.getElementById('fstat').value;
   const fd=document.getElementById('fday').value;
+  // Live counts in dropdown labels (so Alberto sees "Active (65)" instead of "Active")
+  const cnt={weekly:0,biweekly:0,active:0,paused:0,cancelled:0,Mon:0,Tue:0,Wed:0,Thu:0,Fri:0};
+  C.forEach(c=>{cnt[c.freq]=(cnt[c.freq]||0)+1;cnt[c.status]=(cnt[c.status]||0)+1;if(c.day)cnt[c.day]=(cnt[c.day]||0)+1;});
+  const ffSel=document.getElementById('ffreq'), fsSel=document.getElementById('fstat'), fdSel=document.getElementById('fday');
+  if(ffSel&&ffSel.options[1]){ffSel.options[1].text=`${t('weeklyLabel')} (${cnt.weekly})`;ffSel.options[2].text=`${t('biweeklyLabel')} (${cnt.biweekly})`;}
+  if(fsSel&&fsSel.options[1]){fsSel.options[1].text=`${t('activeStatus')} (${cnt.active})`;fsSel.options[2].text=`${t('pausedStatus')} (${cnt.paused})`;fsSel.options[3].text=`${t('cancelledStatus')} (${cnt.cancelled})`;}
+  if(fdSel&&fdSel.options[1]){const dn=getDN();[1,2,3,4,5].forEach((i,k)=>{const dk=DAYS[k];if(fdSel.options[i])fdSel.options[i].text=`${dn[k]} (${cnt[dk]||0})`;});}
   let f=C.filter(c=>{
-    if(s&&!c.name.toLowerCase().includes(s))return false;
+    if(s){
+      const haystack=`${c.name} ${c.addr||''} ${c.phone||''} ${c.email||''} ${c.notes||''}`.toLowerCase();
+      if(!haystack.includes(s))return false;
+    }
     if(ff&&c.freq!==ff)return false;
     if(fs&&c.status!==fs)return false;
     if(fd&&c.day!==fd)return false;
@@ -1713,35 +1925,93 @@ function rc(){
   document.getElementById('ctbody').innerHTML=page.map((c,i)=>{
     const isAB=c.week==='A&B';
     const nameStyle=isAB?'font-weight:600;color:#3B82F6;font-style:italic':'font-weight:600;color:var(--brand)';
-    const notesAttr=(c.notes||'').replace(/"/g,'&quot;');
-    const sanAttr=(c.san||'').replace(/"/g,'&quot;');
-    const emailAttr=(c.email||'').replace(/"/g,'&quot;');
-    const addrAttr=(c.addr||'').replace(/"/g,'&quot;');
-    const noteSub=c.notes?`<div class="tcell" style="font-size:11.5px;color:var(--muted);max-width:170px;margin-top:2px" title="${notesAttr}">${c.notes}</div>`:'';
+    const noteSub=c.notes?`<div class="tcell" style="font-size:11.5px;color:var(--muted);max-width:170px;margin-top:2px" title="${esc(c.notes)}">${esc(c.notes)}</div>`:'';
     return`<tr>
+      <td style="text-align:center"><input type="checkbox" class="bulk-cb" data-id="${c.id}" onchange="bulkUpdate()" ${_bulkSel.has(c.id)?'checked':''}></td>
       <td style="font-size:12.6px;color:var(--muted);text-align:center">${st2+i+1}</td>
-      <td><div style="${nameStyle}">${c.name}</div>${noteSub}</td>
-      <td style="font-size:13.2px;white-space:nowrap">${c.phone}</td>
-      <td class="tcell" style="font-size:12.6px;color:var(--muted);max-width:140px" title="${emailAttr}">${c.email||'—'}</td>
-      <td class="tcell" style="font-size:12.6px;max-width:170px" title="${addrAttr}">${c.addr}</td>
+      <td><div style="${nameStyle}">${esc(c.name)}</div>${noteSub}</td>
+      <td style="font-size:13.2px;white-space:nowrap">${esc(c.phone)}</td>
+      <td class="tcell" style="font-size:12.6px;color:var(--muted);max-width:140px" title="${esc(c.email)}">${esc(c.email)||'—'}</td>
+      <td class="tcell" style="font-size:12.6px;max-width:170px" title="${esc(c.addr)}">${esc(c.addr)}</td>
       <td>${fb(c.freq)}</td>
       <td style="font-size:13.2px;white-space:nowrap">${dln(c.day)}</td>
       <td style="text-align:center">${c.week==='A&B'?'<span class="wb-ab">A+B</span>':c.week==='A'?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>'}</td>
-      <td class="tcell" style="font-size:12.6px;max-width:110px" title="${sanAttr}">${c.san||'—'}</td>
-      <td style="font-size:12.6px;white-space:nowrap">${c.lwc||'—'}</td>
-      <td style="font-size:12.6px;white-space:nowrap;${od(c.nwc)&&!c.wcN?'color:#DC2626;font-weight:600':''}">${c.nwc||'—'}</td>
-      <td class="tcell" style="font-size:12.6px;max-width:140px" title="${notesAttr}">${c.notes||'—'}</td>
+      <td class="tcell" style="font-size:12.6px;max-width:110px" title="${esc(c.san)}">${esc(c.san)||'—'}</td>
+      <td style="font-size:12.6px;white-space:nowrap">${esc(c.lwc)||'—'}</td>
+      <td style="font-size:12.6px;white-space:nowrap;${od(c.nwc)&&!c.wcN?'color:#DC2626;font-weight:600':''}">${esc(c.nwc)||'—'}</td>
+      <td class="tcell" style="font-size:12.6px;max-width:140px" title="${esc(c.notes)}">${esc(c.notes)||'—'}</td>
       <td>${sb(c.status)}</td>
       <td class="cact"><div class="arow-v">
         <button class="btn" onclick="vc(${c.id})">${t('view')}</button>
         <button class="btn btn-amber" onclick="openEdit(${c.id})">${t('edit')}</button>
-        <button class="btn ${c.status==='paused'?'btn-green':'btn-amber'}" onclick="tp(${c.id})">${c.status==='paused'?t('activate'):t('pause')}</button>
+        <button class="btn ${c.status==='active'?'btn-amber':'btn-green'}" onclick="${c.status==='cancelled'?`activateClient(${c.id})`:`tp(${c.id})`}">${c.status==='active'?t('pause'):t('activate')}</button>
       </div></td></tr>`;
   }).join('');
+  bulkUpdate();
 }
-function pp(){if(pg>0){pg--;rc();}}
-function np(){pg++;rc();}
-function tp(id){const c=C.find(x=>x.id===id);if(!c)return;c.status=c.status==='active'?'paused':'active';rc();rd();}
+function pp(){if(pg>0){pg--;rc();document.getElementById('pclients')?.scrollIntoView({behavior:'smooth',block:'start'});}}
+function np(){pg++;rc();document.getElementById('pclients')?.scrollIntoView({behavior:'smooth',block:'start'});}
+
+// ─── Bulk operations ────────────────────────────────────────────────────────
+const _bulkSel=new Set();
+function bulkUpdate(){
+  // Sync set with current checkboxes on the visible page
+  document.querySelectorAll('.bulk-cb').forEach(cb=>{
+    const id=parseInt(cb.dataset.id);
+    if(cb.checked)_bulkSel.add(id);else _bulkSel.delete(id);
+  });
+  const bar=document.getElementById('bulk-bar');
+  const cnt=document.getElementById('bulk-count');
+  if(bar&&cnt){
+    if(_bulkSel.size>0){bar.style.display='flex';cnt.textContent=_bulkSel.size;}
+    else bar.style.display='none';
+  }
+  // Update select-all checkbox state to match
+  const all=document.getElementById('bulk-all');
+  if(all){
+    const cbs=document.querySelectorAll('.bulk-cb');
+    const checked=Array.from(cbs).filter(c=>c.checked).length;
+    all.checked=cbs.length>0 && checked===cbs.length;
+    all.indeterminate=checked>0 && checked<cbs.length;
+  }
+}
+function bulkToggleAll(master){
+  document.querySelectorAll('.bulk-cb').forEach(cb=>{
+    cb.checked=master.checked;
+    const id=parseInt(cb.dataset.id);
+    if(master.checked)_bulkSel.add(id);else _bulkSel.delete(id);
+  });
+  bulkUpdate();
+}
+function bulkClear(){_bulkSel.clear();rc();}
+async function bulkAction(action){
+  if(_bulkSel.size===0)return;
+  const labels={pause:LANG==='es'?'pausar':'pause',activate:LANG==='es'?'activar':'activate',cancel:LANG==='es'?'cancelar':'cancel'};
+  if(!await showConfirm((LANG==='es'?`¿${labels[action]} ${_bulkSel.size} cliente(s)?`:`${labels[action]} ${_bulkSel.size} client(s)?`).replace(/^./,c=>c.toUpperCase()),{danger:action==='cancel'}))return;
+  const newStatus={pause:'paused',activate:'active',cancel:'cancelled'}[action];
+  const affected=[];
+  C.forEach(c=>{
+    if(_bulkSel.has(c.id)){
+      affected.push({c,prev:c.status});
+      c.status=newStatus;
+      c.lastModified=Date.now();
+    }
+  });
+  pushUndo(`${affected.length} → ${newStatus}`,()=>{affected.forEach(({c,prev})=>{c.status=prev;c.lastModified=Date.now();});});
+  _bulkSel.clear();
+  saveData();rc();rd();
+  showToast(LANG==='es'?`${affected.length} cliente(s) actualizados`:`${affected.length} client(s) updated`,'ok');
+}
+function tp(id){
+  const c=C.find(x=>x.id===id);if(!c)return;
+  // Cancelled clients require explicit Activate (handled separately by activateClient())
+  if(c.status==='cancelled'){showToast(LANG==='es'?'Usa "Activar" para reactivar un cliente cancelado':'Use "Activate" to reactivate a cancelled client','warn');return;}
+  const prevStatus=c.status;
+  c.status=c.status==='active'?'paused':'active';
+  c.lastModified=Date.now();
+  pushUndo((LANG==='es'?'Cliente ':'Client ')+c.name+': '+prevStatus+' → '+c.status,()=>{c.status=prevStatus;c.lastModified=Date.now();});
+  rc();rd();saveData();
+}
 
 function vc(id){
   const c=C.find(x=>x.id===id);if(!c)return;
@@ -1759,7 +2029,7 @@ function vc(id){
   document.getElementById('detbody').innerHTML=`
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.6rem;gap:8px;flex-wrap:wrap">
       <div>
-        <div style="font-size:19.5px;font-weight:600;color:var(--brand)">${c.name}</div>
+        <div style="font-size:19.5px;font-weight:600;color:var(--brand)">${esc(c.name)}</div>
         <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           ${sb(c.status)}
           ${c.week==='A&B'?`<span class="wb-ab">A+B ${t('weeklyLabel')}</span>`:c.week==='A'?`<span class="wb-a">${t('weekA')}</span>`:`<span class="wb-b">${t('weekB')}</span>`}
@@ -1775,12 +2045,12 @@ function vc(id){
     </div>
     <div style="height:2px;background:var(--brand);border-radius:2px;margin-bottom:12px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('phone')}</div><div style="font-size:14.9px">${c.phone}</div></div>
-      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('email')}</div><div style="font-size:12.6px;word-break:break-all">${c.email||'—'}</div></div>
-      <div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('address')}</div><div style="font-size:13.8px">${c.addr}</div></div>
-      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('freqLbl')} / ${t('dayLabel')}</div><div style="font-size:13.8px">${c.freq} — ${dln(c.day)} ${t('sem')} ${c.week}</div></div>
-      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('sanitizer')}</div><div style="font-size:13.8px">${c.san||'—'}</div></div>
-      ${c.notes?`<div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('notes')}</div><div style="font-size:13.2px;background:var(--warm2);padding:6px 8px;border-radius:6px;border-left:3px solid var(--brand2)">${c.notes}</div></div>`:''}
+      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('phone')}</div><div style="font-size:14.9px">${esc(c.phone)}</div></div>
+      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('email')}</div><div style="font-size:12.6px;word-break:break-all">${esc(c.email)||'—'}</div></div>
+      <div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('address')}</div><div style="font-size:13.8px">${esc(c.addr)}</div></div>
+      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('freqLbl')} / ${t('dayLabel')}</div><div style="font-size:13.8px">${esc(c.freq)} — ${dln(c.day)} ${t('sem')} ${c.week}</div></div>
+      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('sanitizer')}</div><div style="font-size:13.8px">${esc(c.san)||'—'}</div></div>
+      ${c.notes?`<div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('notes')}</div><div style="font-size:13.2px;background:var(--warm2);padding:6px 8px;border-radius:6px;border-left:3px solid var(--brand2)">${esc(c.notes)}</div></div>`:''}
     </div>
     <div style="background:linear-gradient(135deg,#DBEAFE 0%,#F0F9FF 100%);border-radius:10px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--border)">
       <div style="font-size:14.4px;font-weight:600;color:var(--brand);margin-bottom:10px">${t('serviceValue')}</div>
@@ -1817,7 +2087,7 @@ function vc(id){
     </div>`:''}
     ${ta.length>0?`<div style="background:#EDE9FE;border:1px solid #A78BFA;border-radius:8px;padding:10px 12px;margin-bottom:10px">
       <div style="font-size:14.4px;font-weight:600;color:#5B21B6;margin-bottom:6px">${t('schedTechAppts')}</div>
-      ${ta.map((a,ai)=>`<div style="font-size:13.2px;padding:4px 0;border-bottom:.5px solid #A78BFA;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:600">${a.date}${a.time?' '+a.time:''}</span><span>${a.type}</span><span style="color:var(--muted)">${a.tech?'· '+a.tech:''}</span><span class="badge ${a.status==='done'?'bwcd':a.status==='scheduled'?'bsched':'bpending'}">${a.status==='done'?t('statusDone'):a.status==='scheduled'?t('statusScheduled'):t('statusPending')}</span>${a.status!=='done'?`<button class="btn btn-green" style="font-size:10.3px;padding:2px 6px" onclick="completeTechApptFromDetail(${c.id},${ai})">✓</button>`:''}<button class="btn btn-red" style="font-size:10.3px;padding:2px 6px" onclick="deleteTechApptFromDetail(${c.id},${ai})">✕</button></div>`).join('')}</div>`:''}
+      ${ta.map((a,ai)=>`<div style="font-size:13.2px;padding:4px 0;border-bottom:.5px solid #A78BFA;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:600">${esc(a.date)}${a.time?' '+esc(a.time):''}</span><span>${esc(a.type)}</span><span style="color:var(--muted)">${a.tech?'· '+esc(a.tech):''}</span><span class="badge ${a.status==='done'?'bwcd':a.status==='scheduled'?'bsched':'bpending'}">${a.status==='done'?t('statusDone'):a.status==='scheduled'?t('statusScheduled'):t('statusPending')}</span>${a.status!=='done'?`<button class="btn btn-green" style="font-size:10.3px;padding:2px 6px" onclick="completeTechApptFromDetail(${c.id},${ai})">✓</button>`:''}<button class="btn btn-red" style="font-size:10.3px;padding:2px 6px" onclick="deleteTechApptFromDetail(${c.id},${ai})">✕</button></div>`).join('')}</div>`:''}
     <div style="font-size:14.4px;font-weight:600;color:var(--brand);margin-bottom:6px">${t('billingQClient')}</div>
     ${qs.map(q=>{
       const bq=b[q];
@@ -1849,7 +2119,7 @@ function owc(id){
 function swc(){
   const id=parseInt(document.getElementById('wcid').value);
   const d=document.getElementById('wcd').value;
-  if(!d){alert(t('enterDate'));return;}
+  if(!d){showToast(t('enterDate'));return;}
   const c=C.find(x=>x.id===id);
   c.lwc=d;c.wcN=false;c.wcD=true;
   const nd=new Date(d);nd.setMonth(nd.getMonth()+6);
@@ -1866,7 +2136,7 @@ function otc(id){
 function stc(){
   const id=parseInt(document.getElementById('tid').value);
   const issue=document.getElementById('ti').value.trim();
-  if(!issue){alert(t('describeProblem'));return;}
+  if(!issue){showToast(t('describeProblem'));return;}
   const c=C.find(x=>x.id===id);
   c.techP=true;c.techI=issue;c.techD=document.getElementById('td').value;c.techS=document.getElementById('ts').value;
   if(c.techS==='done')c.techP=false;
@@ -1912,9 +2182,9 @@ function loadSLConfig(){
     const stored=JSON.parse(localStorage.getItem(SL_CONFIG_KEY));
     // Force-refresh stored config if it's missing storageBucket (fixes older saves)
     if(stored&&stored.apiKey&&stored.projectId&&stored.storageBucket)return stored;
-  }catch(e){}
+  }catch(e){dbgWarn("caught:",e);}
   // Fall back to the hardcoded default so it works out of the box
-  try{localStorage.setItem(SL_CONFIG_KEY,JSON.stringify(SL_DEFAULT_CONFIG));}catch(e){}
+  try{localStorage.setItem(SL_CONFIG_KEY,JSON.stringify(SL_DEFAULT_CONFIG));}catch(e){dbgWarn("caught:",e);}
   return SL_DEFAULT_CONFIG;
 }
 
@@ -1965,7 +2235,7 @@ function connectServiceLog(){
   const apiKey=document.getElementById('sl-apikey').value.trim();
   const projectId=document.getElementById('sl-project').value.trim();
   const authDomain=document.getElementById('sl-authdomain').value.trim();
-  if(!apiKey||!projectId){alert('API Key and Project ID are required');return;}
+  if(!apiKey||!projectId){showToast('API Key and Project ID are required');return;}
   const config={apiKey,projectId,authDomain:authDomain||(projectId+'.firebaseapp.com')};
   localStorage.setItem(SL_CONFIG_KEY,JSON.stringify(config));
   // Re-init
@@ -1974,8 +2244,8 @@ function connectServiceLog(){
   else{initServiceLogConnection();}
 }
 
-function disconnectServiceLog(){
-  if(!confirm('Disconnect from Service Log? Tickets will stop syncing to the service log app.'))return;
+async function disconnectServiceLog(){
+  if(!await showConfirm('Disconnect from Service Log? Tickets will stop syncing to the service log app.',{danger:true}))return;
   localStorage.removeItem(SL_CONFIG_KEY);
   const existing=firebase.apps.find(a=>a.name==='serviceLog');
   if(existing)existing.delete().catch(()=>{});
@@ -2017,14 +2287,14 @@ function _mapTypeToWorkType(apptType){
 async function saveTechApptAndSendToSL(){
   const id=parseInt(document.getElementById('ta-cid').value);
   const c=C.find(x=>x.id===id);
-  if(!c){alert('Client not found');return;}
+  if(!c){showToast('Client not found');return;}
   const date=document.getElementById('ta-date').value;
   const time=document.getElementById('ta-time').value;
   const type=document.getElementById('ta-type').value;
   const desc=document.getElementById('ta-desc').value;
   const tech=document.getElementById('ta-tech').value;
   const status=document.getElementById('ta-status').value;
-  if(!date){alert(t('enterDate'));return;}
+  if(!date){showToast(t('enterDate'));return;}
 
   // Always save locally (existing behavior) — this is what shows the 🔧 badge on the schedule
   const appt={date,time,type,desc,tech,status,created:new Date().toISOString()};
@@ -2044,7 +2314,7 @@ async function saveTechApptAndSendToSL(){
     console.warn('🎫 Service Log STILL not connected after init attempt');
     if(!localStorage.getItem('sl_nag_shown')){
       localStorage.setItem('sl_nag_shown','1');
-      if(confirm('Tech visit saved locally ✓\n\nBut Service Log is not connected, so the ticket was NOT sent to the Service Log dashboard.\n\nConnect Service Log now?')){
+      if(await showConfirm('Tech visit saved locally ✓\n\nBut Service Log is not connected, so the ticket was NOT sent to the Service Log dashboard.\n\nConnect Service Log now?')){
         om('mslfirebase');
       }
     }
@@ -2170,7 +2440,7 @@ async function saveTechApptAndSendToSL(){
     console.error('   Error code:',e.code);
     console.error('   Error message:',e.message);
     saveData();ra();
-    alert('❌ Ticket could NOT be sent to Service Log\n\nError: '+(e.code||'')+'\n'+e.message+'\n\nThe tech visit WAS saved locally.\n\nMost common cause: Firestore security rules are blocking writes.\n\nTo fix: In Firebase Console → Firestore Database → Rules, make sure writes to `tickets` are allowed.\n\nOpen browser DevTools → Console to see the full error.');
+    showToast('❌ Ticket could NOT be sent to Service Log\n\nError: '+(e.code||'')+'\n'+e.message+'\n\nThe tech visit WAS saved locally.\n\nMost common cause: Firestore security rules are blocking writes.\n\nTo fix: In Firebase Console → Firestore Database → Rules, make sure writes to `tickets` are allowed.\n\nOpen browser DevTools → Console to see the full error.');
   }
 }
 
@@ -2178,7 +2448,7 @@ async function saveTechApptAndSendToSL(){
 async function testServiceLogConnection(){
   if(!slDB){
     const ok=initServiceLogConnection();
-    if(!ok){alert('❌ Service Log is not configured.');return;}
+    if(!ok){showToast('❌ Service Log is not configured.');return;}
   }
   console.log('🔍 Testing Service Log connection...');
   const testDoc={
@@ -2206,10 +2476,10 @@ async function testServiceLogConnection(){
       try{await slDB.collection('tickets').doc(ref.id).delete();console.log('🗑 Test ticket deleted');}
       catch(e){console.warn('Could not auto-delete test ticket:',e);}
     },3000);
-    alert('✓ Service Log connection WORKS!\n\nTest ticket id: '+ref.id+'\n\nThis test ticket will be auto-deleted in 3 seconds. If you see it flash in your Service Log app, everything is wired up correctly.');
+    showToast('✓ Service Log connection WORKS!\n\nTest ticket id: '+ref.id+'\n\nThis test ticket will be auto-deleted in 3 seconds. If you see it flash in your Service Log app, everything is wired up correctly.');
   }catch(e){
     console.error('❌ Test write failed:',e);
-    alert('❌ Service Log connection test FAILED\n\nError code: '+(e.code||'unknown')+'\nMessage: '+e.message+'\n\nThis means your Firestore security rules are blocking writes.\n\nFix: Firebase Console → Firestore Database → Rules\n\nMake sure the rule allows creating documents in the `tickets` collection.');
+    showToast('❌ Service Log connection test FAILED\n\nError code: '+(e.code||'unknown')+'\nMessage: '+e.message+'\n\nThis means your Firestore security rules are blocking writes.\n\nFix: Firebase Console → Firestore Database → Rules\n\nMake sure the rule allows creating documents in the `tickets` collection.');
   }
 }
 
@@ -2249,14 +2519,14 @@ setTimeout(()=>{
   }catch(e){console.warn('SL auto-connect error:',e);}
 },500);
 
-function deleteTechAppt(cid,idx){
+async function deleteTechAppt(cid,idx){
   const c=C.find(x=>x.id===cid);
   if(!c||!TAPPTS[cid]||!TAPPTS[cid][idx])return;
   const a=TAPPTS[cid][idx];
   const msg=LANG==='es'
     ?`¿Eliminar esta cita?\n\n${a.type} — ${a.date}${a.time?' '+a.time:''}\n${c.name}`
     :`Delete this appointment?\n\n${a.type} — ${a.date}${a.time?' '+a.time:''}\n${c.name}`;
-  if(!confirm(msg))return;
+  if(!await showConfirm(msg,{danger:true}))return;
   TAPPTS[cid].splice(idx,1);
   if(TAPPTS[cid].length===0)delete TAPPTS[cid];
   saveData();ra();
@@ -2268,14 +2538,14 @@ function completeTechAppt(cid,idx){
   saveData();ra();
 }
 
-function deleteTechApptFromDetail(cid,idx){
+async function deleteTechApptFromDetail(cid,idx){
   const c=C.find(x=>x.id===cid);
   if(!c||!TAPPTS[cid]||!TAPPTS[cid][idx])return;
   const a=TAPPTS[cid][idx];
   const msg=LANG==='es'
     ?`¿Eliminar esta cita?\n\n${a.type} — ${a.date}${a.time?' '+a.time:''}\n${c.name}`
     :`Delete this appointment?\n\n${a.type} — ${a.date}${a.time?' '+a.time:''}\n${c.name}`;
-  if(!confirm(msg))return;
+  if(!await showConfirm(msg,{danger:true}))return;
   TAPPTS[cid].splice(idx,1);
   if(TAPPTS[cid].length===0)delete TAPPTS[cid];
   saveData();cm('mdet');ra();setTimeout(()=>vc(cid),80);
@@ -2313,7 +2583,7 @@ function exportAllTechAppts(){
     const c=C.find(x=>x.id===parseInt(cid));
     if(c)appts.forEach(a=>allAppts.push({c,a}));
   });
-  if(allAppts.length===0){alert(t('noTechAppts'));return;}
+  if(allAppts.length===0){showToast(t('noTechAppts'));return;}
   let events='';
   allAppts.forEach(({c,a})=>{
     const d=a.date.replace(/-/g,'');
@@ -2366,14 +2636,14 @@ function sinv(){
   const id=parseInt(document.getElementById('iid').value);
   const q=document.getElementById('iql').value;
   const num=document.getElementById('inum').value.trim();
-  if(!num){alert(t('enterInvoiceNum'));return;}
+  if(!num){showToast(t('enterInvoiceNum'));return;}
   if(!BL[id])BL[id]={};
   BL[id][q]={i:num,a:document.getElementById('iamt').value,s:document.getElementById('ist').value,n:document.getElementById('inotes').value.trim()};
   cm('minv');rb();rd();
 }
 function ac(){
   const name=document.getElementById('nn').value.trim();
-  if(!name){alert(t('nameRequired'));return;}
+  if(!name){showToast(t('nameRequired'));return;}
   const nid=Math.max(...C.map(c=>c.id))+1;
   C.push({id:nid,name,phone:document.getElementById('np').value,addr:document.getElementById('na').value,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week:document.getElementById('nw').value,day:document.getElementById('nd').value,san:document.getElementById('ns').value,lwc:document.getElementById('nwc').value,nwc:'',notes:document.getElementById('nnt').value,status:'active'});
   ['nn','np','na','ne','ns','nnt'].forEach(id=>document.getElementById(id).value='');
@@ -2393,7 +2663,7 @@ function rb(){
   const curQ=document.getElementById('qsel').value;
   document.getElementById('btbody').innerHTML=f.map(c=>{
     const b=BL[c.id]||{};
-    return`<tr><td><strong style="font-weight:600;color:var(--brand)">${c.name}</strong></td>
+    return`<tr><td><strong style="font-weight:600;color:var(--brand)">${esc(c.name)}</strong></td>
     ${qs.map(q=>{const bq=b[q];return`<td>${bq?`<span class="badge ${bq.s==='paid'?'bpaid':'bpending'}">${bq.s==='paid'?t('paidBilling'):t('pendBilling')}</span>`:'<span style="font-size:11.5px;color:var(--muted)">—</span>'}</td><td style="font-size:12.6px;color:var(--muted)">${bq?bq.i+(bq.a?' ($'+parseFloat(bq.a).toFixed(0)+')'  :''):'—'}</td>`;}).join('')}
     <td><div class="arow"><button class="btn btn-brand" style="font-size:12.1px" onclick="oinv(${c.id},'${curQ}')">+ ${t('invoice')}</button><button class="btn" style="font-size:12.1px" onclick="openEdit(${c.id})">&#9998;</button><button class="btn btn-purple" style="font-size:12.1px" onclick="showQPanel('${curQ}',${c.id})">${t('detalle')}</button></div></td></tr>`;
   }).join('');
@@ -2428,7 +2698,7 @@ function rv(){
     const wcs=c.wcN?`<span class="badge bwc">${t('statusPending')}</span>`:c.wcD?`<span class="badge bwcd">${t('statusDone')} ${c.lwc||''}</span>`:od(c.nwc)?`<span class="badge bwc">${t('overdue')}</span>`:`<span class="badge bwcd">OK ${c.nwc||''}</span>`;
     const tcs=c.techP&&c.techS!=='done'?`<span class="badge btech">${c.techS==='scheduled'?t('statusScheduled'):t('statusPending')}</span>`:c.techP&&c.techS==='done'?`<span class="badge bwcd">${t('statusDone')}</span>`:'<span style="font-size:11.5px;color:var(--muted)">—</span>';
     return`<tr>
-      <td><strong style="font-weight:600;color:var(--brand)">${c.name}</strong></td>
+      <td><strong style="font-weight:600;color:var(--brand)">${esc(c.name)}</strong></td>
       <td style="font-size:13.2px">${dln(c.day)} / ${c.week}</td>
       <td><div style="display:flex;gap:1px;flex-wrap:wrap">${dots}</div></td>
       <td>${wcs} <button class="btn" style="font-size:11.5px;margin-left:4px" onclick="owc(${c.id})">${t('register')}</button></td>
@@ -2441,20 +2711,21 @@ function rv(){
 function rwc(){
   const s=(document.getElementById('wcsrch').value||'').toLowerCase();
   const fl=document.getElementById('wcfilter').value;
-  const now=new Date();
+  const now=todayLocal();
   let f=C.filter(c=>c.status==='active');
   if(s)f=f.filter(c=>c.name.toLowerCase().includes(s));
-  if(fl==='overdue')f=f.filter(c=>c.nwc&&new Date(c.nwc)<now&&!c.wcN);
-  if(fl==='upcoming')f=f.filter(c=>{if(!c.nwc)return false;const d=(new Date(c.nwc)-now)/86400000;return d>=0&&d<=30;});
+  if(fl==='overdue')f=f.filter(c=>{const d=parseLocalDate(c.nwc);return d&&d<now&&!c.wcN;});
+  if(fl==='upcoming')f=f.filter(c=>{const d=parseLocalDate(c.nwc);if(!d)return false;const diff=(d-now)/86400000;return diff>=0&&diff<=30;});
   if(fl==='pending')f=f.filter(c=>c.wcN);
   // Sort: overdue first, then by next date
   f.sort((a,b)=>{
-    const da=a.nwc?new Date(a.nwc):new Date('2099-01-01');
-    const db=b.nwc?new Date(b.nwc):new Date('2099-01-01');
+    const da=parseLocalDate(a.nwc)||new Date(2099,0,1);
+    const db=parseLocalDate(b.nwc)||new Date(2099,0,1);
     return da-db;
   });
   document.getElementById('wctbody').innerHTML=f.map(c=>{
-    const daysLeft=c.nwc?Math.ceil((new Date(c.nwc)-now)/86400000):null;
+    const dt=parseLocalDate(c.nwc);
+    const daysLeft=dt?Math.ceil((dt-now)/86400000):null;
     const isOverdue=daysLeft!==null&&daysLeft<0;
     const isClose=daysLeft!==null&&daysLeft>=0&&daysLeft<=30;
     const isPending=c.wcN;
@@ -2466,7 +2737,7 @@ function rwc(){
     else statusBadge=`<span style="font-size:11.5px;color:var(--muted)">—</span>`;
     const daysCol=daysLeft!==null?`<span style="font-weight:600;color:${isOverdue?'#DC2626':isClose?'#F59E0B':'#16A34A'}">${daysLeft}d</span>`:'—';
     return`<tr>
-      <td><strong style="font-weight:600;color:var(--brand);cursor:pointer" onclick="vc(${c.id})">${c.name}</strong></td>
+      <td><strong style="font-weight:600;color:var(--brand);cursor:pointer" onclick="vc(${c.id})">${esc(c.name)}</strong></td>
       <td>${fb(c.freq)}</td>
       <td style="font-size:13.2px">${c.lwc||'—'}</td>
       <td style="font-size:13.2px;${isOverdue?'color:#DC2626;font-weight:600':''}">${c.nwc||'—'}</td>
@@ -2478,12 +2749,15 @@ function rwc(){
       </div></td></tr>`;
   }).join('');
 }
-function editWCDate(id){
+async function editWCDate(id){
   const c=C.find(x=>x.id===id);if(!c)return;
-  const newDate=prompt((LANG==='es'?'Nueva fecha de próximo cambio de agua para ':'New next water change date for ')+c.name+'\n\n'+(LANG==='es'?'Formato: AAAA-MM-DD':'Format: YYYY-MM-DD')+'\n'+(LANG==='es'?'Actual: ':'Current: ')+(c.nwc||'—'),c.nwc||'');
+  const msg=(LANG==='es'?'Nueva fecha de próximo cambio de agua para ':'New next water change date for ')+c.name+'\n'+(LANG==='es'?'Actual: ':'Current: ')+(c.nwc||'—');
+  const newDate=await showPrompt(msg,c.nwc||'',{type:'date'});
   if(!newDate)return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){alert(LANG==='es'?'Formato inválido. Usa AAAA-MM-DD':'Invalid format. Use YYYY-MM-DD');return;}
-  c.nwc=newDate;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){showToast(LANG==='es'?'Formato inválido. Usa AAAA-MM-DD':'Invalid format. Use YYYY-MM-DD','err');return;}
+  const prev=c.nwc;
+  c.nwc=newDate;c.lastModified=Date.now();
+  pushUndo((LANG==='es'?'Fecha cambiada para ':'Date changed for ')+c.name,()=>{c.nwc=prev;c.lastModified=Date.now();});
   saveData();rwc();rd();
 }
 
@@ -2605,13 +2879,13 @@ function buildWeekSection(wt,clients,q){
           <span class="drag-handle" onclick="event.stopPropagation()" title="${t('dragReorder')}">&#8942;</span>
           <span class="chevron">&#9654;</span>
           <span class="cc-num">${ordNum}</span>
-          <span class="cc-name" title="${c.name}">${c.name}</span>
+          <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
           ${wbadge}
           ${hasTechAppt?'<span style="font-size:10.3px;color:#7C3AED" title="Visita técnica agendada">&#128295;</span>':''}
           <span class="cc-prog" style="color:${progC}">${done}/${total}</span>
         </div>
         <div class="cc-body">
-          ${c.san?`<div class="cc-san">${c.san}</div>`:''}
+          ${c.san?`<div class="cc-san">${esc(c.san)}</div>`:''}
           <div class="freq-btns" onclick="event.stopPropagation()">
             <span style="font-size:10.9px;color:var(--muted);margin-right:2px;align-self:center">${t('weekLabel')}</span>
             <button class="fq-btn ${c.week==='A'?'fq-active-a':''}" onclick="changeClientWeek(${c.id},'A')">A</button>
@@ -2887,15 +3161,18 @@ function saveData(){
         lwc:cl.lwc||'',nwc:cl.nwc||'',notes:cl.notes||'',status:cl.status,
         wcN:cl.wcN||false,wcD:cl.wcD||false,
         techP:cl.techP||false,techI:cl.techI||'',
-        techD:cl.techD||'',techS:cl.techS||''
+        techD:cl.techD||'',techS:cl.techS||'',
+        lastModified:cl.lastModified||0
       })),
       savedAt:new Date().toISOString()
     };
     localStorage.setItem(LS_KEY,JSON.stringify(payload));
     flashSave();
+    markClean();
+    maybeAutoBackup();
     // Also save to Firebase if connected
     saveToFirebase();
-  }catch(e){console.warn('Save error:',e);}
+  }catch(e){dbgErr('Save error:',e);markDirty();}
 }
 
 function loadData(){
@@ -2926,8 +3203,8 @@ function loadData(){
   }catch(e){console.warn('Load error:',e);}
 }
 
-function clearAllData(){
-  if(!confirm(t('confirmClear')))return;
+async function clearAllData(){
+  if(!await showConfirm(t('confirmClear'),{danger:true,okText:LANG==='es'?'Borrar TODO':'DELETE ALL'}))return;
   localStorage.removeItem(LS_KEY);
   location.reload();
 }
@@ -2948,10 +3225,39 @@ function getBackupPayload(){
       lwc:cl.lwc||'',nwc:cl.nwc||'',notes:cl.notes||'',status:cl.status,
       wcN:cl.wcN||false,wcD:cl.wcD||false,
       techP:cl.techP||false,techI:cl.techI||'',
-      techD:cl.techD||'',techS:cl.techS||''
+      techD:cl.techD||'',techS:cl.techS||'',
+      lastModified:cl.lastModified||0
     }))
   };
 }
+
+// ─── Auto-backup: keeps the last 7 daily snapshots in localStorage ──
+const AUTO_BACKUP_PREFIX='aspen_autobackup_';
+function rotateAutoBackups(){
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith(AUTO_BACKUP_PREFIX)).sort();
+  while(keys.length>7){try{localStorage.removeItem(keys.shift());}catch(e){dbgWarn('rotate',e);}}
+}
+function maybeAutoBackup(){
+  try{
+    const todayKey=AUTO_BACKUP_PREFIX+new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(todayKey))return; // already snapshotted today
+    const payload=JSON.stringify(getBackupPayload());
+    // localStorage 5MB cap — only snapshot if under 1MB
+    if(payload.length<1_000_000){
+      localStorage.setItem(todayKey, payload);
+      rotateAutoBackups();
+      dbg('auto-backup saved',todayKey);
+    }
+  }catch(e){dbgWarn('autoBackup',e);}
+}
+
+// ─── beforeunload guard (warn if unsaved local changes during cloud sync) ──
+let _hasUnsavedChanges=false;
+function markDirty(){_hasUnsavedChanges=true;}
+function markClean(){_hasUnsavedChanges=false;}
+window.addEventListener('beforeunload',e=>{
+  if(_hasUnsavedChanges){e.preventDefault();e.returnValue='';return '';}
+});
 
 function downloadBackup(){
   const data=getBackupPayload();
@@ -2969,19 +3275,39 @@ function downloadBackup(){
   flashSave();
 }
 
-function restoreBackup(input){
+// ─── CSV export of clients (Excel/Sheets compatible) ─────────────────────────
+function csvEscape(v){
+  const s=String(v==null?'':v);
+  if(/[",\n\r]/.test(s))return'"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function exportClientsCSV(){
+  const headers=['ID','Name','Phone','Email','Address','Frequency','Day','Week','Sanitizer','Last_WC','Next_WC','Status','Notes','Last_Modified'];
+  const rows=C.map(c=>[c.id,c.name,c.phone,c.email,c.addr,c.freq,c.day,c.week,c.san,c.lwc,c.nwc,c.status,c.notes,c.lastModified?new Date(c.lastModified).toISOString():''].map(csvEscape).join(','));
+  // BOM so Excel recognizes UTF-8
+  const csv='\uFEFF'+headers.join(',')+'\n'+rows.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`AspenSpas_Clients_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(url);},500);
+  showToast(LANG==='es'?`CSV exportado (${C.length} clientes)`:`CSV exported (${C.length} clients)`,'ok');
+}
+
+async function restoreBackup(input){
   const file=input.files[0];
   if(!file)return;
   const confirmMsg=LANG==='es'
     ?'¿Restaurar datos desde este archivo?\n\nEsto reemplazará TODOS los datos actuales.\n\n¿Continuar?'
     :'Restore data from this file?\n\nThis will REPLACE ALL current data.\n\nContinue?';
-  if(!confirm(confirmMsg)){input.value='';return;}
+  if(!await showConfirm(confirmMsg,{danger:true})){input.value='';return;}
   const reader=new FileReader();
   reader.onload=function(e){
     try{
       const d=JSON.parse(e.target.result);
       if(!d.clients||(typeof d.clients!=='object')){
-        alert(LANG==='es'?'Archivo de backup inválido':'Invalid backup file');
+        showToast(LANG==='es'?'Archivo de backup inválido':'Invalid backup file');
         return;
       }
       const clientsArr=Array.isArray(d.clients)?d.clients:Object.values(d.clients).filter(Boolean);
@@ -3004,10 +3330,10 @@ function restoreBackup(input){
       const okMsg=LANG==='es'
         ?`✓ Backup restaurado: ${clientsArr.length} clientes cargados.\n\nFecha del backup: ${d.exportedAt?new Date(d.exportedAt).toLocaleString():''}`
         :`✓ Backup restored: ${clientsArr.length} clients loaded.\n\nBackup date: ${d.exportedAt?new Date(d.exportedAt).toLocaleString():''}`;
-      alert(okMsg);
+      showToast(okMsg);
       location.reload();
     }catch(err){
-      alert(LANG==='es'?'Error al leer el archivo: '+err.message:'Error reading file: '+err.message);
+      showToast(LANG==='es'?'Error al leer el archivo: '+err.message:'Error reading file: '+err.message);
     }
   };
   reader.readAsText(file);
@@ -3037,21 +3363,21 @@ function updateBackupIndicator(){
 function checkWeeklyBackupReminder(){
   const last=localStorage.getItem(BACKUP_KEY);
   if(!last){
-    setTimeout(()=>{
+    setTimeout(async()=>{
       const msg=LANG==='es'
         ?'💾 Recomendación: Descarga un backup semanal de tus datos.\n\n¿Descargar backup ahora?'
         :'💾 Recommendation: Download a weekly backup of your data.\n\nDownload backup now?';
-      if(confirm(msg))downloadBackup();
+      if(await showConfirm(msg))downloadBackup();
     },3000);
     return;
   }
   const days=Math.floor((Date.now()-new Date(last).getTime())/(86400000));
   if(days>=7){
-    setTimeout(()=>{
+    setTimeout(async()=>{
       const msg=LANG==='es'
         ?`💾 Han pasado ${days} días desde tu último backup.\n\n¿Descargar backup ahora?`
         :`💾 It's been ${days} days since your last backup.\n\nDownload backup now?`;
-      if(confirm(msg))downloadBackup();
+      if(await showConfirm(msg))downloadBackup();
     },2000);
   }
 }
@@ -3131,7 +3457,7 @@ function applyCloudData(d){
     }
   }
   // Also save to localStorage
-  try{localStorage.setItem(LS_KEY,JSON.stringify(d));}catch(e){}
+  try{localStorage.setItem(LS_KEY,JSON.stringify(d));}catch(e){dbgWarn("caught:",e);}
   refreshTechDataLists();
   ra();
   }catch(e){console.error('applyCloudData error:',e);ra();}
@@ -3158,7 +3484,7 @@ function connectFirebase(){
   const projectId=document.getElementById('fb-project').value.trim();
   const databaseURL=document.getElementById('fb-dburl').value.trim();
   if(!apiKey||!projectId||!databaseURL){
-    alert(LANG==='es'?'Completa todos los campos':'Fill in all fields');
+    showToast(LANG==='es'?'Completa todos los campos':'Fill in all fields');
     return;
   }
   const config={apiKey,projectId,databaseURL};
@@ -3169,13 +3495,13 @@ function connectFirebase(){
     if(fbConnected){
       saveToFirebase();
       cm('mfirebase');
-      alert(LANG==='es'?'☁️ ¡Conectado! Los datos se sincronizan automáticamente.':'☁️ Connected! Data syncs automatically.');
+      showToast(LANG==='es'?'☁️ ¡Conectado! Los datos se sincronizan automáticamente.':'☁️ Connected! Data syncs automatically.');
     }
   },1500);
 }
 
-function disconnectFirebase(){
-  if(!confirm(LANG==='es'?'¿Desconectar Firebase?\n\nLos datos locales se mantienen.':'Disconnect Firebase?\n\nLocal data will be kept.'))return;
+async function disconnectFirebase(){
+  if(!await showConfirm(LANG==='es'?'¿Desconectar Firebase?\n\nLos datos locales se mantienen.':'Disconnect Firebase?\n\nLocal data will be kept.',{danger:true}))return;
   localStorage.removeItem(FB_CONFIG_KEY);
   if(fbRef)fbRef.off();
   fbConnected=false;fbDB=null;fbRef=null;
@@ -3220,9 +3546,9 @@ let GEO_CACHE={};
 try{
   const raw=JSON.parse(localStorage.getItem('aspen_geo_cache')||'{}');
   if(raw._v===GEO_CACHE_VERSION){delete raw._v;GEO_CACHE=raw;}
-}catch(e){}
+}catch(e){dbgWarn("caught:",e);}
 let _routeClients=[],_leafletMap=null,_routePoints=[],_failedAddrs=[],_approxAddrs=[];
-function _saveGeoCache(){try{localStorage.setItem('aspen_geo_cache',JSON.stringify({...GEO_CACHE,_v:GEO_CACHE_VERSION}));}catch(e){}}
+function _saveGeoCache(){try{localStorage.setItem('aspen_geo_cache',JSON.stringify({...GEO_CACHE,_v:GEO_CACHE_VERSION}));}catch(e){dbgWarn("caught:",e);}}
 
 // ─── St Louis metro service area (generous box: ~100mi around downtown STL) ───
 // Anything outside this box is treated as a wrong geocode (e.g. "Archer Rd" matching NYC instead of Wright City MO).
@@ -3509,9 +3835,9 @@ function _renderRouteList(dc){
     return `<div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;cursor:pointer;${bg}" onclick="focusRoutePoint(${i})">
       <span style="background:${badgeC};color:#fff;min-width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${i+1}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13.5px;color:var(--text)">${c.name}</div>
-        <div style="font-size:12px;color:var(--muted);word-break:break-word">${c.addr||'—'}</div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">📞 ${c.phone||''}</div>
+        <div style="font-weight:600;font-size:13.5px;color:var(--text)">${esc(c.name)}</div>
+        <div style="font-size:12px;color:var(--muted);word-break:break-word">${esc(c.addr)||'—'}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">📞 ${esc(c.phone)||''}</div>
         ${errLine}
       </div>
     </div>`;
@@ -3673,7 +3999,7 @@ function updatePrintNotesEditor(weekOffset){
     dayC.forEach(c=>{
       const existing=(VL[c.id]&&VL[c.id][dateKey]&&VL[c.id][dateKey].notes)||'';
       html+=`<div class="prn-row">
-        <span class="prn-client">${c.name}</span>
+        <span class="prn-client">${esc(c.name)}</span>
         <input type="text" class="prn-input"
                data-cid="${c.id}" data-dk="${dateKey}"
                placeholder="${LANG==='es'?'Nota recordatorio...':'Reminder note...'}"
@@ -3788,10 +4114,10 @@ function printWeek(weekOffset){
 
         html+=`<tr>
           <td class="pct-num">${ci+1}</td>
-          <td><span class="pct-name">${c.name}</span> <span class="pct-wb ${wbClass}">${wbLabel}</span></td>
-          <td class="pct-addr">${c.addr||'—'}</td>
-          <td class="pct-phone">${c.phone||'—'}</td>
-          <td class="pct-san">${c.san||'—'}</td>
+          <td><span class="pct-name">${esc(c.name)}</span> <span class="pct-wb ${wbClass}">${wbLabel}</span></td>
+          <td class="pct-addr">${esc(c.addr)||'—'}</td>
+          <td class="pct-phone">${esc(c.phone)||'—'}</td>
+          <td class="pct-san">${esc(c.san)||'—'}</td>
           <td class="pct-notes">${notesHtml}</td>
         </tr>`;
       });
