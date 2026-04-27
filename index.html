@@ -810,6 +810,15 @@ tr:hover td{background:#F0F9FF}
     </div>
   </div>
 
+  <!-- Force re-geocode all — for when many addresses are stuck on approximate ──── -->
+  <div style="margin:0 0 10px;padding:9px 12px;background:#EFF6FF;border:1px solid #93C5FD;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:12px;font-weight:700;color:#1E40AF">📍 ¿Direcciones aproximadas?</div>
+      <div style="font-size:11.5px;color:#475569;font-style:italic">Borra el caché y reintenta todas las direcciones con Census + Photon + Nominatim</div>
+    </div>
+    <button class="btn" onclick="forceRegeocodeAll()" style="background:#1E40AF;color:#FFF;border:none;padding:7px 14px;font-weight:600;font-size:12px;border-radius:6px;cursor:pointer;white-space:nowrap">🔄 Forzar re-geocodificar</button>
+  </div>
+
   <!-- Print mode + technician filter ───────────────────────────────────── -->
   <div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 14px;padding:10px 12px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px">
     <div style="flex:1;min-width:240px">
@@ -3201,8 +3210,11 @@ function updateScheduleDayStats(allClients,q){
         if(co&&co.lat)points.push({lat:co.lat,lon:co.lon});
         else missing++;
       });
-      if(points.length===0){el.style.display='none';return;}
-      const stats=_routeStats(points,{includeHome:true});
+      if(points.length===0 && missing===0){el.style.display='none';return;}
+      // Pass real stopCount so service/buffer/breaks/prep aren't undercounted when some addresses aren't geocoded yet.
+      // Drive distance still comes from whichever points ARE geocoded (so it's a slight underestimate when missing>0,
+      // marked with the ~ pill in the UI).
+      const stats=_routeStats(points,{includeHome:true, stopCount:dayClients.length});
       el.style.display='block';
       const partial = missing>0 ? ` <span style="color:#D97706;font-weight:500" title="${missing} ${LANG==='es'?'sin geocodificar':'not geocoded yet'}">~</span>` : '';
       el.innerHTML=`📅 <b>${_fmtMin(stats.totalMin)}</b>${partial} · 🛣️ ${stats.miles.toFixed(1)} mi`;
@@ -3224,7 +3236,8 @@ function updateScheduleDayStats(allClients,q){
         summaryEl.innerHTML=`<span style="font-weight:700;color:#1E40AF">📊 ${LANG==='es'?'Total semana':'Week total'} ${wt}:</span>
           <span><b>${tot.stops}</b> ${LANG==='es'?'paradas':'stops'}</span>
           <span><b>🛣️ ${tot.miles.toFixed(1)} mi</b></span>
-          <span style="background:#1E40AF;color:#FFF;padding:3px 10px;border-radius:6px;font-weight:700">📅 ${_fmtMin(tot.min)}${partialMark} ${LANG==='es'?'a la semana':'per week'}</span>`;
+          <span style="background:#1E40AF;color:#FFF;padding:3px 10px;border-radius:6px;font-weight:700">📅 ${_fmtMin(tot.min)}${partialMark} ${LANG==='es'?'a la semana':'per week'}</span>
+          <span style="font-size:11px;color:#64748B;font-style:italic">🏠 ${LANG==='es'?'cada día inicia y termina en':'each day starts/ends at'} Aspen Spas</span>`;
       }
     }
   });
@@ -3703,8 +3716,8 @@ function updateCloudIndicator(connected,error){
 /* ── DAY MAP ROUTE (Leaflet + OpenStreetMap, no API key needed) ── */
 // v3: added St Louis bounding-box validation + ZIP→city injection + ZIP-centroid fallback.
 // Bumping the cache key invalidates v2 entries that may have geocoded to wrong cities (e.g. Wright City → NYC).
-// v4: stopped caching approximate results so the app retries them on each visit (was getting stuck on stale ZIP-centroid entries).
-const GEO_CACHE_VERSION='v4';
+// v5: added Photon as a secondary geocoder + St↔Saint reverse fallback (was getting too many ZIP-centroid fallbacks).
+const GEO_CACHE_VERSION='v5';
 let GEO_CACHE={};
 try{
   const raw=JSON.parse(localStorage.getItem('aspen_geo_cache')||'{}');
@@ -3874,7 +3887,7 @@ async function _geocodeCensus(addr){
   try{
     const url='https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address='+
       encodeURIComponent(addr)+'&benchmark=Public_AR_Current&format=json';
-    const r=await _fetchTimeout(url, null, 7000);
+    const r=await _fetchTimeout(url, null, 12000);
     if(!r.ok)return null;
     const d=await r.json();
     const matches=d&&d.result&&d.result.addressMatches;
@@ -3885,13 +3898,29 @@ async function _geocodeCensus(addr){
   return null;
 }
 
-// FALLBACK: Nominatim (OpenStreetMap) — biased to STL metro via viewbox; 1 req/sec limit
+// SECONDARY: Photon (Komoot, OSM-based) — free, no API key, no strict rate limit, excellent for US addresses
+async function _geocodePhoton(addr){
+  try{
+    // Bias around STL metro via lon/lat hint (Photon supports `lon` + `lat` for proximity bias)
+    const url='https://photon.komoot.io/api?limit=1&lang=en&lat=38.62&lon=-90.4&q='+encodeURIComponent(addr);
+    const r=await _fetchTimeout(url, null, 10000);
+    if(!r.ok)return null;
+    const d=await r.json();
+    if(d&&d.features&&d.features[0]&&d.features[0].geometry&&d.features[0].geometry.coordinates){
+      const [lon,lat]=d.features[0].geometry.coordinates;
+      return {lat, lon, src:'photon'};
+    }
+  }catch(e){dbgWarn('Photon geocode failed',addr,e&&e.name);}
+  return null;
+}
+
+// TERTIARY: Nominatim (OpenStreetMap) — biased to STL metro via viewbox; 1 req/sec limit
 async function _geocodeNominatim(addr){
   try{
     // viewbox = left,top,right,bottom (lon,lat,lon,lat) — biases results toward STL but doesn't strictly limit
     const vb='-91.8,39.7,-89.3,37.5';
     const r=await _fetchTimeout('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&viewbox='+vb+'&q='+encodeURIComponent(addr),
-      {headers:{'Accept-Language':'en-US,en'}}, 7000);
+      {headers:{'Accept-Language':'en-US,en'}}, 10000);
     if(!r.ok)return null;
     const d=await r.json();
     if(d&&d[0])return {lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),src:'nominatim'};
@@ -3922,36 +3951,50 @@ async function _geocode(rawAddr, forceRefresh){
   // 1) Census geocoder (most accurate for US addresses)
   let result=_accept(await _geocodeCensus(norm));
 
-  // 2) Nominatim with full normalized address (city + state + zip injected)
+  // 2) Photon (Komoot, OSM-based) — excellent for US addresses, no rate limit, biased to STL
+  if(!result) result=_accept(await _geocodePhoton(norm));
+
+  // 3) Nominatim with full normalized address (city + state + zip injected)
   if(!result) result=_accept(await _geocodeNominatim(norm));
 
-  // 3) Nominatim with simplified street + city + zip (some addresses have unit/apt noise)
+  // 4) Photon with simplified street + city + zip
   if(!result && zip && ZIP_TO_CITY[zip]){
     const street=norm.split(',')[0].trim();
     const simple=street+', '+ZIP_TO_CITY[zip]+' '+zip+', USA';
-    result=_accept(await _geocodeNominatim(simple));
+    result=_accept(await _geocodePhoton(simple));
+    if(!result) result=_accept(await _geocodeNominatim(simple));
   }
 
-  // 4) Nominatim with just street + zip
+  // 5) Photon with just street + zip
   if(!result && zip){
     const simple=norm.split(',')[0]+' '+zip+' USA';
-    result=_accept(await _geocodeNominatim(simple));
+    result=_accept(await _geocodePhoton(simple));
+    if(!result) result=_accept(await _geocodeNominatim(simple));
   }
 
-  // 4b) "Saint Louis" → "St Louis" alternate spelling (Census sometimes prefers the abbreviation)
+  // 6) "Saint Louis" → "St Louis" alternate spelling — try every geocoder
   if(!result && norm.includes('Saint Louis')){
-    const altCensus=norm.replace(/Saint Louis/g,'St Louis');
-    result=_accept(await _geocodeCensus(altCensus));
-    if(!result) result=_accept(await _geocodeNominatim(altCensus));
+    const altAddr=norm.replace(/Saint Louis/g,'St Louis');
+    result=_accept(await _geocodeCensus(altAddr));
+    if(!result) result=_accept(await _geocodePhoton(altAddr));
+    if(!result) result=_accept(await _geocodeNominatim(altAddr));
   }
 
-  // 4c) Try Census with the original raw address (no aggressive normalization) — sometimes the cleaner upsets it
+  // 7) "St" → "Saint" the other direction (in case input was already abbreviated)
+  if(!result && /\bSt\.?\s+Louis\b/i.test(norm) && !norm.includes('Saint Louis')){
+    const altAddr=norm.replace(/\bSt\.?\s+Louis\b/gi,'Saint Louis');
+    result=_accept(await _geocodeCensus(altAddr));
+    if(!result) result=_accept(await _geocodePhoton(altAddr));
+  }
+
+  // 8) Try Census + Photon with the original raw address (no aggressive normalization)
   if(!result){
-    const rawCensus=String(rawAddr).trim()+', USA';
-    result=_accept(await _geocodeCensus(rawCensus));
+    const rawAddr2=String(rawAddr).trim()+', USA';
+    result=_accept(await _geocodeCensus(rawAddr2));
+    if(!result) result=_accept(await _geocodePhoton(rawAddr2));
   }
 
-  // 5) Final fallback: ZIP centroid — marker appears in the correct ZIP, flagged as approximate
+  // 9) Final fallback: ZIP centroid — marker appears in the correct ZIP, flagged as approximate
   if(!result && zip){
     result=_zipCentroid(zip);
   }
@@ -3995,6 +4038,45 @@ async function refreshDayMapCache(){
   _routeClients.forEach(c=>{const k=String(c.addr||'').trim().toLowerCase();if(k)delete GEO_CACHE[k];});
   _saveGeoCache();
   _drawMap(_routeClients);
+}
+
+// Force re-geocode ALL active client addresses — purges cache, runs full chain in parallel batches.
+// Surfaces a progress modal with cancel; refreshes the calendar view when done.
+async function forceRegeocodeAll(){
+  const ok = await showConfirm(LANG==='es'
+    ?'Esto borrará el caché de geocodificación y re-intentará todas las direcciones. Puede tardar 30–60 segundos. ¿Continuar?'
+    :'This will clear the geocode cache and re-attempt every address. May take 30–60 seconds. Continue?');
+  if(!ok)return;
+  const active=C.filter(c=>c.status==='active'&&c.addr);
+  if(active.length===0){showToast(LANG==='es'?'Sin direcciones activas':'No active addresses','warn');return;}
+  // Purge the entire cache
+  GEO_CACHE={};
+  _saveGeoCache();
+  const total=active.length;
+  let done=0, exact=0, approx=0, failed=0;
+  showProgress(LANG==='es'?'Re-geocodificando todas las direcciones...':'Re-geocoding all addresses...', 0, total, {
+    actions:[{label:LANG==='es'?'Cancelar':'Cancel', fn:()=>{_progressCancel=true;}}]
+  });
+  // Process in batches of 4 (smaller than warmup so we don't hammer Photon)
+  for(let i=0;i<active.length;i+=4){
+    if(_progressCancel)break;
+    const batch=active.slice(i,i+4);
+    const results=await Promise.all(batch.map(c=>_geocode(c.addr,true).catch(()=>null)));
+    results.forEach(r=>{
+      if(!r)failed++;
+      else if(r.approximate)approx++;
+      else exact++;
+    });
+    done+=batch.length;
+    if(_progressEl)showProgress(LANG==='es'?'Re-geocodificando todas las direcciones...':'Re-geocoding all addresses...', done, total);
+  }
+  hideProgress();
+  const msg=LANG==='es'
+    ?`✓ Listo: ${exact} exactas, ${approx} aproximadas, ${failed} fallaron`
+    :`✓ Done: ${exact} exact, ${approx} approximate, ${failed} failed`;
+  showToast(msg, exact>active.length*0.7?'ok':'warn');
+  // Refresh calendar if user is on it so stats update with the new coords
+  if(typeof rcal==='function' && ctab==='calendar') rcal();
 }
 
 // ─── Persistent progress modal (replaces transient toast for long jobs) ──────
@@ -4083,33 +4165,36 @@ function _haversineMiles(lat1,lon1,lat2,lon2){
 }
 
 // Full-day stats for a route that starts AND ends at home (Aspen Spas).
-// `points` = ordered client stops only; home is auto-inserted at start + end when includeHome (default true).
-// Returns total miles, drive/service/buffer/break minutes, total day minutes, and the home-anchored sequence.
+// `points` = ordered geocoded coordinates; home is auto-inserted at start + end when includeHome (default true).
+// `opts.stopCount` (optional) = the ACTUAL number of stops the day has, even if some aren't geocoded yet.
+//   When provided, service/buffer/breaks/prep are based on this real count; drive distance is still based on `points`.
+//   This avoids undercounting time when the geocode cache hasn't fully warmed up.
 function _routeStats(points, opts){
   opts=opts||{};
   const includeHome=opts.includeHome!==false;
   const home=getHome();
-  if(!points||points.length===0){
-    return {miles:0,driveMin:0,serviceMin:0,bufferMin:0,breakMin:0,totalMin:0,n:0,sequence:[]};
+  const nReal = (typeof opts.stopCount==='number' && opts.stopCount>=0) ? opts.stopCount : (points?points.length:0);
+  if(nReal===0){
+    return {miles:0,driveMin:0,serviceMin:0,bufferMin:0,breakMin:0,prepMin:0,totalMin:0,n:0,sequence:[]};
   }
-  const sequence = includeHome
+  const sequence = (points && points.length>0 && includeHome)
     ? [{lat:home.lat,lon:home.lon,isHome:true,label:home.name},
        ...points,
        {lat:home.lat,lon:home.lon,isHome:true,label:home.name}]
-    : points.slice();
+    : (points?points.slice():[]);
   let miles=0;
   for(let i=1;i<sequence.length;i++){
     miles += _haversineMiles(sequence[i-1].lat,sequence[i-1].lon,sequence[i].lat,sequence[i].lon);
   }
   miles *= ROAD_FACTOR;
-  const n=points.length;
   const driveMin=Math.round((miles/DRIVE_MPH)*60);
-  const serviceMin=n*(TIME_SERVICE+TIME_UNLOAD+TIME_RELOAD);
-  const bufferMin=Math.max(0,n-1)*TIME_TRAFFIC_BUFFER;
-  const breakMin=n>0 ? (TIME_BREAK+TIME_LUNCH) : 0;
-  const prepMin=n>0 ? TIME_PREP : 0;
+  // Service/buffer/breaks/prep depend on REAL stop count, not just the geocoded subset
+  const serviceMin=nReal*(TIME_SERVICE+TIME_UNLOAD+TIME_RELOAD);
+  const bufferMin=Math.max(0,nReal-1)*TIME_TRAFFIC_BUFFER;
+  const breakMin=nReal>0 ? (TIME_BREAK+TIME_LUNCH) : 0;
+  const prepMin=nReal>0 ? TIME_PREP : 0;
   const totalMin=driveMin+serviceMin+bufferMin+breakMin+prepMin;
-  return {miles,driveMin,serviceMin,bufferMin,breakMin,prepMin,totalMin,n,sequence};
+  return {miles,driveMin,serviceMin,bufferMin,breakMin,prepMin,totalMin,n:nReal,sequence};
 }
 
 // Format minutes as "Xh Ym" or "Xm" string
