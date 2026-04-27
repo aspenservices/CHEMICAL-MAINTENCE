@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Aspen Spas">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><path d='M18 3C18 3 8 10.5 8 20C8 25.5 12.5 30 18 30C23.5 30 28 25.5 28 20C28 10.5 18 3 18 3Z' fill='%238B3A0F'/><path d='M18 8C18 8 10 14.5 10 20C10 24.4 13.6 28 18 28C22.4 28 26 24.4 26 20C26 14.5 18 8 18 8Z' fill='%23C4581A'/><path d='M18 13C18 13 12 17.5 12 20C12 22.2 14.8 24 18 24C21.2 24 24 22.2 24 20C24 17.5 18 13 18 13Z' fill='%23F5E6D3'/></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%231E40AF'/><path d='M14 6 L14 16 L7 32 Q6 36 10 36 L30 36 Q34 36 33 32 L26 16 L26 6 Z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/><path d='M9 24 Q14 22 20 24 Q26 26 31 24 L33 32 Q33 34 31 34 L9 34 Q7 34 7 32 Z' fill='%2360A5FA'/><circle cx='15' cy='29' r='1.5' fill='white' opacity='0.85'/><circle cx='25' cy='30' r='1.3' fill='white' opacity='0.7'/><line x1='13' y1='6' x2='27' y2='6' stroke='white' stroke-width='2.4' stroke-linecap='round'/></svg>">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -21,14 +21,17 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F1F5F9;color:#1E293B;min-height:100vh}
 :root{--brand:#2563EB;--brand2:#3B82F6;--warm:#EFF6FF;--warm2:#F0F9FF;--accent:#0EA5E9;--gold:#F59E0B;--rust:#DC2626;--light:#F8FAFC;--mid:#CBD5E1;--text:#1E293B;--muted:#64748B;--border:#E2E8F0;}
 .app{max-width:100%;margin:0;padding:0}
-.header{background:linear-gradient(135deg,#1E40AF,#2563EB);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-radius:0;flex-wrap:wrap;gap:8px}
+.header{background:linear-gradient(135deg,#1E40AF,#2563EB);padding:14px 20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-radius:0;gap:12px 16px}
 .logo-area{display:flex;align-items:center;gap:12px}
-.logo-mark{width:48px;height:48px;background:var(--warm2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.brand-name{color:#FFF8F0;font-size:23px;font-weight:600}
+.logo-mark{width:48px;height:48px;background:linear-gradient(135deg,#1E3A8A,#1E40AF);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:inset 0 1px 2px rgba(255,255,255,0.15),0 2px 6px rgba(0,0,0,0.2)}
+.logo-mark svg{overflow:visible}
+.brand-name{color:#FFF8F0;font-size:23px;font-weight:600;line-height:1.1}
 .brand-sub{color:#93C5FD;font-size:12.6px;letter-spacing:1px;text-transform:uppercase}
-.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.header-primary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-self:start}
+.header-secondary{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-self:end}
 .hbtn{padding:6px 14px;font-size:13.8px;border-radius:8px;cursor:pointer;font-weight:500;border:1.5px solid #93C5FD;background:transparent;color:#FFF;font-family:inherit}
 .hbtn:hover{background:rgba(255,255,255,.15)}
+.hbtn-sm{padding:5px 9px;font-size:13px;border-radius:7px}
 .hbtn-accent{background:#0EA5E9;border-color:#0EA5E9;color:#FFF}
 .hbtn-accent:hover{background:#0284C7}
 select.hbtn option{color:#3D1F08;background:#FFF}
@@ -114,12 +117,13 @@ tr:hover td{background:#F0F9FF}
 
 /* ── MOBILE RESPONSIVE ── */
 @media(max-width:768px){
-  .header{padding:10px 12px;gap:6px}
+  .header{padding:10px 12px;gap:6px;grid-template-columns:1fr;grid-template-rows:auto auto auto}
   .logo-mark{width:36px;height:36px}
   .brand-name{font-size:18px}
   .brand-sub{font-size:10px}
-  .header-right{gap:4px;width:100%;justify-content:flex-start;overflow-x:auto;padding-bottom:4px}
+  .header-primary,.header-secondary{gap:4px;width:100%;justify-self:stretch;justify-content:flex-start;overflow-x:auto;padding-bottom:4px}
   .hbtn{padding:5px 8px;font-size:11.5px;white-space:nowrap}
+  .hbtn-sm{padding:4px 7px;font-size:11px}
   .tabs-bar{padding:0 8px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .tab{padding:9px 10px;font-size:13px;white-space:nowrap}
   .body{padding:10px 8px}
@@ -160,7 +164,7 @@ tr:hover td{background:#F0F9FF}
 }
 
 @media(max-width:420px){
-  .header-right{flex-wrap:wrap}
+  .header-primary,.header-secondary{flex-wrap:wrap}
   .metrics{grid-template-columns:1fr 1fr;gap:4px}
   .mval{font-size:20px}
   .cal-wtab{padding:4px 8px;font-size:11px}
@@ -174,7 +178,7 @@ tr:hover td{background:#F0F9FF}
 ::-webkit-scrollbar-thumb:hover{background:var(--brand2)}
 
 @media print{
-  .header-right,.tabs-bar,.btn,.arow,.chips,.pager,.fbar,.cal-toolbar,.cal-legend,.modal-bg,.cc-actions,.freq-btns,.drag-handle,.tech-appt-row{display:none!important}
+  .header-primary,.header-secondary,.tabs-bar,.btn,.arow,.chips,.pager,.fbar,.cal-toolbar,.cal-legend,.modal-bg,.cc-actions,.freq-btns,.drag-handle,.tech-appt-row{display:none!important}
   .modal-bg{display:none!important}
   body{background:#FFF!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:11px}
   .header{display:none!important}
@@ -215,7 +219,38 @@ tr:hover td{background:#F0F9FF}
 
   .print-spacer{height:6px}
   .print-empty{text-align:center;padding:16px;color:#999;font-size:11px}
+
+  /* ─── Field route sheet (one page per day, technician-friendly) ─── */
+  .pr-route-page{page-break-after:always;page-break-inside:avoid}
+  .pr-route-page:last-child{page-break-after:auto}
+  .pr-route-header{background:#1E40AF;color:#FFF;padding:8px 12px;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-route-header .prh-day{font-size:16px;font-weight:700}
+  .pr-route-header .prh-date{font-size:11px;opacity:.9}
+  .pr-route-header .prh-meta{font-size:10px;text-align:right;line-height:1.4}
+  /* Drive estimate strip */
+  .pr-drive-strip{background:#EFF6FF;border:1px solid #93C5FD;border-top:none;padding:6px 12px;font-size:10.5px;display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-drive-strip b{color:#1E40AF;font-size:11px}
+  .pr-drive-note-line{background:#F8FAFC;border:1px solid #CBD5E1;border-top:none;padding:4px 12px;font-size:9px;color:#64748B;font-style:italic;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-drive-note{color:#64748B;font-size:9px;font-style:italic;margin-left:auto}
+  /* Map container */
+  .pr-map-wrap{border:1px solid #CBD5E1;border-top:none;padding:0;background:#F1F5F9;page-break-inside:avoid}
+  .pr-map-empty{border:1px solid #CBD5E1;border-top:none;padding:24px;background:#F8FAFC;color:#64748B;font-size:11px;text-align:center;font-style:italic}
+  .pr-map-empty.pr-map-warn{background:#FEF3C7;color:#78350F;font-weight:600}
+  .pr-tech-line{background:#F1F5F9;border:1px solid #CBD5E1;border-top:none;padding:5px 12px;font-size:10px;display:flex;gap:18px;flex-wrap:wrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pr-tech-line span{color:#475569;font-weight:600;display:flex;align-items:center;gap:4px}
+  .pr-tech-line .pr-line{flex:1;border-bottom:1px solid #94A3B8;margin-left:4px;min-width:50px;height:10px}
+  /* Gate code pill (in notes column) */
+  .pr-gate-pill{display:inline-block;background:#FECACA;color:#991B1B;font-weight:700;font-size:9px;padding:1px 5px;border-radius:3px;margin-right:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* Footer summary */
+  .pr-route-summary{background:#EFF6FF;border:1px solid #93C5FD;border-top:none;border-radius:0 0 6px 6px;padding:5px 10px;font-size:10px;color:#1E40AF;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* ── Print mode toggle (route vs invoice list) ── */
+.prn-mode-pill{transition:border-color .15s,background .15s}
+.prn-mode-pill:has(input:not(:checked)){border-color:var(--border) !important;background:#FFF !important}
+.prn-mode-pill:has(input:not(:checked)) > div > div:first-child{color:var(--text) !important}
+.prn-mode-pill:has(input:checked){border-color:var(--brand) !important;background:#EFF6FF !important}
+.prn-mode-pill:has(input:checked) > div > div:first-child{color:var(--brand) !important}
 
 /* ── PRINT OPTIONS MODAL ── */
 .prw-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
@@ -260,6 +295,7 @@ tr:hover td{background:#F0F9FF}
 .cal-wtab.act-b{background:#8B5CF6;color:#FFF;border-color:#8B5CF6}
 .cal-week-section{margin-bottom:0}
 .cal-week-label{padding:9px 16px;font-size:14.9px;font-weight:700;letter-spacing:.4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.week-summary-bar{padding:8px 16px;background:linear-gradient(90deg,#EFF6FF,#FFF7ED);border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 .cal-week-label-a{background:#DBEAFE;color:#1E40AF;border-left:4px solid #0EA5E9}
 .cal-week-label-b{background:#EDE9FE;color:#5B21B6;border-left:4px solid #8B5CF6}
 .cal-grid{display:grid;grid-template-columns:repeat(5,1fr);border-left:1px solid var(--border)}
@@ -384,14 +420,25 @@ tr:hover td{background:#F0F9FF}
 <div class="header">
   <div class="logo-area">
     <div class="logo-mark">
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <path d="M18 3C18 3 8 10.5 8 20C8 25.5 12.5 30 18 30C23.5 30 28 25.5 28 20C28 10.5 18 3 18 3Z" fill="#1E40AF"/>
-        <path d="M18 8C18 8 10 14.5 10 20C10 24.4 13.6 28 18 28C22.4 28 26 24.4 26 20C26 14.5 18 8 18 8Z" fill="#3B82F6"/>
-        <path d="M18 13C18 13 12 17.5 12 20C12 22.2 14.8 24 18 24C21.2 24 24 22.2 24 20C24 17.5 18 13 18 13Z" fill="#DBEAFE"/>
-        <ellipse cx="18" cy="31.5" rx="5.5" ry="1.8" fill="#1E40AF" opacity=".25"/>
-        <line x1="18" y1="24" x2="18" y2="31" stroke="#1E40AF" stroke-width="1.5"/>
-        <line x1="14.5" y1="28" x2="18" y2="24" stroke="#1E40AF" stroke-width="1.2"/>
-        <line x1="21.5" y1="28" x2="18" y2="24" stroke="#1E40AF" stroke-width="1.2"/>
+      <!-- Erlenmeyer flask with bubbling chemical solution — represents chemical maintenance -->
+      <svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Flask body outline -->
+        <path d="M14 4 L14 16 L7 32 Q6 36 10 36 L30 36 Q34 36 33 32 L26 16 L26 4 Z"
+              fill="rgba(255,255,255,0.08)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+        <!-- Liquid inside (cyan/blue chemical) -->
+        <path d="M9 24 Q12 22 15 24 Q18 26 21 24 Q24 22 27 24 Q30 26 31 27 L33 32 Q33 34 31 34 L9 34 Q7 34 7 32 L9 24 Z"
+              fill="#60A5FA"/>
+        <!-- Bubbles -->
+        <circle cx="14" cy="29" r="1.5" fill="#FFFFFF" opacity="0.85"/>
+        <circle cx="22" cy="31" r="1.2" fill="#FFFFFF" opacity="0.7"/>
+        <circle cx="27" cy="28" r="1.4" fill="#FFFFFF" opacity="0.85"/>
+        <circle cx="18" cy="26" r="0.9" fill="#FFFFFF" opacity="0.6"/>
+        <!-- Flask rim -->
+        <line x1="13" y1="4" x2="27" y2="4" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>
+        <!-- Steam/vapor wisps above -->
+        <path d="M16 1 Q17 -0.5 16 -2" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity="0.7" fill="none"/>
+        <path d="M20 1 Q21 -0.5 20 -2" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity="0.7" fill="none"/>
+        <path d="M24 1 Q25 -0.5 24 -2" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity="0.7" fill="none"/>
       </svg>
     </div>
     <div>
@@ -399,19 +446,23 @@ tr:hover td{background:#F0F9FF}
       <div class="brand-sub">Chemical Maintenance Dashboard</div>
     </div>
   </div>
-  <div class="header-right">
-    <button class="hbtn hbtn-accent" id="btn-new-client" onclick="om('madd')">+ Nuevo cliente</button>
+  <!-- Primary actions: New Client, Techs, Quarter, Print -->
+  <div class="header-primary">
+    <button class="hbtn hbtn-accent" id="btn-new-client" onclick="om('madd')">+ <span id="newclient-label">Nuevo cliente</span></button>
     <button class="hbtn" id="btn-techs" onclick="om('mtechs')" style="background:#7C3AED;border-color:#A78BFA;color:#FFF">👷 <span id="techs-btn-label">Techs</span></button>
     <select class="hbtn" id="qsel" onchange="ra();renderQDropdown()" style="cursor:pointer;min-width:90px"></select>
-    <button class="hbtn" id="lang-btn" onclick="toggleLang()" style="background:#F59E0B;border-color:#F59E0B;font-weight:600">EN 🌐</button>
-    <button class="hbtn" id="btn-backup" onclick="downloadBackup()" style="background:#16A34A;border-color:#16A34A;font-weight:600" title="Download backup">💾 Backup</button>
-    <label class="hbtn" style="cursor:pointer;margin:0" title="Restore backup">📂 <span id="restore-label">Restore</span><input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none"></label>
-    <span id="save-ind" style="font-size:11.5px;color:#93C5FD;opacity:0;transition:opacity .6s;align-self:center;white-space:nowrap">&#10003; Guardado</span>
-    <span id="last-backup" style="font-size:10.3px;color:#93C5FD;opacity:.7;align-self:center;white-space:nowrap"></span>
-    <button class="hbtn" id="btn-cloud" onclick="om('mfirebase')" style="background:#1a73e8;border-color:#1a73e8;font-weight:600" title="Cloud Sync">☁️ <span id="cloud-status-btn">Cloud</span></button>
-    <button class="hbtn" id="btn-servicelog" onclick="openSLConfig()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Service Log Ticket Routing">🎫 <span>Service Log</span></button>
-    <button class="hbtn" onclick="openPrintDialog()" style="background:#059669;border-color:#059669;font-weight:600" title="Print current week">🖨️ <span id="print-btn-label">Print Week</span></button>
-    <span id="cloud-ind" style="font-size:10.3px;color:#93C5FD;opacity:.7;align-self:center;white-space:nowrap"></span>
+    <button class="hbtn" onclick="openPrintDialog()" style="background:#059669;border-color:#059669;font-weight:600" title="Print current week">🖨️ <span id="print-btn-label">Print</span></button>
+  </div>
+  <!-- Secondary / utility / status: lang, backup, cloud, service log, indicators -->
+  <div class="header-secondary">
+    <button class="hbtn hbtn-sm" id="lang-btn" onclick="toggleLang()" style="background:#F59E0B;border-color:#F59E0B;font-weight:600" title="Language">EN 🌐</button>
+    <button class="hbtn hbtn-sm" id="btn-backup" onclick="downloadBackup()" style="background:#16A34A;border-color:#16A34A;font-weight:600" title="Download backup">💾</button>
+    <label class="hbtn hbtn-sm" style="cursor:pointer;margin:0" title="Restore backup">📂<input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none"></label>
+    <button class="hbtn hbtn-sm" id="btn-cloud" onclick="om('mfirebase')" style="background:#1a73e8;border-color:#1a73e8;font-weight:600" title="Cloud Sync">☁️</button>
+    <button class="hbtn hbtn-sm" id="btn-servicelog" onclick="openSLConfig()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Service Log Ticket Routing">🎫</button>
+    <span id="save-ind" style="font-size:11px;color:#93C5FD;opacity:0;transition:opacity .6s;align-self:center;white-space:nowrap;margin-left:4px">&#10003;</span>
+    <span id="last-backup" style="font-size:10px;color:#93C5FD;opacity:.7;align-self:center;white-space:nowrap" title="Last backup"></span>
+    <span id="cloud-ind" style="font-size:10px;color:#93C5FD;opacity:.7;align-self:center;white-space:nowrap"></span>
   </div>
 </div>
 
@@ -745,6 +796,47 @@ tr:hover td{background:#F0F9FF}
   </div>
   <div class="prw-list" id="mprint-weeks"></div>
 
+  <!-- Aspen Home Base config — start/end of every route ──────────────────── -->
+  <div style="margin:6px 0 10px;padding:9px 12px;background:#FFF7ED;border:1px solid #FDBA74;border-radius:8px">
+    <div style="font-size:12px;font-weight:700;color:#9A3412;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">
+      🏠 Aspen Spas — Home Base
+    </div>
+    <div style="font-size:11.5px;color:#7C2D12;margin-bottom:6px;font-style:italic">
+      Punto de inicio/fin de cada ruta · Start &amp; end of every route
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="aspen-home-input" type="text" style="flex:1;padding:6px 9px;border:1px solid #FDBA74;border-radius:6px;font-size:12.5px;font-family:inherit" placeholder="14856 Manchester Rd, Ballwin, MO 63011">
+      <button class="btn" onclick="saveAspenHome()" style="background:#EA580C;color:#FFF;border:none;padding:6px 12px;font-weight:600;font-size:12px;border-radius:6px;cursor:pointer">💾 Guardar / Save</button>
+    </div>
+  </div>
+
+  <!-- Print mode + technician filter ───────────────────────────────────── -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 14px;padding:10px 12px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px">
+    <div style="flex:1;min-width:240px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
+        🗒️ Estilo / Print style
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <label class="prn-mode-pill" style="flex:1;min-width:140px;padding:8px 10px;border:2px solid var(--brand);background:#EFF6FF;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:flex-start;gap:6px">
+          <input type="radio" name="prn-mode" value="route" checked onchange="document.getElementById('prn-tech-wrap').style.display='block'" style="margin-top:2px;accent-color:var(--brand)">
+          <div><div style="font-weight:700;color:var(--brand)">🚚 Hoja de ruta / Field route</div><div style="font-size:10.5px;color:var(--muted);margin-top:1px">Una página por día — para el campo<br>One page per day — field-ready</div></div>
+        </label>
+        <label class="prn-mode-pill" style="flex:1;min-width:140px;padding:8px 10px;border:2px solid var(--border);border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:flex-start;gap:6px">
+          <input type="radio" name="prn-mode" value="compact" onchange="document.getElementById('prn-tech-wrap').style.display='none'" style="margin-top:2px;accent-color:var(--brand)">
+          <div><div style="font-weight:700">📋 Compacta / Compact</div><div style="font-size:10.5px;color:var(--muted);margin-top:1px">Lista resumida — toda la semana<br>Summary list — full week</div></div>
+        </label>
+      </div>
+    </div>
+    <div id="prn-tech-wrap" style="min-width:200px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
+        👷 Técnico / Technician
+      </div>
+      <select id="prn-tech-select" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;background:#FFF">
+        <option value="">— Todos / All —</option>
+      </select>
+    </div>
+  </div>
+
   <div class="prn-section">
     <div class="prn-section-hd">
       <div class="prn-section-title">
@@ -885,6 +977,10 @@ tr:hover td{background:#F0F9FF}
   <h3 id="mdaymap-title" style="margin-bottom:4px">🗺️ Ruta del día</h3>
   <div id="mdaymap-subtitle" style="font-size:13px;color:var(--muted);margin-bottom:8px"></div>
   <div class="divider"></div>
+  <!-- Day stats bar — populated after geocoding finishes -->
+  <div id="mdaymap-stats" style="display:none;background:linear-gradient(90deg,#EFF6FF,#FFF7ED);border:1px solid #93C5FD;border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:13px;align-items:center;gap:10px 16px;flex-wrap:wrap">
+    <!-- Filled in dynamically -->
+  </div>
   <div id="mdaymap-progress" style="padding:6px 10px;font-size:13px;color:var(--brand);display:none;background:var(--warm2);border-radius:6px;margin-bottom:8px"></div>
   <div style="display:flex;gap:12px;flex:1;min-height:0;flex-wrap:wrap" id="mdaymap-split">
     <div id="mdaymap-list" style="width:300px;overflow-y:auto;max-height:60vh;border:1px solid var(--border);border-radius:8px;background:var(--light);flex-shrink:0"></div>
@@ -1785,6 +1881,12 @@ function saveEdit(){
   pushUndo((LANG==='es'?'Cliente editado: ':'Client edited: ')+c.name,()=>{Object.assign(c,prev);c.lastModified=Date.now();});
   saveData();
   cm("medit");ra();
+  // Re-geocode if address changed so stats update with new location
+  if(prev.addr !== c.addr && c.addr){
+    _geocode(c.addr).then(co=>{
+      if(co && ctab==='calendar' && typeof rcal==='function') rcal();
+    }).catch(e=>dbgWarn('edit-addr geocode',e));
+  }
 }
 function showQPanel(q,cid){
   const c=C.find(x=>x.id===cid);if(!c)return;
@@ -2645,10 +2747,17 @@ function ac(){
   const name=document.getElementById('nn').value.trim();
   if(!name){showToast(t('nameRequired'));return;}
   const nid=Math.max(...C.map(c=>c.id))+1;
-  C.push({id:nid,name,phone:document.getElementById('np').value,addr:document.getElementById('na').value,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week:document.getElementById('nw').value,day:document.getElementById('nd').value,san:document.getElementById('ns').value,lwc:document.getElementById('nwc').value,nwc:'',notes:document.getElementById('nnt').value,status:'active'});
+  const newClient={id:nid,name,phone:document.getElementById('np').value,addr:document.getElementById('na').value,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week:document.getElementById('nw').value,day:document.getElementById('nd').value,san:document.getElementById('ns').value,lwc:document.getElementById('nwc').value,nwc:'',notes:document.getElementById('nnt').value,status:'active',lastModified:Date.now()};
+  C.push(newClient);
   ['nn','np','na','ne','ns','nnt'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nwc').value='';
   cm('madd');ra();
+  // Geocode the new address in the background so day-time stats update once it resolves
+  if(newClient.addr){
+    _geocode(newClient.addr).then(co=>{
+      if(co && ctab==='calendar' && typeof rcal==='function') rcal();
+    }).catch(e=>dbgWarn('new-client geocode',e));
+  }
 }
 function rb(){
   const s=document.getElementById('bsrch').value.toLowerCase();
@@ -2819,7 +2928,8 @@ function buildWeekSection(wt,clients,q){
 
   const section=document.createElement('div');
   section.className='cal-week-section';
-  section.innerHTML=`<div class="cal-week-label ${wClass}">${badge} <strong>${wLabel}</strong> — ${t('clientsThisWeek')}</div>`;
+  section.innerHTML=`<div class="cal-week-label ${wClass}">${badge} <strong>${wLabel}</strong> — ${t('clientsThisWeek')}</div>
+    <div id="week-summary-${wt}" class="week-summary-bar" style="display:none"></div>`;
 
   const grid=document.createElement('div');
   grid.className='cal-grid';
@@ -2829,7 +2939,7 @@ function buildWeekSection(wt,clients,q){
     // Use drag-drop aware ordering
     const dayClients=getOrderedClients(weekClients, dayKey, wt);
 
-    col.innerHTML=`<div class="cal-day-head"><div class="cal-day-head-text"><div class="cal-day-name">${getDN()[di]}</div><div class="cal-day-count">${dayClients.length} ${t('clients').toLowerCase()}</div></div><button class="day-map-btn" onclick="openDayMap('${dayKey}','${wt}',event)" title="${LANG==='es'?'Ver ruta en mapa':'View route on map'}">🗺️</button></div>`;
+    col.innerHTML=`<div class="cal-day-head"><div class="cal-day-head-text"><div class="cal-day-name">${getDN()[di]}</div><div class="cal-day-count">${dayClients.length} ${t('clients').toLowerCase()}</div><div class="cal-day-stats" id="day-stats-${wt}-${dayKey}" style="font-size:11px;color:var(--brand);font-weight:600;margin-top:2px;display:none"></div></div><button class="day-map-btn" onclick="openDayMap('${dayKey}','${wt}',event)" title="${LANG==='es'?'Ver ruta en mapa':'View route on map'}">🗺️</button></div>`;
 
     if(dayClients.length===0){col.innerHTML+=`<div class="cal-empty">${t('noClients')}</div>`;}
     else dayClients.forEach((c,ci)=>{
@@ -3066,6 +3176,58 @@ function rcal(){
       }
     });
   }
+  // Lazy: fill in per-day stats labels using only the geocode cache (no new API calls).
+  // Triggers any time rcal() runs. The warmup background task fills the cache so this becomes accurate within seconds of page load.
+  setTimeout(()=>updateScheduleDayStats(clients,q),50);
+}
+
+// Populate the small "📅 Xh Ym · 🛣️ X mi" line under each day header in Schedule A/B.
+// Uses ONLY the geocode cache — never triggers new lookups. Also computes weekly totals.
+function updateScheduleDayStats(allClients,q){
+  const totalsByWeek={A:{min:0,miles:0,stops:0,partial:false},B:{min:0,miles:0,stops:0,partial:false}};
+  ['A','B'].forEach(wt=>{
+    const weekClients=allClients.filter(c=>c.week===wt||c.week==='A&B');
+    DAYS.forEach((dk,di)=>{
+      const el=document.getElementById(`day-stats-${wt}-${dk}`);
+      if(!el)return;
+      const dayClients=getOrderedClients(weekClients,dk,wt);
+      if(dayClients.length===0){el.style.display='none';return;}
+      // Look up cached coords; if any are missing, show a soft "calculando..." label
+      const points=[];
+      let missing=0;
+      dayClients.forEach(c=>{
+        const k=String(c.addr||'').trim().toLowerCase();
+        const co=GEO_CACHE[k];
+        if(co&&co.lat)points.push({lat:co.lat,lon:co.lon});
+        else missing++;
+      });
+      if(points.length===0){el.style.display='none';return;}
+      const stats=_routeStats(points,{includeHome:true});
+      el.style.display='block';
+      const partial = missing>0 ? ` <span style="color:#D97706;font-weight:500" title="${missing} ${LANG==='es'?'sin geocodificar':'not geocoded yet'}">~</span>` : '';
+      el.innerHTML=`📅 <b>${_fmtMin(stats.totalMin)}</b>${partial} · 🛣️ ${stats.miles.toFixed(1)} mi`;
+      el.title=`${LANG==='es'?'Día completo':'Full day'}: ${_fmtMin(stats.totalMin)}\n  ⚙️ ${_fmtMin(stats.prepMin)} ${LANG==='es'?'prep en oficina':'office prep'}\n  ⏱️ ${_fmtMin(stats.driveMin)} ${LANG==='es'?'manejo':'driving'}\n  🔧 ${_fmtMin(stats.serviceMin)} ${LANG==='es'?'servicio':'service'}\n  🚦 ${_fmtMin(stats.bufferMin)} ${LANG==='es'?'tráfico':'traffic'}\n  ☕ ${_fmtMin(stats.breakMin)} ${LANG==='es'?'breaks+lunch':'breaks+lunch'}${missing>0?`\n\n${missing} ${LANG==='es'?'dirección(es) sin geocodificar':'address(es) not yet geocoded'}`:''}`;
+      // Aggregate week totals (counting full days where most addresses are cached)
+      totalsByWeek[wt].min += stats.totalMin;
+      totalsByWeek[wt].miles += stats.miles;
+      totalsByWeek[wt].stops += dayClients.length;
+      if(missing>0)totalsByWeek[wt].partial=true;
+    });
+    // Render weekly summary panel for this week section
+    const summaryEl=document.getElementById(`week-summary-${wt}`);
+    if(summaryEl){
+      const tot=totalsByWeek[wt];
+      if(tot.stops===0){summaryEl.style.display='none';}
+      else {
+        summaryEl.style.display='flex';
+        const partialMark=tot.partial?` <span style="color:#D97706" title="${LANG==='es'?'Algunas direcciones aún sin geocodificar':'Some addresses not yet geocoded'}">~</span>`:'';
+        summaryEl.innerHTML=`<span style="font-weight:700;color:#1E40AF">📊 ${LANG==='es'?'Total semana':'Week total'} ${wt}:</span>
+          <span><b>${tot.stops}</b> ${LANG==='es'?'paradas':'stops'}</span>
+          <span><b>🛣️ ${tot.miles.toFixed(1)} mi</b></span>
+          <span style="background:#1E40AF;color:#FFF;padding:3px 10px;border-radius:6px;font-weight:700">📅 ${_fmtMin(tot.min)}${partialMark} ${LANG==='es'?'a la semana':'per week'}</span>`;
+      }
+    }
+  });
 }
 
 function openVisitModal(cid,dateKey){
@@ -3541,7 +3703,8 @@ function updateCloudIndicator(connected,error){
 /* ── DAY MAP ROUTE (Leaflet + OpenStreetMap, no API key needed) ── */
 // v3: added St Louis bounding-box validation + ZIP→city injection + ZIP-centroid fallback.
 // Bumping the cache key invalidates v2 entries that may have geocoded to wrong cities (e.g. Wright City → NYC).
-const GEO_CACHE_VERSION='v3';
+// v4: stopped caching approximate results so the app retries them on each visit (was getting stuck on stale ZIP-centroid entries).
+const GEO_CACHE_VERSION='v4';
 let GEO_CACHE={};
 try{
   const raw=JSON.parse(localStorage.getItem('aspen_geo_cache')||'{}');
@@ -3695,19 +3858,30 @@ function _normAddr(a){
   return s+', USA';
 }
 
+// Fetch with timeout — prevents a single hanging request from freezing the print preparation
+async function _fetchTimeout(url, opts, timeoutMs){
+  const ctl = new AbortController();
+  const timer = setTimeout(()=>ctl.abort(), timeoutMs||7000);
+  try{
+    return await fetch(url, Object.assign({}, opts||{}, {signal: ctl.signal}));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // PRIMARY: US Census geocoder — free, unlimited, very accurate for US addresses
 async function _geocodeCensus(addr){
   try{
     const url='https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address='+
       encodeURIComponent(addr)+'&benchmark=Public_AR_Current&format=json';
-    const r=await fetch(url);
+    const r=await _fetchTimeout(url, null, 7000);
     if(!r.ok)return null;
     const d=await r.json();
     const matches=d&&d.result&&d.result.addressMatches;
     if(matches&&matches[0]&&matches[0].coordinates){
       return {lat:matches[0].coordinates.y, lon:matches[0].coordinates.x, src:'census'};
     }
-  }catch(e){console.warn('Census geocode failed',addr,e);}
+  }catch(e){dbgWarn('Census geocode failed',addr,e&&e.name);}
   return null;
 }
 
@@ -3716,12 +3890,12 @@ async function _geocodeNominatim(addr){
   try{
     // viewbox = left,top,right,bottom (lon,lat,lon,lat) — biases results toward STL but doesn't strictly limit
     const vb='-91.8,39.7,-89.3,37.5';
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&viewbox='+vb+'&q='+encodeURIComponent(addr),
-      {headers:{'Accept-Language':'en-US,en'}});
+    const r=await _fetchTimeout('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&viewbox='+vb+'&q='+encodeURIComponent(addr),
+      {headers:{'Accept-Language':'en-US,en'}}, 7000);
     if(!r.ok)return null;
     const d=await r.json();
     if(d&&d[0])return {lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),src:'nominatim'};
-  }catch(e){console.warn('Nominatim geocode failed',addr,e);}
+  }catch(e){dbgWarn('Nominatim geocode failed',addr,e&&e.name);}
   return null;
 }
 
@@ -3764,14 +3938,31 @@ async function _geocode(rawAddr, forceRefresh){
     result=_accept(await _geocodeNominatim(simple));
   }
 
+  // 4b) "Saint Louis" → "St Louis" alternate spelling (Census sometimes prefers the abbreviation)
+  if(!result && norm.includes('Saint Louis')){
+    const altCensus=norm.replace(/Saint Louis/g,'St Louis');
+    result=_accept(await _geocodeCensus(altCensus));
+    if(!result) result=_accept(await _geocodeNominatim(altCensus));
+  }
+
+  // 4c) Try Census with the original raw address (no aggressive normalization) — sometimes the cleaner upsets it
+  if(!result){
+    const rawCensus=String(rawAddr).trim()+', USA';
+    result=_accept(await _geocodeCensus(rawCensus));
+  }
+
   // 5) Final fallback: ZIP centroid — marker appears in the correct ZIP, flagged as approximate
   if(!result && zip){
     result=_zipCentroid(zip);
   }
 
   if(result){
-    GEO_CACHE[k]=result;
-    _saveGeoCache();
+    // Only cache EXACT results — approximate (ZIP centroid) results are recomputed each time
+    // so the app keeps trying for a precise match if the geocoder service comes back online
+    if(!result.approximate){
+      GEO_CACHE[k]=result;
+      _saveGeoCache();
+    }
   }
   return result;
 }
@@ -3806,6 +3997,233 @@ async function refreshDayMapCache(){
   _drawMap(_routeClients);
 }
 
+// ─── Persistent progress modal (replaces transient toast for long jobs) ──────
+let _progressEl=null, _progressCancel=false;
+function showProgress(label, current, total, opts){
+  opts=opts||{};
+  if(!_progressEl){
+    _progressCancel=false;
+    _progressEl=document.createElement('div');
+    _progressEl.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:inherit;animation:toast-in .15s ease';
+    _progressEl.innerHTML=`<div style="background:#fff;padding:22px 26px;border-radius:12px;box-shadow:0 14px 44px rgba(0,0,0,.3);min-width:340px;max-width:440px">
+      <div id="progress-label" style="font-size:14.5px;font-weight:600;color:#0F172A;margin-bottom:12px"></div>
+      <div style="background:#E5E7EB;height:9px;border-radius:5px;overflow:hidden;margin-bottom:8px">
+        <div id="progress-bar" style="background:linear-gradient(90deg,#2563EB,#3B82F6);height:100%;width:0%;transition:width .25s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#6B7280">
+        <span id="progress-detail">0 / 0</span>
+        <span id="progress-pct" style="font-weight:600">0%</span>
+      </div>
+      <div id="progress-actions" style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px"></div>
+    </div>`;
+    document.body.appendChild(_progressEl);
+  }
+  const pct=total>0?Math.round((current/total)*100):0;
+  _progressEl.querySelector('#progress-label').textContent=label;
+  _progressEl.querySelector('#progress-bar').style.width=pct+'%';
+  _progressEl.querySelector('#progress-detail').textContent=`${current} / ${total}`;
+  _progressEl.querySelector('#progress-pct').textContent=pct+'%';
+  // Optional action buttons
+  if(opts.actions){
+    const wrap=_progressEl.querySelector('#progress-actions');
+    if(!wrap.dataset.set){
+      wrap.dataset.set='1';
+      opts.actions.forEach(a=>{
+        const btn=document.createElement('button');
+        btn.textContent=a.label;
+        btn.style.cssText=a.primary
+          ?'padding:7px 14px;border:none;background:#2563EB;color:#fff;border-radius:7px;cursor:pointer;font-weight:600;font-family:inherit;font-size:12px'
+          :'padding:7px 14px;border:1px solid #D1D5DB;background:#fff;border-radius:7px;cursor:pointer;font-family:inherit;font-size:12px';
+        btn.onclick=a.fn;
+        wrap.appendChild(btn);
+      });
+    }
+  }
+}
+function hideProgress(){
+  if(_progressEl){_progressEl.remove();_progressEl=null;}
+  _progressCancel=false;
+}
+// Aspen Spas home base — every route starts and ends here.
+// Stored in localStorage so Alberto can update from print dialog without editing code.
+const ASPEN_HOME_KEY='aspen_home_base';
+const DEFAULT_HOME={
+  name:'Aspen Spas',
+  addr:'14856 Manchester Rd, Ballwin, MO 63011',  // Alberto can edit from print dialog
+  lat:38.5961, lon:-90.5460   // West County, MO area
+};
+function getHome(){
+  try{
+    const s=JSON.parse(localStorage.getItem(ASPEN_HOME_KEY)||'null');
+    if(s&&typeof s.lat==='number'&&typeof s.lon==='number')return s;
+  }catch(e){dbgWarn('getHome',e);}
+  return DEFAULT_HOME;
+}
+function setHome(h){
+  try{localStorage.setItem(ASPEN_HOME_KEY,JSON.stringify(h));}catch(e){dbgWarn('setHome',e);}
+}
+// Time constants (per Alberto's spec)
+const TIME_SERVICE=30;        // min — actual chemical maintenance per stop
+const TIME_UNLOAD=5;          // min — pull material out of vehicle on arrival
+const TIME_RELOAD=5;          // min — pack material back into vehicle on departure
+const TIME_TRAFFIC_BUFFER=5;  // min — added between every consecutive stop
+const TIME_BREAK=15;          // min — short break, once per day
+const TIME_LUNCH=30;          // min — lunch, once per day
+const TIME_PREP=60;           // min — morning prep at the office before heading out (load truck, paperwork, briefing)
+const DRIVE_MPH=28;           // metro avg driving speed
+const ROAD_FACTOR=1.4;        // road distance / straight-line distance
+
+// Haversine distance in miles between two lat/lon points
+function _haversineMiles(lat1,lon1,lat2,lon2){
+  const R=3958.8;
+  const toRad=d=>d*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+// Full-day stats for a route that starts AND ends at home (Aspen Spas).
+// `points` = ordered client stops only; home is auto-inserted at start + end when includeHome (default true).
+// Returns total miles, drive/service/buffer/break minutes, total day minutes, and the home-anchored sequence.
+function _routeStats(points, opts){
+  opts=opts||{};
+  const includeHome=opts.includeHome!==false;
+  const home=getHome();
+  if(!points||points.length===0){
+    return {miles:0,driveMin:0,serviceMin:0,bufferMin:0,breakMin:0,totalMin:0,n:0,sequence:[]};
+  }
+  const sequence = includeHome
+    ? [{lat:home.lat,lon:home.lon,isHome:true,label:home.name},
+       ...points,
+       {lat:home.lat,lon:home.lon,isHome:true,label:home.name}]
+    : points.slice();
+  let miles=0;
+  for(let i=1;i<sequence.length;i++){
+    miles += _haversineMiles(sequence[i-1].lat,sequence[i-1].lon,sequence[i].lat,sequence[i].lon);
+  }
+  miles *= ROAD_FACTOR;
+  const n=points.length;
+  const driveMin=Math.round((miles/DRIVE_MPH)*60);
+  const serviceMin=n*(TIME_SERVICE+TIME_UNLOAD+TIME_RELOAD);
+  const bufferMin=Math.max(0,n-1)*TIME_TRAFFIC_BUFFER;
+  const breakMin=n>0 ? (TIME_BREAK+TIME_LUNCH) : 0;
+  const prepMin=n>0 ? TIME_PREP : 0;
+  const totalMin=driveMin+serviceMin+bufferMin+breakMin+prepMin;
+  return {miles,driveMin,serviceMin,bufferMin,breakMin,prepMin,totalMin,n,sequence};
+}
+
+// Format minutes as "Xh Ym" or "Xm" string
+function _fmtMin(m){
+  if(!m||m<0)return '0m';
+  const h=Math.floor(m/60), mm=m%60;
+  return h>0 ? `${h}h ${mm}m` : `${mm}m`;
+}
+// Build a self-contained SVG of the route — works on print, no map tiles needed.
+// `pts` = client stops only. Home is auto-anchored at start + end (drawn as 🏠).
+function _buildRouteSVG(pts, width, height){
+  width = width || 700;
+  height = height || 240;
+  if(!pts || pts.length===0) return '';
+  const home=getHome();
+  // Build full sequence: home → stops → home
+  const seq=[
+    {lat:home.lat,lon:home.lon,isHome:true,label:home.name+' (start)'},
+    ...pts.map((p,i)=>({...p,num:i+1})),
+    {lat:home.lat,lon:home.lon,isHome:true,label:home.name+' (return)'}
+  ];
+  // Bounding box across the full sequence
+  const lats=seq.map(p=>p.lat), lons=seq.map(p=>p.lon);
+  let minLat=Math.min(...lats), maxLat=Math.max(...lats);
+  let minLon=Math.min(...lons), maxLon=Math.max(...lons);
+  const padLat=Math.max((maxLat-minLat)*0.12, 0.005);
+  const padLon=Math.max((maxLon-minLon)*0.12, 0.005);
+  minLat-=padLat; maxLat+=padLat; minLon-=padLon; maxLon+=padLon;
+  // Aspect adjust
+  const midLat=(minLat+maxLat)/2;
+  const lonScale=Math.cos(midLat*Math.PI/180);
+  const latRange=maxLat-minLat;
+  const lonRangeAdj=(maxLon-minLon)*lonScale;
+  const dataAspect=lonRangeAdj/latRange;
+  const svgAspect=width/height;
+  let drawW=width, drawH=height, offX=0, offY=0;
+  if(dataAspect > svgAspect){drawH=width/dataAspect; offY=(height-drawH)/2;}
+  else                       {drawW=height*dataAspect; offX=(width-drawW)/2;}
+  const project=(lat,lon)=>({
+    x: offX + ((lon-minLon)/(maxLon-minLon))*drawW,
+    y: offY + drawH - ((lat-minLat)/(maxLat-minLat))*drawH
+  });
+  const proj = seq.map(p=>({...project(p.lat,p.lon), isHome:p.isHome, num:p.num||0}));
+  // Spread overlapping markers (home and last-stop coincide visually otherwise)
+  for(let i=1;i<proj.length;i++){
+    for(let j=0;j<i;j++){
+      const dx=proj[i].x-proj[j].x, dy=proj[i].y-proj[j].y;
+      if(Math.sqrt(dx*dx+dy*dy)<22){
+        const angle=(i*0.7+j)*1.2;
+        proj[i].x += Math.cos(angle)*16;
+        proj[i].y += Math.sin(angle)*16;
+      }
+    }
+  }
+  let svg=`<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;background:#F1F5F9">`;
+  // Faint grid
+  for(let i=1;i<6;i++){
+    const y=height*i/6, x=width*i/6;
+    svg+=`<line x1="0" y1="${y.toFixed(0)}" x2="${width}" y2="${y.toFixed(0)}" stroke="#E2E8F0" stroke-width="0.5"/>`;
+    svg+=`<line x1="${x.toFixed(0)}" y1="0" x2="${x.toFixed(0)}" y2="${height}" stroke="#E2E8F0" stroke-width="0.5"/>`;
+  }
+  // Border
+  svg+=`<rect x="0.5" y="0.5" width="${width-1}" height="${height-1}" fill="none" stroke="#94A3B8" stroke-width="1"/>`;
+  // Two segments: home→stop1 (green) and last→home (orange) drawn separately for visual emphasis;
+  // middle stops connected with the standard blue dashed line.
+  if(proj.length>=3){
+    // Out-bound (home → first client) in green
+    svg+=`<path d="M${proj[0].x.toFixed(1)},${proj[0].y.toFixed(1)} L${proj[1].x.toFixed(1)},${proj[1].y.toFixed(1)}" stroke="#16A34A" stroke-width="2.2" stroke-dasharray="6,3" fill="none"/>`;
+    // Middle (client to client) in blue
+    if(proj.length>3){
+      const mid=proj.slice(1,-1).map((p,i)=>`${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      svg+=`<path d="${mid}" stroke="#2563EB" stroke-width="2.2" stroke-dasharray="7,3" fill="none" stroke-linejoin="round"/>`;
+    }
+    // Return (last client → home) in orange
+    const lastIdx=proj.length-1, prevIdx=lastIdx-1;
+    svg+=`<path d="M${proj[prevIdx].x.toFixed(1)},${proj[prevIdx].y.toFixed(1)} L${proj[lastIdx].x.toFixed(1)},${proj[lastIdx].y.toFixed(1)}" stroke="#EA580C" stroke-width="2.2" stroke-dasharray="6,3" fill="none"/>`;
+  }
+  // Markers
+  proj.forEach((p,i)=>{
+    if(p.isHome){
+      // Home: orange diamond with 🏠 — different at start vs end (S/E label)
+      const isStart=(i===0);
+      svg+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="13" fill="${isStart?'#16A34A':'#EA580C'}" stroke="#FFF" stroke-width="2"/>`;
+      svg+=`<text x="${p.x.toFixed(1)}" y="${(p.y+4).toFixed(1)}" font-size="11" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Arial,sans-serif">${isStart?'S':'E'}</text>`;
+    } else {
+      // Client stop: blue circle with number
+      svg+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="11" fill="#2563EB" stroke="#FFF" stroke-width="2"/>`;
+      svg+=`<text x="${p.x.toFixed(1)}" y="${(p.y+3.7).toFixed(1)}" font-size="11" font-weight="700" fill="#FFF" text-anchor="middle" font-family="Arial,sans-serif">${p.num}</text>`;
+    }
+  });
+  // Legend (top-left)
+  svg+=`<g transform="translate(8,10)" font-family="Arial,sans-serif" font-size="9" font-weight="600">
+    <circle cx="6" cy="0" r="5" fill="#16A34A" stroke="#FFF" stroke-width="1.5"/>
+    <text x="14" y="3" fill="#1F2937">Aspen Spas (S/E)</text>
+    <circle cx="6" cy="14" r="5" fill="#2563EB" stroke="#FFF" stroke-width="1.5"/>
+    <text x="14" y="17" fill="#1F2937">Cliente / Stop</text>
+  </g>`;
+  // Scale bar (bottom-left)
+  const lonRangeMiles=(maxLon-minLon)*69*lonScale;
+  let scaleMiles = lonRangeMiles>30?10 : lonRangeMiles>15?5 : lonRangeMiles>6?2 : lonRangeMiles>2?1 : 0.5;
+  const scalePx=(scaleMiles/(maxLon-minLon))*drawW;
+  const sx=offX+8, sy=height-12;
+  svg+=`<line x1="${sx.toFixed(0)}" y1="${sy}" x2="${(sx+scalePx).toFixed(0)}" y2="${sy}" stroke="#1F2937" stroke-width="1.6"/>`;
+  svg+=`<line x1="${sx.toFixed(0)}" y1="${sy-3}" x2="${sx.toFixed(0)}" y2="${sy+3}" stroke="#1F2937" stroke-width="1.6"/>`;
+  svg+=`<line x1="${(sx+scalePx).toFixed(0)}" y1="${sy-3}" x2="${(sx+scalePx).toFixed(0)}" y2="${sy+3}" stroke="#1F2937" stroke-width="1.6"/>`;
+  svg+=`<text x="${(sx+scalePx/2).toFixed(0)}" y="${sy-5}" font-size="10" font-weight="600" fill="#1F2937" text-anchor="middle" font-family="Arial,sans-serif">${scaleMiles} mi</text>`;
+  // North arrow (top-right)
+  const nx=width-22, ny=22;
+  svg+=`<polygon points="${nx},${ny-8} ${nx-5},${ny+4} ${nx},${ny+1} ${nx+5},${ny+4}" fill="#1F2937"/>`;
+  svg+=`<text x="${nx}" y="${ny+15}" font-size="9" font-weight="700" fill="#1F2937" text-anchor="middle" font-family="Arial,sans-serif">N</text>`;
+  svg+='</svg>';
+  return svg;
+}
+
 async function openDayMap(dayKey,wt,event){
   if(event)event.stopPropagation();
   const cl=C.filter(c=>c.status==='active'&&c.day);
@@ -3815,6 +4233,8 @@ async function openDayMap(dayKey,wt,event){
   document.getElementById('mdaymap-title').innerHTML=`🗺️ ${DN[di]} — Week ${wt} <button class="btn" style="font-size:12px;padding:3px 9px;margin-left:10px" onclick="refreshDayMapCache()" title="${LANG==='es'?'Recalcular ubicaciones':'Refresh locations'}">🔄 ${LANG==='es'?'Recargar':'Refresh'}</button>`;
   document.getElementById('mdaymap-subtitle').textContent=`${dc.length} ${LANG==='es'?'clientes en ruta (orden actual)':'clients on route (current order)'}`;
   _routeClients=dc;_failedAddrs=[];
+  // Hide stats panel until geocoding finishes
+  const statsEl=document.getElementById('mdaymap-stats');if(statsEl)statsEl.style.display='none';
   _renderRouteList(dc);
   om('mdaymap');
   setTimeout(()=>_drawMap(dc),150);
@@ -3844,45 +4264,76 @@ function _renderRouteList(dc){
   }).join('')||'<div style="padding:16px;text-align:center;color:var(--muted)">'+(LANG==='es'?'Sin clientes':'No clients')+'</div>';
 }
 
+// Render the day-stats panel (used by the day-map modal) — same breakdown as the print
+function _renderDayStats(geocodedPoints){
+  const el=document.getElementById('mdaymap-stats');
+  if(!el)return;
+  if(!geocodedPoints||geocodedPoints.length===0){el.style.display='none';return;}
+  const home=getHome();
+  const stats=_routeStats(geocodedPoints,{includeHome:true});
+  el.style.display='flex';
+  el.innerHTML=`
+    <span style="font-weight:600;color:#1E40AF">🏠 ${esc(home.name)} → ${stats.n} ${LANG==='es'?'paradas':'stops'} → 🏠</span>
+    <span><b style="color:#475569">⚙️ ${_fmtMin(stats.prepMin)}</b> ${LANG==='es'?'prep':'prep'}</span>
+    <span><b style="color:#1E40AF">🛣️ ${stats.miles.toFixed(1)} mi</b></span>
+    <span><b style="color:#1E40AF">⏱️ ${_fmtMin(stats.driveMin)}</b> ${LANG==='es'?'manejo':'driving'}</span>
+    <span><b style="color:#7C3AED">🔧 ${_fmtMin(stats.serviceMin)}</b> ${LANG==='es'?'servicio':'service'}</span>
+    <span><b style="color:#D97706">🚦 ${_fmtMin(stats.bufferMin)}</b> ${LANG==='es'?'tráfico':'traffic'}</span>
+    <span><b style="color:#059669">☕ ${_fmtMin(stats.breakMin)}</b> ${LANG==='es'?'breaks+lunch':'breaks+lunch'}</span>
+    <span style="background:#1E40AF;color:#FFF;padding:4px 12px;border-radius:6px;font-weight:700;margin-left:auto">📅 ${_fmtMin(stats.totalMin)} ${LANG==='es'?'día total':'full day'}</span>`;
+}
+
 async function _drawMap(dc){
   const ct=document.getElementById('mdaymap-container');
   if(_leafletMap){_leafletMap.remove();_leafletMap=null;}
   ct.innerHTML='';_failedAddrs=[];_approxAddrs=[];
   if(dc.length===0){ct.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">Sin clientes</div>';return;}
   _leafletMap=L.map(ct).setView([38.65,-90.3],10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_leafletMap);
+  // CartoDB Voyager tiles — no Referer requirement (works from file:// + GitHub Pages), clean labels
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains:'abcd',
+    maxZoom:19,
+    crossOrigin:true
+  }).addTo(_leafletMap);
   const pg=document.getElementById('mdaymap-progress');pg.style.display='block';pg.textContent=(LANG==='es'?'Cargando mapa...':'Loading map...');
-  const pts=[];
-  for(let i=0;i<dc.length;i++){
-    const c=dc[i],k=String(c.addr||'').trim().toLowerCase(),uncached=!(GEO_CACHE[k]&&GEO_CACHE[k].lat);
-    if(uncached)pg.textContent=`${LANG==='es'?'Buscando':'Geocoding'} ${i+1}/${dc.length}: ${c.name}...`;
-    const co=await _geocode(c.addr||'');
-    if(co){
-      pts.push({c,coords:co,idx:i,approximate:!!co.approximate});
-      if(co.approximate)_approxAddrs.push(i);
-    } else {
-      _failedAddrs.push(i);
-    }
-    // Polite delay between uncached lookups (Nominatim rate limit, Census is fine)
-    if(uncached&&i<dc.length-1)await new Promise(r=>setTimeout(r,400));
+  // Geocode in parallel batches of 5 — cached entries return immediately, fresh ones share the wait
+  const pts=new Array(dc.length).fill(null);
+  for(let i=0;i<dc.length;i+=5){
+    const slice=dc.slice(i,i+5);
+    await Promise.all(slice.map(async (c,j)=>{
+      const idx=i+j;
+      const co=await _geocode(c.addr||'');
+      if(co){
+        pts[idx]={c,coords:co,idx,approximate:!!co.approximate};
+        if(co.approximate)_approxAddrs.push(idx);
+      } else {
+        _failedAddrs.push(idx);
+      }
+    }));
+    pg.textContent=`${LANG==='es'?'Buscando':'Geocoding'} ${Math.min(i+5,dc.length)}/${dc.length}...`;
   }
-  _spreadOverlapping(pts);
-  pts.forEach(p=>{
+  // Drop nulls (failed geocodes) in-place
+  const validPts=pts.filter(p=>p);
+  _spreadOverlapping(validPts);
+  validPts.forEach(p=>{
     const color=p.approximate?'#D97706':'#2563EB';
     const approxLabel=p.approximate?`<br><small style="color:#B45309;font-weight:600">📍 ${LANG==='es'?'Aproximado (centro del ZIP)':'Approximate (ZIP centroid)'}</small>`:'';
     L.marker([p.coords.lat,p.coords.lon],{icon:_numIcon(p.idx+1,color)}).addTo(_leafletMap)
       .bindPopup(`<b>${p.idx+1}. ${p.c.name}</b><br>${p.c.addr||''}<br>📞 ${p.c.phone||''}${approxLabel}<br><small style="color:#888">via ${p.coords.src||'?'}</small>`);
   });
-  if(pts.length>1){
-    const ll=pts.map(p=>[p.coords.lat,p.coords.lon]);
+  if(validPts.length>1){
+    const ll=validPts.map(p=>[p.coords.lat,p.coords.lon]);
     L.polyline(ll,{color:'#2563EB',weight:3,opacity:0.7,dashArray:'8,6'}).addTo(_leafletMap);
     _leafletMap.fitBounds(L.latLngBounds(ll).pad(0.18));
-  } else if(pts.length===1){
-    _leafletMap.setView([pts[0].coords.lat,pts[0].coords.lon],13);
+  } else if(validPts.length===1){
+    _leafletMap.setView([validPts[0].coords.lat,validPts[0].coords.lon],13);
   }
-  _routePoints=pts;
+  _routePoints=validPts;
   _renderRouteList(dc); // redraw list to highlight failures + approximations
-  const miss=_failedAddrs.length, approx=_approxAddrs.length, exact=pts.length-approx;
+  // ── Render the day-stats panel (drive/service/traffic/breaks/full day) ──
+  _renderDayStats(validPts.map(p=>({lat:p.coords.lat,lon:p.coords.lon})));
+  const miss=_failedAddrs.length, approx=_approxAddrs.length, exact=validPts.length-approx;
   const parts=[];
   if(exact>0)parts.push(`<span style="color:#16A34A">✓ ${exact} ${LANG==='es'?'exactas':'exact'}</span>`);
   if(approx>0){
@@ -3958,7 +4409,43 @@ function openPrintDialog(){
 
   body.innerHTML=html;
   updatePrintNotesEditor(0);
+  // Populate technician dropdown for the per-tech route filter
+  const techSel=document.getElementById('prn-tech-select');
+  if(techSel){
+    const allLbl=LANG==='es'?'— Todos los técnicos —':'— All technicians —';
+    techSel.innerHTML=`<option value="">${allLbl}</option>`+TECHS.map(tk=>`<option value="${esc(tk.name)}">${esc(tk.name)}</option>`).join('');
+  }
+  // Initialize home base input with current saved value
+  const homeInput=document.getElementById('aspen-home-input');
+  if(homeInput){
+    const h=getHome();
+    homeInput.value=h.addr||'';
+  }
   om('mprint');
+}
+
+// Save the Aspen Home Base address — geocode it so the route map can anchor home properly
+async function saveAspenHome(){
+  const input=document.getElementById('aspen-home-input');
+  if(!input)return;
+  const addr=input.value.trim();
+  if(!addr){showToast(LANG==='es'?'Ingresa una dirección':'Enter an address','warn');return;}
+  showProgress(LANG==='es'?'Geocodificando home base...':'Geocoding home base...',0,1);
+  try{
+    const co=await _geocode(addr);
+    if(co){
+      setHome({name:'Aspen Spas', addr, lat:co.lat, lon:co.lon});
+      hideProgress();
+      showToast(LANG==='es'?'✓ Home base guardado':'✓ Home base saved','ok');
+    } else {
+      hideProgress();
+      showToast(LANG==='es'?'No se pudo localizar la dirección':'Could not locate address','err');
+    }
+  }catch(e){
+    hideProgress();
+    showToast(LANG==='es'?'Error al guardar':'Error saving','err');
+    dbgErr('saveAspenHome',e);
+  }
 }
 
 function updatePrintNotesEditor(weekOffset){
@@ -4041,8 +4528,13 @@ function savePrintNotes(){
 function savePrintNotesAndPrint(){
   savePrintNotes();
   const weekOffset=parseInt(document.querySelector('input[name="prw-sel"]:checked').value);
+  const mode=(document.querySelector('input[name="prn-mode"]:checked')||{}).value||'route';
+  const tech=(document.getElementById('prn-tech-select')||{}).value||'';
   cm('mprint');
-  setTimeout(()=>printWeek(weekOffset),150);
+  setTimeout(()=>{
+    if(mode==='route') printWeekRoute(weekOffset,tech);  // async — fires its own window.print()
+    else printWeek(weekOffset);
+  },150);
 }
 
 function printWeek(weekOffset){
@@ -4134,6 +4626,242 @@ function printWeek(weekOffset){
 /* backward compat alias */
 function printCurrentWeek(){openPrintDialog();}
 
+// ─── Field-ready Route Sheet (one page per day, technician-friendly) ──────────
+// Extract gate / door / lockbox codes from a free-text notes field
+function _extractCodes(notes){
+  if(!notes)return{codes:[],rest:''};
+  const codes=[];
+  const patterns=[
+    /\b(?:gate|portón|porton|puerta)[\s:]*code[\s:]*#?\s*([0-9A-Z\-#*]{3,12})/gi,
+    /\b(?:code|código|codigo)[\s:]+#?\s*([0-9]{3,8})/gi,
+    /\bcode[\s:]+to[\s:]+gate[\s:]+([0-9]{3,8})/gi,
+    /\b#\s*(\d{4,8})\b/g,
+    /\b(?:lockbox|caja|llavero)[\s:]+#?\s*([0-9A-Z]{3,10})/gi
+  ];
+  let rest=String(notes);
+  patterns.forEach(re=>{
+    let m;while((m=re.exec(notes))!==null){
+      const code=m[1];
+      if(!codes.includes(code))codes.push(code);
+    }
+  });
+  // Also pick up bare 4-8 digit numbers nestled in code-like phrases
+  return{codes,rest};
+}
+
+async function printWeekRoute(weekOffset, techName){
+  const monday=_getMondayForOffset(weekOffset||0);
+  const isoWk=getISOWeek(monday);
+  const weekType=(isoWk%2===1)?'A':'B';
+
+  const monStr=monday.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const friday=new Date(monday);friday.setDate(monday.getDate()+4);
+  const friStr=friday.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  const clients=C.filter(c=>c.status==='active'&&c.day);
+  let weekClients=clients.filter(c=>c.week===weekType||c.week==='A&B');
+  if(techName) weekClients=weekClients.filter(c=>c.techI===techName);
+
+  const DAYS_KEYS=['Mon','Tue','Wed','Thu','Fri'];
+  const DAY_NAMES=LANG==='es'
+    ?['Lunes','Martes','Miércoles','Jueves','Viernes']
+    :['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+  const dayDates=DAYS_KEYS.map((_,i)=>{
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    return{
+      iso:d.toISOString().split('T')[0],
+      label:d.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'long',day:'numeric',year:'numeric'})
+    };
+  });
+
+  // Collect ordered stops per non-empty day
+  const daysData=[];
+  DAYS_KEYS.forEach((dk,di)=>{
+    let dayC=weekClients.filter(c=>c.day===dk);
+    if(dayC.length===0)return;
+    if(CAL_ORDER[weekType]&&CAL_ORDER[weekType][dk]){
+      const ord=CAL_ORDER[weekType][dk];
+      dayC.sort((a,b)=>{
+        const ai=ord.indexOf(a.id),bi=ord.indexOf(b.id);
+        if(ai===-1&&bi===-1)return 0;
+        if(ai===-1)return 1;if(bi===-1)return -1;
+        return ai-bi;
+      });
+    }
+    daysData.push({di,dk,dayC,dayDate:dayDates[di]});
+  });
+
+  if(daysData.length===0){
+    document.getElementById('print-week-overlay').innerHTML=`<div style="padding:40px;text-align:center;color:#666;font-size:14px">
+      ${LANG==='es'?'No hay paradas para imprimir esta semana':'No stops to print for this week'}
+      ${techName?`<br><br><span style="font-size:12px">(${esc(techName)})</span>`:''}
+    </div>`;
+    window.print();
+    return;
+  }
+
+  // ── Geocode every stop in PARALLEL batches with live progress ──
+  // Build a flat list of stops we need to geocode, then process 5 at a time.
+  // Each individual fetch has a 7s timeout so a single hung request can never freeze the loop.
+  const allStops=[];
+  daysData.forEach(dd=>{
+    dd.points=new Array(dd.dayC.length).fill(null);
+    dd.dayC.forEach((c,idx)=>{
+      allStops.push({dd,idx,addr:c.addr||'',c});
+    });
+  });
+
+  let done=0;
+  const total=allStops.length;
+  const label=LANG==='es'?'Geocodificando direcciones...':'Geocoding addresses...';
+  let userSkippedMap=false;
+
+  showProgress(label, 0, total, {actions:[
+    {label:LANG==='es'?'Cancelar':'Cancel', fn:()=>{_progressCancel=true;}},
+    {label:LANG==='es'?'Imprimir sin mapa':'Print without map', primary:true, fn:()=>{userSkippedMap=true;_progressCancel=true;}}
+  ]});
+
+  const BATCH=5;
+  outer: for(let i=0;i<allStops.length;i+=BATCH){
+    if(_progressCancel)break outer;
+    const batch=allStops.slice(i,i+BATCH);
+    await Promise.all(batch.map(async stop=>{
+      try{
+        const co=await _geocode(stop.addr);
+        if(co)stop.dd.points[stop.idx]={lat:co.lat,lon:co.lon,c:stop.c,approximate:!!co.approximate};
+      }catch(e){dbgWarn('geocode fail',stop.addr,e);}
+      done++;
+      if(_progressEl)showProgress(label, done, total);
+    }));
+  }
+
+  // Strip nulls (failed geocodes) so the SVG only sees real points
+  daysData.forEach(dd=>{dd.points=dd.points.filter(p=>p);});
+
+  hideProgress();
+
+  if(_progressCancel && !userSkippedMap){
+    showToast(LANG==='es'?'Impresión cancelada':'Print cancelled','warn');
+    return;
+  }
+
+  // If user clicked "Print without map", clear all points so map blocks render as empty placeholders
+  if(userSkippedMap){
+    daysData.forEach(dd=>{dd.points=[];});
+    showToast(LANG==='es'?'Imprimiendo sin mapa':'Printing without map','info');
+  }
+
+  // Build print HTML
+  let html='';
+  const home=getHome();
+  daysData.forEach(({di,dk,dayC,dayDate,points})=>{
+    // Always include home at start + end (Alberto's spec)
+    const stats=points.length>0?_routeStats(points,{includeHome:true}):{miles:0,driveMin:0,serviceMin:0,bufferMin:0,breakMin:0,totalMin:0,n:0};
+    const headerTech=techName?esc(techName):(LANG==='es'?'Todos los técnicos':'All technicians');
+
+    let mapBlock='';
+    if(points.length>=1){
+      // SVG now auto-anchors home at start + end
+      mapBlock=`<div class="pr-map-wrap">${_buildRouteSVG(points,720,230)}</div>`;
+    } else {
+      mapBlock=`<div class="pr-map-empty pr-map-warn">${LANG==='es'?'⚠ No se pudo geocodificar ninguna dirección de este día':'⚠ Could not geocode any address for this day'}</div>`;
+    }
+
+    html+=`<div class="pr-route-page">`;
+
+    // Day header
+    html+=`<div class="pr-route-header">
+      <div>
+        <div class="prh-day">${DAY_NAMES[di]} <span style="font-weight:400;font-size:11px;opacity:.85">— ${dayDate.label}</span></div>
+        <div class="prh-date">${LANG==='es'?'Semana':'Week'} ${weekType} · ${dayC.length} ${LANG==='es'?'paradas':'stops'} · ${headerTech}</div>
+      </div>
+      <div class="prh-meta">🌊 Aspen Spas<br>${monStr} – ${friStr}</div>
+    </div>`;
+
+    // Day-time breakdown strip
+    const approxCount=points.filter(p=>p.approximate).length;
+    const approxNote=approxCount>0?`<span style="color:#B45309;font-style:italic">📍 ${approxCount} ${LANG==='es'?'aprox.':'approx.'}</span>`:'';
+    html+=`<div class="pr-drive-strip">
+      <span><b>🏠 ${esc(home.name)}</b> → ${dayC.length} ${LANG==='es'?'paradas':'stops'} → 🏠</span>
+      <span><b>⚙️ ${_fmtMin(stats.prepMin)}</b> ${LANG==='es'?'prep':'prep'}</span>
+      <span><b>🛣️ ${stats.miles.toFixed(1)} mi</b> · ⏱️ ${_fmtMin(stats.driveMin)} ${LANG==='es'?'manejo':'driving'}</span>
+      <span><b>🔧 ${_fmtMin(stats.serviceMin)}</b> ${LANG==='es'?'servicio':'service'}</span>
+      <span><b>🚦 ${_fmtMin(stats.bufferMin)}</b> ${LANG==='es'?'tráfico':'traffic'}</span>
+      <span><b>☕ ${_fmtMin(stats.breakMin)}</b> ${LANG==='es'?'breaks+lunch':'breaks+lunch'}</span>
+      <span style="background:#1E40AF;color:#FFF;padding:2px 8px;border-radius:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"><b>📅 ${_fmtMin(stats.totalMin)}</b> ${LANG==='es'?'día total':'full day'}</span>
+      ${approxNote}
+    </div>
+    <div class="pr-drive-note-line">${LANG==='es'
+      ?`Prep ${TIME_PREP}m oficina · Servicio: ${TIME_SERVICE}m × ${dayC.length} + descarga ${TIME_UNLOAD}m + recoger ${TIME_RELOAD}m por parada · tráfico ${TIME_TRAFFIC_BUFFER}m entre paradas · break ${TIME_BREAK}m + lunch ${TIME_LUNCH}m · ruta inicia y termina en Aspen Spas`
+      :`${TIME_PREP}m office prep · Service: ${TIME_SERVICE}m × ${dayC.length} + ${TIME_UNLOAD}m unload + ${TIME_RELOAD}m reload per stop · ${TIME_TRAFFIC_BUFFER}m traffic between stops · ${TIME_BREAK}m break + ${TIME_LUNCH}m lunch · route starts and ends at Aspen Spas`}
+    </div>`;
+
+    // Map SVG
+    html+=mapBlock;
+
+    // Tech check-in line
+    html+=`<div class="pr-tech-line">
+      <span>${LANG==='es'?'Técnico':'Tech'}:<span class="pr-line"></span></span>
+      <span>${LANG==='es'?'Vehículo':'Vehicle'}:<span class="pr-line"></span></span>
+      <span>${LANG==='es'?'Odom. inicio':'Odom. start'}:<span class="pr-line"></span></span>
+      <span>${LANG==='es'?'Odom. fin':'Odom. end'}:<span class="pr-line"></span></span>
+      <span>${LANG==='es'?'Hora inicio':'Start'}:<span class="pr-line"></span></span>
+      <span>${LANG==='es'?'Hora fin':'End'}:<span class="pr-line"></span></span>
+    </div>`;
+
+    // Compact stop list (table)
+    html+=`<table class="print-client-table" style="border:1px solid #CBD5E1;border-top:none">`;
+    html+=`<thead><tr>
+      <th style="width:24px">#</th>
+      <th>${LANG==='es'?'Cliente':'Client'}</th>
+      <th>${LANG==='es'?'Dirección':'Address'}</th>
+      <th>${LANG==='es'?'Teléfono':'Phone'}</th>
+      <th>${LANG==='es'?'Sanitizador':'Sanitizer'}</th>
+      <th>${LANG==='es'?'Notas':'Notes'}</th>
+    </tr></thead><tbody>`;
+
+    dayC.forEach((c,idx)=>{
+      const wbCls=c.week==='A&B'?'pct-wb-ab':weekType==='A'?'pct-wb-a':'pct-wb-b';
+      const wbLbl=c.week==='A&B'?'A+B':weekType;
+
+      const vl=VL[c.id]&&VL[c.id][dayDate.iso];
+      const reminder=vl&&vl.notes?vl.notes:'';
+      const {codes}=_extractCodes(c.notes||'');
+      const codePills=codes.length?codes.map(cd=>`<span class="pr-gate-pill">🔑 ${esc(cd)}</span>`).join(' '):'';
+
+      let notesHtml='';
+      if(reminder)notesHtml+=`<div class="pct-reminder">📌 ${esc(reminder)}</div>`;
+      if(codePills)notesHtml+=`<div style="margin-bottom:2px">${codePills}</div>`;
+      if(c.notes)notesHtml+=`<div class="pct-general-note">${esc(c.notes)}</div>`;
+      if(!notesHtml)notesHtml='—';
+
+      html+=`<tr>
+        <td class="pct-num">${idx+1}</td>
+        <td><span class="pct-name">${esc(c.name)}</span> <span class="pct-wb ${wbCls}">${wbLbl}</span></td>
+        <td class="pct-addr">${esc(c.addr)||'—'}</td>
+        <td class="pct-phone">${esc(c.phone)||'—'}</td>
+        <td class="pct-san">${esc(c.san)||'—'}</td>
+        <td class="pct-notes">${notesHtml}</td>
+      </tr>`;
+    });
+
+    html+=`</tbody></table>`;
+
+    // Footer summary
+    html+=`<div class="pr-route-summary">
+      <span><b>${dayC.length}</b> ${LANG==='es'?'paradas':'stops'} · 🛣️ ${stats.miles.toFixed(1)} mi · ⏱️ ${_fmtMin(stats.driveMin)} ${LANG==='es'?'manejo':'driving'} · 📅 <b>${_fmtMin(stats.totalMin)}</b> ${LANG==='es'?'día total':'full day'}</span>
+      <span>${LANG==='es'?'Firma del técnico':'Tech signature'}: <span style="display:inline-block;border-bottom:1px solid #1E40AF;min-width:160px">&nbsp;</span></span>
+    </div>`;
+
+    html+=`</div>`; // .pr-route-page
+  });
+
+  document.getElementById('print-week-overlay').innerHTML=html;
+  // Wait one frame so the DOM commits before the print dialog freezes the page
+  setTimeout(()=>window.print(),200);
+}
+
 function loadFirebaseOnStartup(){
   // Auto-connect with hardcoded Aspen Spas config
   const hardcoded={
@@ -4188,6 +4916,37 @@ rd();
 updateBackupIndicator();
 loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
+
+// ─── Background warmup: pre-fill the geocode cache so opening any day map / printing a route is instant ──
+// Runs silently after 4 seconds, processes 5 addresses at a time with a 2s gap between batches.
+// Only addresses NOT already in cache are geocoded. Skipped if user is on slow connection (no warmup if first 5 fail).
+async function _warmGeocodeCache(){
+  if(!navigator.onLine)return;
+  const active=C.filter(c=>c.status==='active'&&c.addr);
+  // Skip already-cached addresses (they're free hits)
+  const todo=active.filter(c=>{
+    const k=String(c.addr).trim().toLowerCase();
+    return !(GEO_CACHE[k]&&GEO_CACHE[k].lat);
+  });
+  if(todo.length===0){dbg('warm: cache already complete');return;}
+  dbg('warm: geocoding',todo.length,'uncached addresses in background');
+  let consecutiveFails=0;
+  for(let i=0;i<todo.length;i+=5){
+    const batch=todo.slice(i,i+5);
+    const results=await Promise.all(batch.map(c=>_geocode(c.addr).catch(()=>null)));
+    consecutiveFails = results.every(r=>!r) ? consecutiveFails+batch.length : 0;
+    if(consecutiveFails>=8){dbg('warm: too many fails, aborting');break;}
+    // Polite gap between batches so we don't hammer external services
+    await new Promise(r=>setTimeout(r,2000));
+  }
+  dbg('warm: done');
+  // If user is currently looking at the Schedule tab, refresh the stats labels with the freshly cached coords
+  if(ctab==='calendar' && typeof rcal==='function'){
+    try{rcal();}catch(e){dbgWarn('refresh after warm',e);}
+  }
+}
+setTimeout(_warmGeocodeCache, 4000);
+
 </script>
 </body>
 </html>
