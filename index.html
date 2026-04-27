@@ -210,6 +210,11 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
 .tcc-line a:hover{text-decoration:underline}
 .tcc-icon{flex-shrink:0;font-size:14px;line-height:1.4}
 .tcc-action-row{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:10px}
+.tcc-note-input{width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:9px 11px;margin-top:10px;font-family:inherit;font-size:14px;color:#0F172A;background:#F8FAFC;resize:vertical;min-height:42px;box-sizing:border-box;line-height:1.4}
+.tcc-note-input:focus{outline:none;border-color:#2563EB;background:#FFF;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.tcc-note-input::placeholder{color:#94A3B8;font-size:13px}
+.tcc-saved-note{background:#FEF9C3;border:1px solid #FDE68A;color:#713F12;padding:8px 11px;border-radius:8px;margin-top:10px;font-size:13.5px;line-height:1.4;word-break:break-word}
+.tcc-saved-note-red{background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D}
 .tcc-visit-btn{background:#2563EB;color:#FFF;border:none;padding:16px;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.4px;transition:background .15s}
 .tcc-visit-btn:active{background:#1E3A8A;transform:scale(.98)}
 .tcc-visit-btn:hover{background:#1D4ED8}
@@ -571,6 +576,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
   <button class="tab" onclick="st('calendar',this)">&#128197; Agenda A/B</button>
   <button class="tab" onclick="st('billing',this)">Facturación</button>
   <button class="tab" onclick="st('visits',this)">Visitas</button>
+  <button class="tab" onclick="st('checkins',this)">&#128202; Daily Report</button>
   <button class="tab" onclick="st('wctab',this)">💧 Water Change</button>
 </div>
 
@@ -718,6 +724,46 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
       <table>
         <thead><tr><th>Cliente</th><th>Día / Sem.</th><th>Visitas Q</th><th>Cambio de agua</th><th>Visita técnica</th><th>Acciones</th></tr></thead>
         <tbody id="vtbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CHECK-INS TAB — Tech location/time tracking ──────────────────────────── -->
+<div id="pcheckins" class="hidden">
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title" id="ct-checkins">📊 Daily Report</span>
+      <div class="fbar">
+        <input type="date" id="ck-date-from" onchange="rcheckins()" title="From date">
+        <input type="date" id="ck-date-to" onchange="rcheckins()" title="To date">
+        <select id="ck-tech-filter" onchange="rcheckins()" style="min-width:130px">
+          <option value="">— Todos los técnicos —</option>
+        </select>
+        <select id="ck-status-filter" onchange="rcheckins()">
+          <option value="">— Todos —</option>
+          <option value="done">✓ Visitado</option>
+          <option value="not_done">✗ No visitado</option>
+        </select>
+        <input type="text" id="ck-search" placeholder="Buscar cliente..." oninput="rcheckins()" style="width:160px">
+        <button class="btn" onclick="resetCheckinFilters()" title="Limpiar filtros">↺</button>
+        <button class="btn btn-brand" onclick="exportCheckinsCSV()" title="Export CSV">📊 CSV</button>
+      </div>
+    </div>
+    <div id="ck-summary" style="padding:10px 14px;background:linear-gradient(90deg,#EFF6FF,#FFF7ED);border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:14px;flex-wrap:wrap;align-items:center"></div>
+    <div class="tw">
+      <table class="tbl ck-tbl">
+        <thead><tr>
+          <th style="width:90px">Fecha</th>
+          <th style="width:70px">Hora</th>
+          <th>Cliente</th>
+          <th style="width:110px">Técnico</th>
+          <th style="width:80px;text-align:center">Estado</th>
+          <th style="width:90px;text-align:center">📍 GPS</th>
+          <th style="width:100px;text-align:center">Distancia</th>
+          <th>Notas</th>
+        </tr></thead>
+        <tbody id="ck-tbody"></tbody>
       </table>
     </div>
   </div>
@@ -1137,7 +1183,7 @@ const T={
     newClient:'+ Nuevo cliente',
     saved:'✓ Guardado',
     clearData:'Borrar todos los datos guardados',
-    tabDash:'Dashboard',tabClients:'Clientes',tabCalendar:'📅 Agenda A/B',tabBilling:'Facturación',tabVisits:'Visitas',
+    tabDash:'Dashboard',tabClients:'Clientes',tabCalendar:'📅 Agenda A/B',tabBilling:'Facturación',tabVisits:'Visitas',tabDailyReport:'📊 Daily Report',
     active:'Clientes activos',weekly:'Semanales (A&B)',biweekly:'Bi-semanales',paused:'Pausados',wcPending:'C.A. pendiente',techVisits:'Visitas técnicas',
     estQRev:'Ingreso trimestral estimado',estAnnRev:'Ingreso anual estimado',activeClients:'clientes activos',quarters:'4 trimestres',
     alerts:'⚠ Alertas activas',noAlerts:'Sin alertas activas',viewAll:'▶ Ver todas',collapse:'▼ Contraer',viewMore:'más...',
@@ -1227,7 +1273,7 @@ const T={
     newClient:'+ New Client',
     saved:'✓ Saved',
     clearData:'Clear all saved data',
-    tabDash:'Dashboard',tabClients:'Clients',tabCalendar:'📅 Schedule A/B',tabBilling:'Billing',tabVisits:'Visits',
+    tabDash:'Dashboard',tabClients:'Clients',tabCalendar:'📅 Schedule A/B',tabBilling:'Billing',tabVisits:'Visits',tabDailyReport:'📊 Daily Report',
     active:'Active Clients',weekly:'Weekly (A&B)',biweekly:'Bi-weekly',paused:'Paused',wcPending:'W.C. Pending',techVisits:'Tech Visits',
     estQRev:'Estimated Quarterly',estAnnRev:'Estimated Annual',activeClients:'active clients',quarters:'4 quarters',
     alerts:'⚠ Active Alerts',noAlerts:'No active alerts',viewAll:'▶ View all',collapse:'▼ Collapse',viewMore:'more...',
@@ -1323,9 +1369,9 @@ function rebuildUI(){
   // Update header
   document.querySelector('.brand-sub').textContent=t('brandSub');
   document.getElementById('btn-new-client').textContent=t('newClient');
-  // Update tabs
+  // Update tabs — order must match the .tab buttons in the HTML (Dashboard, Clients, Calendar, Billing, Visits, DailyReport, WaterChange)
   const tabs=document.querySelectorAll('.tab');
-  const tkeys=['tabDash','tabClients','tabCalendar','tabBilling','tabVisits','tabWC'];
+  const tkeys=['tabDash','tabClients','tabCalendar','tabBilling','tabVisits','tabDailyReport','tabWC'];
   tabs.forEach((tb,i)=>{if(tkeys[i])tb.textContent=t(tkeys[i]);});
   // Update lang button
   document.getElementById('lang-btn').textContent=LANG==='es'?'EN 🌐':'ES 🌐';
@@ -1743,19 +1789,22 @@ const sb=s=>{if(s==='active')return`<span class="badge bactive">${t('activeStatu
 function st(tab,el){
   ctab=tab;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  ['dash','clients','calendar','billing','visits','wctab'].forEach(p=>document.getElementById('p'+p).classList.toggle('hidden',p!==tab));
+  ['dash','clients','calendar','billing','visits','checkins','wctab'].forEach(p=>document.getElementById('p'+p).classList.toggle('hidden',p!==tab));
   if(tab==='dash')rd();
   if(tab==='clients'){pg=0;rc();}
   if(tab==='billing')rb();
   if(tab==='visits'){document.getElementById('vqlbl').textContent=document.getElementById('qsel').value;rv();}
   if(tab==='calendar')rcal();
+  if(tab==='checkins')rcheckins();
   if(tab==='wctab')rwc();
 }
 function om(id){document.getElementById(id).classList.add('open');}
 function cm(id){document.getElementById(id).classList.remove('open');}
 function ra(){
   if(ctab==='dash')rd();else if(ctab==='clients')rc();
-  else if(ctab==='billing')rb();else if(ctab==='calendar')rcal();else if(ctab==='wctab')rwc();else rv();
+  else if(ctab==='billing')rb();else if(ctab==='calendar')rcal();
+  else if(ctab==='checkins')rcheckins();
+  else if(ctab==='wctab')rwc();else rv();
 }
 
 /* ─── TECHNICIANS ─── */
@@ -2950,6 +2999,191 @@ function rv(){
       <td>${tcs} <button class="btn btn-red" style="font-size:11.5px;margin-left:4px" onclick="otc(${c.id})">${t('techBtn')}</button></td>
       <td><button class="btn" style="font-size:11.5px" onclick="vc(${c.id})">${t('detailBtn')}</button></td></tr>`;
   }).join('');
+}
+
+/* ─── CHECK-INS TAB — every visit logged with timestamp + GPS ───────────── */
+// Builds a flat sorted list of all visits across all clients.
+// Each row: {clientId, clientName, clientAddr, dateKey, visit:{status, tech, _timestamp, _location, notes}}
+function _collectAllCheckins(){
+  const rows=[];
+  Object.keys(VL||{}).forEach(cidStr=>{
+    const cid=parseInt(cidStr);
+    const c=C.find(x=>x.id===cid);
+    const clientName = c ? c.name : '(deleted #'+cid+')';
+    const clientAddr = c ? (c.addr||'') : '';
+    const visits=VL[cidStr]||{};
+    Object.keys(visits).forEach(dk=>{
+      const v=visits[dk];
+      if(!v||!v.status)return;
+      // Skip plain "pending" rows — those aren't actual check-ins
+      if(v.status==='pending')return;
+      rows.push({cid,clientName,clientAddr,dateKey:dk,visit:v});
+    });
+  });
+  // Sort: most recent first (by _timestamp if present, else by dateKey + 12:00)
+  rows.sort((a,b)=>{
+    const ta = a.visit._timestamp || new Date(a.dateKey+'T12:00:00').getTime();
+    const tb = b.visit._timestamp || new Date(b.dateKey+'T12:00:00').getTime();
+    return tb-ta;
+  });
+  return rows;
+}
+
+// Cache geocodes for distance computation (computed once per client per render)
+const _ckGeoMemo = new Map();
+function _ckClientCoords(addr){
+  if(!addr)return null;
+  if(_ckGeoMemo.has(addr))return _ckGeoMemo.get(addr);
+  const k=String(addr).trim().toLowerCase();
+  const co=GEO_CACHE[k];
+  const result = (co&&co.lat) ? {lat:co.lat,lon:co.lon} : null;
+  _ckGeoMemo.set(addr,result);
+  return result;
+}
+
+function rcheckins(){
+  // Populate tech filter dropdown (once per render to reflect new techs)
+  const techSel=document.getElementById('ck-tech-filter');
+  if(techSel){
+    const cur=techSel.value;
+    const allLbl=LANG==='es'?'— Todos los técnicos —':'— All technicians —';
+    techSel.innerHTML=`<option value="">${allLbl}</option>`+TECHS.map(tk=>`<option value="${esc(tk.name)}">${esc(tk.name)}</option>`).join('');
+    techSel.value=cur;
+  }
+  // Read filters
+  const dFrom=document.getElementById('ck-date-from').value;
+  const dTo=document.getElementById('ck-date-to').value;
+  const techFilt=document.getElementById('ck-tech-filter').value;
+  const statusFilt=document.getElementById('ck-status-filter').value;
+  const search=(document.getElementById('ck-search').value||'').toLowerCase().trim();
+
+  let rows=_collectAllCheckins();
+  if(dFrom) rows=rows.filter(r=>r.dateKey>=dFrom);
+  if(dTo)   rows=rows.filter(r=>r.dateKey<=dTo);
+  if(techFilt) rows=rows.filter(r=>(r.visit.tech||'')===techFilt);
+  if(statusFilt) rows=rows.filter(r=>r.visit.status===statusFilt);
+  if(search) rows=rows.filter(r=>r.clientName.toLowerCase().includes(search) || (r.visit.tech||'').toLowerCase().includes(search));
+
+  // Summary line
+  const totalRows=rows.length;
+  const doneCount=rows.filter(r=>r.visit.status==='done').length;
+  const noVisitCount=rows.filter(r=>r.visit.status==='not_done'||r.visit.status==='skip').length;
+  const withGPS=rows.filter(r=>r.visit._location&&r.visit._location.lat).length;
+  const summary=document.getElementById('ck-summary');
+  if(summary){
+    summary.innerHTML=`
+      <span><b>${totalRows}</b> ${LANG==='es'?'registros':'records'}</span>
+      <span style="color:#16A34A">✓ <b>${doneCount}</b> ${LANG==='es'?'visitadas':'visited'}</span>
+      <span style="color:#DC2626">✗ <b>${noVisitCount}</b> ${LANG==='es'?'no visitadas':'no visit'}</span>
+      <span style="color:#1E40AF">📍 <b>${withGPS}</b> ${LANG==='es'?'con GPS':'with GPS'}</span>`;
+  }
+
+  // Render rows
+  _ckGeoMemo.clear();
+  const tbody=document.getElementById('ck-tbody');
+  if(rows.length===0){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">${LANG==='es'?'No hay registros con estos filtros':'No records matching these filters'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML=rows.map(r=>{
+    const v=r.visit;
+    // Date
+    const dDate=new Date(r.dateKey+'T12:00:00');
+    const dStr=dDate.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric',year:'numeric'});
+    const dow=dDate.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short'});
+    // Time (from _timestamp if available)
+    let tStr='—';
+    if(v._timestamp){
+      tStr=new Date(v._timestamp).toLocaleTimeString(LANG==='es'?'es-MX':'en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+    }
+    // Status pill
+    let statusPill='';
+    if(v.status==='done') statusPill=`<span style="background:#DCFCE7;color:#15803D;padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:700">✓ ${LANG==='es'?'Visitado':'Visited'}</span>`;
+    else if(v.status==='not_done') statusPill=`<span style="background:#FEE2E2;color:#991B1B;padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:700">✗ ${LANG==='es'?'No visit.':'No visit'}</span>`;
+    else if(v.status==='skip') statusPill=`<span style="background:#FEE2E2;color:#991B1B;padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:700">✗ ${LANG==='es'?'Cancelado':'Cancelled'}</span>`;
+    else statusPill=`<span style="background:#F1F5F9;color:#64748B;padding:3px 9px;border-radius:5px;font-size:11.5px">${esc(v.status)}</span>`;
+    // GPS link + distance
+    let gpsCell=`<span style="color:#94A3B8;font-size:11.5px">—</span>`;
+    let distCell=`<span style="color:#94A3B8;font-size:11.5px">—</span>`;
+    if(v._location && v._location.lat){
+      const loc=v._location;
+      const mapsUrl=`https://maps.google.com/?q=${loc.lat},${loc.lon}`;
+      const acc = loc.accuracy ? `<span style="font-size:10.5px;color:#94A3B8;display:block">±${loc.accuracy}m</span>` : '';
+      gpsCell=`<a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:none;font-size:12px" title="${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}">🗺️ Ver mapa</a>${acc}`;
+      // Distance to client address
+      const cc=_ckClientCoords(r.clientAddr);
+      if(cc && typeof _haversineMiles==='function'){
+        const miles=_haversineMiles(loc.lat,loc.lon,cc.lat,cc.lon);
+        const meters=Math.round(miles*1609.34);
+        const distLabel=meters<1000?meters+' m':miles.toFixed(2)+' mi';
+        const distColor = meters<150 ? '#15803D' : (meters<500 ? '#D97706' : '#DC2626');
+        const distIcon = meters<150 ? '✓' : (meters<500 ? '⚠' : '⚠⚠');
+        distCell=`<span style="color:${distColor};font-weight:600;font-size:12px" title="${LANG==='es'?'Distancia entre GPS y dirección del cliente':'Distance from GPS to client address'}">${distIcon} ${distLabel}</span>`;
+      }
+    }
+    // Notes (truncated)
+    const notes=(v.notes||'').replace(/\s+/g,' ').trim();
+    const notesShort = notes.length>40 ? notes.substring(0,40)+'…' : notes;
+    return `<tr style="cursor:pointer" onclick="openVisitModal(${r.cid},'${r.dateKey}')">
+      <td><div style="font-weight:600">${dStr}</div><div style="font-size:11px;color:var(--muted);text-transform:capitalize">${dow}</div></td>
+      <td style="font-size:13px;font-weight:600;color:#1E40AF">${tStr}</td>
+      <td><strong style="color:var(--brand)">${esc(r.clientName)}</strong>${r.clientAddr?`<div style="font-size:11px;color:var(--muted)">${esc(r.clientAddr)}</div>`:''}</td>
+      <td style="font-size:13px">${esc(v.tech||'—')}</td>
+      <td style="text-align:center">${statusPill}</td>
+      <td style="text-align:center">${gpsCell}</td>
+      <td style="text-align:center">${distCell}</td>
+      <td style="font-size:12.5px;color:#475569" title="${esc(notes)}">${esc(notesShort)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function resetCheckinFilters(){
+  ['ck-date-from','ck-date-to','ck-tech-filter','ck-status-filter','ck-search'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  rcheckins();
+}
+
+function exportCheckinsCSV(){
+  // Use the same filters as the current view
+  const dFrom=document.getElementById('ck-date-from').value;
+  const dTo=document.getElementById('ck-date-to').value;
+  const techFilt=document.getElementById('ck-tech-filter').value;
+  const statusFilt=document.getElementById('ck-status-filter').value;
+  const search=(document.getElementById('ck-search').value||'').toLowerCase().trim();
+  let rows=_collectAllCheckins();
+  if(dFrom) rows=rows.filter(r=>r.dateKey>=dFrom);
+  if(dTo)   rows=rows.filter(r=>r.dateKey<=dTo);
+  if(techFilt) rows=rows.filter(r=>(r.visit.tech||'')===techFilt);
+  if(statusFilt) rows=rows.filter(r=>r.visit.status===statusFilt);
+  if(search) rows=rows.filter(r=>r.clientName.toLowerCase().includes(search) || (r.visit.tech||'').toLowerCase().includes(search));
+  if(rows.length===0){showToast(LANG==='es'?'Sin registros para exportar':'No records to export','warn');return;}
+  const escCSV=v=>{const s=String(v==null?'':v);return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;};
+  const header=['Fecha','Hora','Cliente','Direccion del cliente','Tecnico','Estado','GPS Lat','GPS Lon','GPS Precision (m)','Distancia (m)','Google Maps URL','Notas'];
+  const lines=[header.map(escCSV).join(',')];
+  rows.forEach(r=>{
+    const v=r.visit;
+    const t = v._timestamp ? new Date(v._timestamp).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+    let lat='',lon='',acc='',mapsUrl='',distM='';
+    if(v._location && v._location.lat){
+      lat=v._location.lat.toFixed(6);
+      lon=v._location.lon.toFixed(6);
+      acc=v._location.accuracy||'';
+      mapsUrl=`https://maps.google.com/?q=${lat},${lon}`;
+      const cc=_ckClientCoords(r.clientAddr);
+      if(cc && typeof _haversineMiles==='function'){
+        distM=Math.round(_haversineMiles(v._location.lat,v._location.lon,cc.lat,cc.lon)*1609.34);
+      }
+    }
+    lines.push([r.dateKey,t,r.clientName,r.clientAddr,v.tech||'',v.status||'',lat,lon,acc,distM,mapsUrl,(v.notes||'').replace(/\n/g,' ')].map(escCSV).join(','));
+  });
+  const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='aspen-daily-report-'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+  showToast(LANG==='es'?`✓ ${rows.length} registros exportados`:`✓ ${rows.length} records exported`,'ok');
 }
 
 /* ─── WATER CHANGE TAB ─── */
@@ -5520,16 +5754,25 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
       ${c.san?`<div class="tcc-line"><span class="tcc-icon">🧪</span>${esc(c.san)}</div>`:''}
       ${c.notes?`<div class="tcc-line"><span class="tcc-icon">📝</span>${esc(c.notes)}</div>`:''}
       ${visited
-        ? `<div class="tcc-visited-bar">
+        ? `${v.notes?`<div class="tcc-saved-note">📝 ${esc(v.notes)}</div>`:''}
+           <div class="tcc-visited-bar">
             <span>✓ ${LANG==='es'?'Visitado':'Visited'}${stamp?` ${LANG==='es'?'a las':'at'} ${stamp}`:''}${v._location?' 📍':''}</span>
-            <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
+            <div style="display:flex;gap:6px">
+              <button class="tcc-undo" onclick="techEditNote(${c.id})">${v.notes?(LANG==='es'?'Editar nota':'Edit note'):(LANG==='es'?'+ Nota':'+ Note')}</button>
+              <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
+            </div>
           </div>`
         : (noVisit
-          ? `<div class="tcc-novisit-bar">
+          ? `${v.notes?`<div class="tcc-saved-note tcc-saved-note-red">📝 ${esc(v.notes)}</div>`:''}
+             <div class="tcc-novisit-bar">
               <span>✗ ${LANG==='es'?'No visitado':'No visit'}${stamp?` ${LANG==='es'?'a las':'at'} ${stamp}`:''}${v._location?' 📍':''}</span>
-              <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
+              <div style="display:flex;gap:6px">
+                <button class="tcc-undo" onclick="techEditNote(${c.id})">${v.notes?(LANG==='es'?'Editar nota':'Edit note'):(LANG==='es'?'+ Nota':'+ Note')}</button>
+                <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
+              </div>
             </div>`
-          : `<div class="tcc-action-row">
+          : `<textarea class="tcc-note-input" id="tcc-note-${c.id}" placeholder="${LANG==='es'?'Nota (opcional): lectura química, observaciones...':'Note (optional): chemical readings, observations...'}" rows="2"></textarea>
+             <div class="tcc-action-row">
               <button class="tcc-visit-btn" onclick="techMarkVisited(${c.id})">✓ ${LANG==='es'?'VISITADO':'VISITED'}</button>
               <button class="tcc-novisit-btn" onclick="techMarkNoVisit(${c.id})">✗ ${LANG==='es'?'NO VISITADO':'NO VISIT'}</button>
             </div>`)
@@ -5572,14 +5815,44 @@ function _captureLocation(){
   });
 }
 
-// Mark a client as VISITED today (with current tech name + timestamp + GPS)
-async function techMarkVisited(cid){ return _techRecordVisit(cid, 'done'); }
+// Read whatever the tech typed into the in-card note textarea
+function _readTechNote(cid){
+  const el = document.getElementById('tcc-note-'+cid);
+  return el ? (el.value||'').trim() : '';
+}
 
-// Mark a client as NOT visited today (red flag — counted in admin's "missed" reports)
+// Mark a client as VISITED today (with current tech name + timestamp + GPS + note)
+async function techMarkVisited(cid){
+  const note = _readTechNote(cid);
+  return _techRecordVisit(cid, 'done', note);
+}
+
+// Mark a client as NOT visited today (red flag — counted in admin's "missed" reports).
+// Uses the textarea content if the tech filled it; otherwise prompts inline so admin sees a reason.
 async function techMarkNoVisit(cid){
-  const reason = await showPrompt(LANG==='es'?'Razón (opcional):':'Reason (optional):', '');
-  if(reason===null) return; // user cancelled
-  return _techRecordVisit(cid, 'not_done', reason);
+  let note = _readTechNote(cid);
+  if(!note){
+    const reason = await showPrompt(LANG==='es'?'Razón (opcional):':'Reason (optional):', '');
+    if(reason===null) return; // user cancelled the whole action
+    note = reason || '';
+  }
+  return _techRecordVisit(cid, 'not_done', note);
+}
+
+// Edit (or add) a note AFTER the visit was already saved — does not reset GPS/timestamp.
+async function techEditNote(cid){
+  const today = new Date();
+  const dateKey = today.toISOString().split('T')[0];
+  const cur = (VL[cid] && VL[cid][dateKey] && VL[cid][dateKey].notes) || '';
+  const newNote = await showPrompt(LANG==='es'?'Nota:':'Note:', cur);
+  if(newNote===null) return;
+  if(!VL[cid] || !VL[cid][dateKey]){
+    showToast(LANG==='es'?'Sin registro hoy':'No record today','warn'); return;
+  }
+  VL[cid][dateKey].notes = (newNote||'').trim();
+  saveData();
+  showToast(LANG==='es'?'✓ Nota guardada':'✓ Note saved','ok');
+  renderTechView();
 }
 
 async function _techRecordVisit(cid, status, notes){
