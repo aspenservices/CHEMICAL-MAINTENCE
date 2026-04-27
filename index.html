@@ -209,6 +209,11 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
 .tcc-line a{color:#2563EB;text-decoration:none;font-weight:600}
 .tcc-line a:hover{text-decoration:underline}
 .tcc-icon{flex-shrink:0;font-size:14px;line-height:1.4}
+.tcc-phone-line{flex-wrap:wrap}
+.tcc-phone-num{flex-shrink:0}
+.tcc-sms-btn{margin-left:auto;background:#16A34A;color:#FFF;border:none;padding:6px 11px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .15s}
+.tcc-sms-btn:hover{background:#15803D}
+.tcc-sms-btn:active{transform:scale(.97)}
 .tcc-action-row{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:10px}
 .tcc-note-input{width:100%;border:1.5px solid #E2E8F0;border-radius:8px;padding:9px 11px;margin-top:10px;font-family:inherit;font-size:14px;color:#0F172A;background:#F8FAFC;resize:vertical;min-height:42px;box-sizing:border-box;line-height:1.4}
 .tcc-note-input:focus{outline:none;border-color:#2563EB;background:#FFF;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
@@ -5750,7 +5755,7 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
         ${noVisit?'<div class="tcc-check" style="color:#DC2626">✗</div>':''}
       </div>
       ${c.addr?`<div class="tcc-line"><span class="tcc-icon">📍</span><a href="https://maps.google.com/?q=${encodeURIComponent(c.addr)}" target="_blank" rel="noopener">${esc(c.addr)}</a></div>`:''}
-      ${c.phone?`<div class="tcc-line"><span class="tcc-icon">📞</span><a href="tel:${esc(phoneClean)}">${esc(c.phone)}</a></div>`:''}
+      ${c.phone?`<div class="tcc-line tcc-phone-line"><span class="tcc-icon">📞</span><a href="tel:${esc(phoneClean)}" class="tcc-phone-num">${esc(c.phone)}</a><button class="tcc-sms-btn" onclick="techSendOnTheWaySMS('${esc(phoneClean)}','${esc(c.name).replace(/'/g,"&#39;")}')">💬 ${LANG==='es'?'En camino':"On my way"}</button></div>`:''}
       ${c.san?`<div class="tcc-line"><span class="tcc-icon">🧪</span>${esc(c.san)}</div>`:''}
       ${c.notes?`<div class="tcc-line"><span class="tcc-icon">📝</span>${esc(c.notes)}</div>`:''}
       ${visited
@@ -5813,6 +5818,31 @@ function _captureLocation(){
       );
     } catch(e){ dbgWarn('geo throw',e); finish(null); }
   });
+}
+
+// Open the phone's native SMS app with a pre-filled, professional "on my way" message.
+// Uses the `sms:` URI scheme — works on iOS (sms:NUMBER&body=...) and Android (sms:NUMBER?body=...).
+// We send both forms separated by a fallback so it works across platforms.
+function techSendOnTheWaySMS(phone, clientName){
+  const cleanPhone = String(phone).replace(/[^\d+]/g,'');
+  // Pull just the first name (or first two words if it's a couple — e.g. "Chris & Heidi")
+  const firstName = String(clientName||'').split(',')[0].trim().split(' ')[0] || (LANG==='es'?'estimado cliente':'valued customer');
+  // Approximate ETA — could be smarter later (use route order + average pace), keeping simple for now
+  const message = LANG==='es'
+    ? `Hola ${firstName}, le saluda Aspen Spas. Estoy en camino para realizar el mantenimiento químico de su spa. Llegaré en aproximadamente 15-30 minutos. Gracias por su preferencia.`
+    : `Hi ${firstName}, this is Aspen Spas. I'm on my way to perform the chemical maintenance on your spa. I'll arrive in approximately 15-30 minutes. Thank you for your business.`;
+  // iOS prefers `sms:NUMBER&body=...`, Android prefers `sms:NUMBER?body=...`. Most modern handsets accept either.
+  // We use `?body=` first since it has wider support including older iOS.
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const sep = isIOS ? '&' : '?';
+  const url = `sms:${cleanPhone}${sep}body=${encodeURIComponent(message)}`;
+  // Use location.href on mobile so the SMS app actually opens; fallback to a hidden link click on desktop
+  try {
+    window.location.href = url;
+  } catch(e){
+    const a=document.createElement('a'); a.href=url; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
 }
 
 // Read whatever the tech typed into the in-card note textarea
