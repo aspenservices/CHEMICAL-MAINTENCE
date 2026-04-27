@@ -177,6 +177,82 @@ tr:hover td{background:#F0F9FF}
 ::-webkit-scrollbar-thumb{background:var(--mid);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--brand2)}
 
+/* ─── Role-based visibility ─────────────────────────────────────────────── */
+/* When role=tech, hide all admin chrome and show only #tech-view */
+body.role-tech .app{display:none!important}
+body.role-tech #tech-view{display:block!important}
+body.role-admin #tech-view,
+body:not(.role-tech) #tech-view{display:none}
+/* Switch-user button — small, fixed top-right corner, visible in both modes */
+.switch-user-btn{position:fixed;top:10px;right:10px;z-index:200;background:rgba(255,255,255,.92);border:1px solid #CBD5E1;color:#1E40AF;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.1);font-family:inherit;display:none}
+body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
+.switch-user-btn:hover{background:#FFF;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+
+/* ─── Tech view (mobile-first, big touch targets) ────────────────────────── */
+#tech-view{min-height:100vh;background:linear-gradient(180deg,#EFF6FF 0%,#F8FAFC 100%);font-family:inherit;color:#0F172A;padding-bottom:30px}
+.tech-view-header{background:linear-gradient(135deg,#1E40AF,#2563EB);color:#FFF;padding:20px 16px 16px;border-radius:0 0 16px 16px;box-shadow:0 4px 12px rgba(30,64,175,.25)}
+.tech-greet{font-size:14px;opacity:.9;margin-bottom:2px}
+.tech-name{font-size:24px;font-weight:700;margin-bottom:8px}
+.tech-day-info{font-size:15px;opacity:.95}
+.tech-week-badge{display:inline-block;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:6px;font-weight:700;margin-left:6px}
+.tech-content{padding:14px;max-width:600px;margin:0 auto}
+.tech-card{background:#FFF;border:2px solid #E2E8F0;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.06);transition:all .25s ease}
+.tech-card.visited{background:#F0FDF4;border-color:#16A34A;box-shadow:0 2px 8px rgba(22,163,74,.15)}
+.tech-card.no-visit{background:#FEF2F2;border-color:#DC2626;box-shadow:0 2px 8px rgba(220,38,38,.15)}
+.tcc-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tcc-num{width:34px;height:34px;background:#2563EB;color:#FFF;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:15px}
+.tech-card.visited .tcc-num{background:#16A34A}
+.tech-card.no-visit .tcc-num{background:#DC2626}
+.tcc-name{font-size:18px;font-weight:700;flex:1;color:#0F172A;line-height:1.2}
+.tcc-check{color:#16A34A;font-size:26px;font-weight:bold;line-height:1}
+.tcc-line{font-size:14px;color:#475569;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.tcc-line a{color:#2563EB;text-decoration:none;font-weight:600}
+.tcc-line a:hover{text-decoration:underline}
+.tcc-icon{flex-shrink:0;font-size:14px;line-height:1.4}
+.tcc-action-row{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:10px}
+.tcc-visit-btn{background:#2563EB;color:#FFF;border:none;padding:16px;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.4px;transition:background .15s}
+.tcc-visit-btn:active{background:#1E3A8A;transform:scale(.98)}
+.tcc-visit-btn:hover{background:#1D4ED8}
+.tcc-novisit-btn{background:#FFF;color:#DC2626;border:2px solid #DC2626;padding:14px 8px;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.3px;transition:all .15s}
+.tcc-novisit-btn:active{background:#FEE2E2;transform:scale(.98)}
+.tcc-novisit-btn:hover{background:#FEE2E2}
+.tcc-visited-bar{background:#16A34A;color:#FFF;padding:11px 14px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-weight:600;font-size:14px;gap:10px;flex-wrap:wrap}
+.tcc-novisit-bar{background:#DC2626;color:#FFF;padding:11px 14px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-weight:600;font-size:14px;gap:10px;flex-wrap:wrap}
+.tcc-undo{background:rgba(255,255,255,.2);color:#FFF;border:1px solid rgba(255,255,255,.4);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:500}
+.tcc-undo:hover{background:rgba(255,255,255,.32)}
+.tech-empty{text-align:center;padding:40px 20px;color:#64748B}
+.tech-empty h2{color:#0F172A;margin-bottom:10px}
+.tech-progress{background:#FFF;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:14px;font-weight:600;color:#1E40AF;display:flex;align-items:center;gap:10px}
+.tech-progress-bar{flex:1;height:8px;background:#E2E8F0;border-radius:4px;overflow:hidden}
+.tech-progress-fill{height:100%;background:linear-gradient(90deg,#16A34A,#22C55E);transition:width .4s ease}
+
+/* Role-selection screen (shown on first load if no role saved) */
+.role-pick-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1E40AF,#2563EB);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.role-pick-card{background:#FFF;border-radius:16px;padding:32px 28px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.role-pick-card h2{margin:0 0 8px;font-size:24px;color:#0F172A}
+.role-pick-card .sub{color:#64748B;margin-bottom:24px;font-size:14px}
+.role-pick-buttons{display:grid;gap:12px}
+.role-btn{padding:18px 20px;border:2px solid #E2E8F0;border-radius:12px;background:#F8FAFC;cursor:pointer;text-align:left;font-family:inherit;transition:all .15s ease;display:flex;align-items:center;gap:14px}
+.role-btn:hover{border-color:#2563EB;background:#EFF6FF;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.15)}
+.role-btn-icon{font-size:32px;flex-shrink:0;width:48px;text-align:center}
+.role-btn-text{flex:1}
+.role-btn-title{font-size:17px;font-weight:700;color:#0F172A}
+.role-btn-sub{font-size:12.5px;color:#64748B;margin-top:2px}
+.tech-pick-list{display:grid;gap:8px;margin-bottom:14px}
+.tech-pick-btn{padding:14px 18px;border:2px solid #E2E8F0;border-radius:10px;background:#FFF;cursor:pointer;font-family:inherit;font-size:16px;font-weight:600;color:#0F172A;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s}
+.tech-pick-btn:hover{border-color:#7C3AED;background:#F5F3FF;transform:translateX(2px)}
+
+@media(max-width:480px){
+  .role-pick-card{padding:24px 20px}
+  .role-pick-card h2{font-size:20px}
+  .role-btn{padding:14px 16px}
+  .role-btn-icon{font-size:26px;width:36px}
+  .tech-name{font-size:21px}
+  .tech-content{padding:10px}
+  .tcc-name{font-size:16.5px}
+  .tcc-visit-btn{padding:14px;font-size:15px}
+}
+
 @media print{
   .header-primary,.header-secondary,.tabs-bar,.btn,.arow,.chips,.pager,.fbar,.cal-toolbar,.cal-legend,.modal-bg,.cc-actions,.freq-btns,.drag-handle,.tech-appt-row{display:none!important}
   .modal-bg{display:none!important}
@@ -415,6 +491,29 @@ tr:hover td{background:#F0F9FF}
 </style>
 </head>
 <body>
+
+<!-- ─── Role selection overlay (first-load only, when no role saved) ───────── -->
+<div id="role-pick-overlay" class="role-pick-overlay" style="display:none">
+  <div class="role-pick-card" id="role-pick-card">
+    <!-- Filled by JS -->
+  </div>
+</div>
+
+<!-- ─── Switch user button (always visible, top-right) ────────────────────── -->
+<button class="switch-user-btn" id="switch-user-btn" onclick="switchUser()">👤 <span id="switch-user-label">Cambiar usuario</span></button>
+
+<!-- ─── Tech view (only visible when role=tech) ───────────────────────────── -->
+<div id="tech-view" style="display:none">
+  <div class="tech-view-header">
+    <div class="tech-greet">👋 Hola,</div>
+    <div class="tech-name" id="tech-view-name">—</div>
+    <div class="tech-day-info" id="tech-view-day-info">—</div>
+  </div>
+  <div class="tech-content" id="tech-view-content">
+    <!-- Filled by renderTechView() -->
+  </div>
+</div>
+
 <div class="app">
 
 <div class="header">
@@ -733,11 +832,17 @@ tr:hover td{background:#F0F9FF}
     <select id="vis-status">
       <option value="done">&#10003; Visitado</option>
       <option value="pending">Pendiente</option>
-      <option value="skip">&#10007; No visitado / Cancelado</option>
+      <option value="not_done">&#10007; No visitado (técnico)</option>
+      <option value="skip">&#10007; Cancelado</option>
     </select>
   </div>
   <div class="frow"><label>Técnico</label>
     <select id="vis-tech" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;background:#FFF;color:var(--text);font-family:inherit"></select>
+  </div>
+  <!-- GPS info, only shown if technician captured location ─────────────── -->
+  <div id="vis-location-info" class="frow" style="display:none">
+    <label>📍 Ubicación GPS</label>
+    <div id="vis-location-content" style="font-size:13px;color:#475569"></div>
   </div>
   <div class="frow"><label>Notas del servicio</label><textarea id="vis-notes" placeholder="Lectura química, productos usados, observaciones..."></textarea></div>
   <div class="mfoot"><button class="btn" onclick="cm('mvisit')">Cancelar</button><button class="btn btn-brand" onclick="saveVisit()">Guardar visita</button></div>
@@ -929,6 +1034,18 @@ tr:hover td{background:#F0F9FF}
 <div class="modal-bg" id="mtechs">
 <div class="modal" style="max-width:460px">
   <h3 id="mtechs-title">👷 Manage Technicians</h3><div class="divider"></div>
+
+  <!-- Admin password management ────────────────────────────────────────── -->
+  <div id="admin-pwd-section" style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 12px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:12.5px;font-weight:700;color:#78350F;text-transform:uppercase;letter-spacing:.4px" id="admin-pwd-title">🔒 Contraseña Admin</div>
+        <div style="font-size:11.5px;color:#92400E;margin-top:2px" id="admin-pwd-status">—</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="admin-pwd-actions"></div>
+    </div>
+  </div>
+
   <div id="techs-list" style="margin-bottom:12px"></div>
   <div style="display:flex;gap:8px;align-items:center">
     <input id="new-tech-name" placeholder="New technician name..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
@@ -1007,6 +1124,13 @@ tr:hover td{background:#F0F9FF}
    i18n — ENGLISH / SPANISH TOGGLE
    ══════════════════════════════════════════════ */
 let LANG=localStorage.getItem('aspen_lang')||'es';
+
+// ─── Role / user system ────────────────────────────────────────────────────
+// Two roles: 'admin' (full app — Alberto) and 'tech' (minimal day-view for technicians).
+// Persists in localStorage so each device remembers its role. Switch via "Cambiar usuario" button.
+let CURRENT_ROLE = localStorage.getItem('aspen_role') || null; // null forces selection on first load
+let CURRENT_TECH = localStorage.getItem('aspen_tech_name') || null;
+
 const T={
   es:{
     brandSub:'Chemical Maintenance Dashboard',
@@ -1652,6 +1776,8 @@ function renderTechsList(){
       <span style="font-size:13.2px;color:var(--muted)">${tk.phone||''}</span>
       <button class="btn btn-red" style="font-size:11.5px;padding:3px 8px" onclick="removeTechnician(${i})">✕</button>
     </div>`).join('');
+  // Also refresh the admin-password section every time this modal renders
+  if(typeof renderAdminPwdPanel==='function') renderAdminPwdPanel();
 }
 function addTechnician(){
   const nameEl=document.getElementById('new-tech-name');
@@ -2809,9 +2935,10 @@ function rv(){
     const dots=allDates.map(dk=>{
       const vl=vls[dk];const isPast=new Date(dk+'T12:00:00')<tn2;
       const st=vl?vl.status:'pending';
-      const bg=st==='done'?'#16A34A':st==='skip'?'#EF4444':isPast?'#EF4444':'#F59E0B';
-      const op=st==='done'||isPast?1:0.45;
-      return`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bg};opacity:${op};margin:1px" title="${dk}${st==='done'?' ✓':''}"></span>`;
+      const bg=st==='done'?'#16A34A':(st==='skip'||st==='not_done')?'#EF4444':isPast?'#EF4444':'#F59E0B';
+      const op=st==='done'||st==='not_done'||st==='skip'||isPast?1:0.45;
+      const titleSuffix = st==='done' ? ' ✓' : (st==='not_done' ? ' ✗ no visitado' : '');
+      return`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bg};opacity:${op};margin:1px" title="${dk}${titleSuffix}"></span>`;
     }).join('');
     const wcs=c.wcN?`<span class="badge bwc">${t('statusPending')}</span>`:c.wcD?`<span class="badge bwcd">${t('statusDone')} ${c.lwc||''}</span>`:od(c.nwc)?`<span class="badge bwc">${t('overdue')}</span>`:`<span class="badge bwcd">OK ${c.nwc||''}</span>`;
     const tcs=c.techP&&c.techS!=='done'?`<span class="badge btech">${c.techS==='scheduled'?t('statusScheduled'):t('statusPending')}</span>`:c.techP&&c.techS==='done'?`<span class="badge bwcd">${t('statusDone')}</span>`:'<span style="font-size:11.5px;color:var(--muted)">—</span>';
@@ -2971,11 +3098,12 @@ function buildWeekSection(wt,clients,q){
         const vl=vls[dk];
         const st=vl?vl.status:'pending';
         const isPast=new Date(dk+'T12:00:00')<today2;
-        const dotC=st==='done'?'vd-done':st==='skip'?'vd-skip':'vd-pend';
+        const isMissed = (st==='skip'||st==='not_done');
+        const dotC=st==='done'?'vd-done':isMissed?'vd-skip':'vd-pend';
         const dlbl=new Date(dk+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'});
         const note=vl&&vl.notes?vl.notes.substring(0,16):'';
         const tech=vl&&vl.tech?vl.tech:'';
-        const label=note||tech||(st==='done'?t('visitedCal'):st==='skip'?t('notVisitedCal'):isPast?t('overdue'):'');
+        const label=note||tech||(st==='done'?t('visitedCal'):isMissed?t('notVisitedCal'):isPast?t('overdue'):'');
         return`<div class="visit-row" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span><span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span></div>`;
       }).join('');
 
@@ -3255,13 +3383,53 @@ function openVisitModal(cid,dateKey){
   document.getElementById('vis-status').value=vl?vl.status:'done';
   document.getElementById('vis-notes').value=vl?vl.notes||'':'';
   document.getElementById('vis-tech').value=vl?vl.tech||'':TECHS.length?TECHS[0].name:'';
+  // Show GPS location info if technician captured one
+  const locWrap=document.getElementById('vis-location-info');
+  const locContent=document.getElementById('vis-location-content');
+  if(vl && vl._location && vl._location.lat){
+    const loc=vl._location;
+    const ts = vl._timestamp ? new Date(vl._timestamp).toLocaleString(LANG==='es'?'es-MX':'en-US',{hour:'numeric',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) : '';
+    const accuracy = loc.accuracy ? ` (±${loc.accuracy}m)` : '';
+    const mapsUrl = `https://maps.google.com/?q=${loc.lat},${loc.lon}`;
+    const distLine = c.addr ? `<div id="vis-loc-dist" style="font-size:11.5px;color:#64748B;margin-top:3px"></div>` : '';
+    locContent.innerHTML = `
+      <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:none">🗺️ ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}${accuracy}</a>
+      ${ts?`<div style="font-size:11.5px;color:#64748B;margin-top:3px">⏱ ${LANG==='es'?'Capturado':'Captured'}: ${ts}</div>`:''}
+      ${distLine}`;
+    locWrap.style.display='';
+    // Compute distance from client address (if geocoded) — small sanity check for the admin
+    if(c.addr){
+      _geocode(c.addr).then(co=>{
+        if(co && typeof _haversineMiles==='function'){
+          const miles = _haversineMiles(loc.lat,loc.lon,co.lat,co.lon);
+          const meters = Math.round(miles*1609.34);
+          const distEl=document.getElementById('vis-loc-dist');
+          if(distEl){
+            const farFlag = meters>500 ? `<span style="color:#DC2626;font-weight:600"> ⚠ ${LANG==='es'?'lejos de la dirección':'far from address'}</span>` : ` <span style="color:#16A34A">✓</span>`;
+            distEl.innerHTML = `📐 ${LANG==='es'?'Distancia a dirección':'Distance to address'}: ${meters<1000?meters+' m':miles.toFixed(2)+' mi'}${farFlag}`;
+          }
+        }
+      }).catch(()=>{});
+    }
+  } else {
+    locWrap.style.display='none';
+  }
   om('mvisit');
 }
 function saveVisit(){
   const cid=parseInt(document.getElementById('vis-cid').value);
   const dk=document.getElementById('vis-date').value;
   if(!VL[cid])VL[cid]={};
-  VL[cid][dk]={status:document.getElementById('vis-status').value,notes:document.getElementById('vis-notes').value.trim(),tech:document.getElementById('vis-tech').value.trim(),saved:new Date().toISOString()};
+  // Preserve existing _location / _timestamp so admin edits don't wipe the tech's GPS evidence
+  const prev = VL[cid][dk] || {};
+  VL[cid][dk]={
+    status:document.getElementById('vis-status').value,
+    notes:document.getElementById('vis-notes').value.trim(),
+    tech:document.getElementById('vis-tech').value.trim(),
+    saved:new Date().toISOString(),
+    _timestamp: prev._timestamp || Date.now(),
+    _location: prev._location || null
+  };
   cm('mvisit');rcal();
 }
 
@@ -4947,6 +5115,510 @@ async function printWeekRoute(weekOffset, techName){
   setTimeout(()=>window.print(),200);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// ROLE SYSTEM — Admin (Alberto, full app) vs Technician (minimal day view)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Apply a CSS class on <body> so the layout switches between admin chrome and tech view
+function applyRole(){
+  document.body.classList.remove('role-admin','role-tech','role-none');
+  if(CURRENT_ROLE==='admin') document.body.classList.add('role-admin');
+  else if(CURRENT_ROLE==='tech') document.body.classList.add('role-tech');
+  else document.body.classList.add('role-none');
+  // Localize switch-user button
+  const lbl=document.getElementById('switch-user-label');
+  if(lbl) lbl.textContent = LANG==='es'?'Cambiar usuario':'Switch user';
+}
+
+// Show the role-selection overlay (called on first load + via switch-user)
+function showRoleSelection(){
+  const card=document.getElementById('role-pick-card');
+  if(!card)return;
+  card.innerHTML = `
+    <h2>${LANG==='es'?'¿Quién eres?':'Who are you?'}</h2>
+    <div class="sub">${LANG==='es'?'Elige tu rol para continuar':'Choose your role to continue'}</div>
+    <div class="role-pick-buttons">
+      <button class="role-btn" onclick="chooseRole('admin')">
+        <div class="role-btn-icon">👨‍💼</div>
+        <div class="role-btn-text">
+          <div class="role-btn-title">Admin</div>
+          <div class="role-btn-sub">${LANG==='es'?'Control completo de la app':'Full app control'}</div>
+        </div>
+      </button>
+      <button class="role-btn" onclick="chooseRole('tech')">
+        <div class="role-btn-icon">👷</div>
+        <div class="role-btn-text">
+          <div class="role-btn-title">${LANG==='es'?'Técnico':'Technician'}</div>
+          <div class="role-btn-sub">${LANG==='es'?'Solo mis clientes del día':'Just my clients for the day'}</div>
+        </div>
+      </button>
+    </div>`;
+  document.getElementById('role-pick-overlay').style.display='flex';
+}
+function hideRoleSelection(){
+  document.getElementById('role-pick-overlay').style.display='none';
+}
+
+// Handle initial role pick
+// Hash a password (simple but adequate for a single-tenant app — same person controls all data anyway).
+// Uses Web Crypto SubtleDigest if available, falls back to btoa for old browsers.
+async function _hashPwd(pwd){
+  const txt='aspen_v1::'+String(pwd);
+  if(window.crypto && window.crypto.subtle){
+    const buf=new TextEncoder().encode(txt);
+    const hash=await window.crypto.subtle.digest('SHA-256',buf);
+    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  return btoa(txt);
+}
+function getStoredAdminPwdHash(){
+  return localStorage.getItem('aspen_admin_pwd_hash')||null;
+}
+async function setAdminPwd(plainPwd){
+  if(!plainPwd){
+    localStorage.removeItem('aspen_admin_pwd_hash');
+    return;
+  }
+  const h=await _hashPwd(plainPwd);
+  localStorage.setItem('aspen_admin_pwd_hash',h);
+}
+async function verifyAdminPwd(plainPwd){
+  const stored=getStoredAdminPwdHash();
+  if(!stored)return true; // no password set → always allow
+  const h=await _hashPwd(plainPwd);
+  return h===stored;
+}
+
+function chooseRole(role){
+  if(role==='admin'){
+    // If a password is already set → require it before granting admin access
+    if(getStoredAdminPwdHash()){
+      promptAdminPassword();
+    } else {
+      // First-time admin login → offer to create a password (they can also skip)
+      promptCreateAdminPassword();
+    }
+  } else if(role==='tech'){
+    showTechSelection();
+  }
+}
+
+// Actually log in as admin — called after password verification (or first-time creation/skip)
+function _grantAdmin(){
+  CURRENT_ROLE='admin'; CURRENT_TECH=null;
+  localStorage.setItem('aspen_role','admin');
+  localStorage.removeItem('aspen_tech_name');
+  hideRoleSelection();
+  applyRole();
+  if(typeof rd==='function') rd();
+}
+
+// Show password input UI inside the role-pick overlay
+function promptAdminPassword(opts){
+  opts=opts||{};
+  const card=document.getElementById('role-pick-card');
+  if(!card)return;
+  const errMsg=opts.error?`<div style="background:#FEE2E2;color:#991B1B;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:13px;font-weight:500">⚠ ${opts.error}</div>`:'';
+  card.innerHTML=`
+    <h2>🔒 ${LANG==='es'?'Acceso Admin':'Admin access'}</h2>
+    <div class="sub">${LANG==='es'?'Ingresa la contraseña':'Enter the password'}</div>
+    ${errMsg}
+    <input id="admin-pwd-input" type="password" autocomplete="current-password"
+      placeholder="${LANG==='es'?'Contraseña':'Password'}"
+      style="width:100%;padding:14px 16px;border:2px solid #E2E8F0;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:14px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')_submitAdminPwd()">
+    <div style="display:grid;gap:10px">
+      <button class="role-btn" onclick="_submitAdminPwd()" style="background:#2563EB;border-color:#2563EB;color:#FFF;justify-content:center">
+        <div class="role-btn-icon" style="color:#FFF">✓</div>
+        <div class="role-btn-text"><div class="role-btn-title" style="color:#FFF">${LANG==='es'?'Entrar':'Sign in'}</div></div>
+      </button>
+      <button class="tech-pick-btn" onclick="showRoleSelection()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:14px;padding:10px 14px;justify-content:center">
+        ← ${LANG==='es'?'Atrás':'Back'}
+      </button>
+    </div>
+    <div style="margin-top:12px;font-size:11.5px;color:#94A3B8;text-align:center">
+      <a href="#" onclick="event.preventDefault();_resetAdminPwdFlow()" style="color:#94A3B8">${LANG==='es'?'¿Olvidaste tu contraseña?':'Forgot your password?'}</a>
+    </div>`;
+  setTimeout(()=>{const i=document.getElementById('admin-pwd-input');if(i)i.focus();},80);
+}
+async function _submitAdminPwd(){
+  const input=document.getElementById('admin-pwd-input');
+  if(!input)return;
+  const ok=await verifyAdminPwd(input.value);
+  if(ok){_grantAdmin();}
+  else{promptAdminPassword({error:LANG==='es'?'Contraseña incorrecta':'Incorrect password'});}
+}
+// Last-resort reset — requires explicit confirmation since it bypasses the password
+async function _resetAdminPwdFlow(){
+  const ok=await showConfirm(LANG==='es'
+    ?'Esto borrará la contraseña y te dará acceso admin. ¿Solo hazlo si eres el dueño del dispositivo. Continuar?'
+    :'This will clear the password and grant you admin access. Only do this if you own the device. Continue?');
+  if(!ok)return;
+  localStorage.removeItem('aspen_admin_pwd_hash');
+  showToast(LANG==='es'?'Contraseña borrada':'Password cleared','warn');
+  _grantAdmin();
+}
+
+// First-time admin: offer to create a password
+function promptCreateAdminPassword(opts){
+  opts=opts||{};
+  const card=document.getElementById('role-pick-card');
+  if(!card)return;
+  const errMsg=opts.error?`<div style="background:#FEE2E2;color:#991B1B;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:13px;font-weight:500">⚠ ${opts.error}</div>`:'';
+  card.innerHTML=`
+    <h2>🔒 ${LANG==='es'?'Crear contraseña Admin':'Create Admin password'}</h2>
+    <div class="sub">${LANG==='es'?'Protege el panel admin con una contraseña (recomendado)':'Protect the admin panel with a password (recommended)'}</div>
+    ${errMsg}
+    <input id="admin-pwd-new" type="password" autocomplete="new-password"
+      placeholder="${LANG==='es'?'Nueva contraseña (mín. 4 caracteres)':'New password (min 4 chars)'}"
+      style="width:100%;padding:14px 16px;border:2px solid #E2E8F0;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:10px;box-sizing:border-box">
+    <input id="admin-pwd-confirm" type="password" autocomplete="new-password"
+      placeholder="${LANG==='es'?'Confirmar contraseña':'Confirm password'}"
+      style="width:100%;padding:14px 16px;border:2px solid #E2E8F0;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:14px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')_submitNewAdminPwd()">
+    <div style="display:grid;gap:10px">
+      <button class="role-btn" onclick="_submitNewAdminPwd()" style="background:#2563EB;border-color:#2563EB;color:#FFF;justify-content:center">
+        <div class="role-btn-icon" style="color:#FFF">🔒</div>
+        <div class="role-btn-text"><div class="role-btn-title" style="color:#FFF">${LANG==='es'?'Crear contraseña y entrar':'Create password & sign in'}</div></div>
+      </button>
+      <button class="tech-pick-btn" onclick="_skipAdminPwd()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:13px;padding:10px 14px;justify-content:center">
+        ${LANG==='es'?'Saltar (sin contraseña)':'Skip (no password)'}
+      </button>
+      <button class="tech-pick-btn" onclick="showRoleSelection()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:14px;padding:10px 14px;justify-content:center">
+        ← ${LANG==='es'?'Atrás':'Back'}
+      </button>
+    </div>`;
+  setTimeout(()=>{const i=document.getElementById('admin-pwd-new');if(i)i.focus();},80);
+}
+async function _submitNewAdminPwd(){
+  const a=document.getElementById('admin-pwd-new');
+  const b=document.getElementById('admin-pwd-confirm');
+  if(!a||!b)return;
+  const p1=a.value, p2=b.value;
+  if(p1.length<4){promptCreateAdminPassword({error:LANG==='es'?'Mínimo 4 caracteres':'Minimum 4 characters'});return;}
+  if(p1!==p2){promptCreateAdminPassword({error:LANG==='es'?'Las contraseñas no coinciden':'Passwords do not match'});return;}
+  await setAdminPwd(p1);
+  showToast(LANG==='es'?'✓ Contraseña creada':'✓ Password created','ok');
+  _grantAdmin();
+}
+function _skipAdminPwd(){
+  // Sign in without setting a password (they can add one later from Techs modal)
+  _grantAdmin();
+}
+
+// ─── Admin password panel inside the Techs modal ────────────────────────────
+function renderAdminPwdPanel(){
+  const titleEl=document.getElementById('admin-pwd-title');
+  const statusEl=document.getElementById('admin-pwd-status');
+  const actionsEl=document.getElementById('admin-pwd-actions');
+  if(!titleEl||!statusEl||!actionsEl)return;
+  titleEl.textContent = LANG==='es'?'🔒 Contraseña Admin':'🔒 Admin password';
+  const hasPwd=!!getStoredAdminPwdHash();
+  if(hasPwd){
+    statusEl.innerHTML=`<span style="color:#047857;font-weight:600">✓ ${LANG==='es'?'Activa':'Active'}</span> — ${LANG==='es'?'se requiere para acceso admin':'required for admin access'}`;
+    actionsEl.innerHTML=`
+      <button class="btn" onclick="changeAdminPwdFlow()" style="background:#D97706;color:#FFF;border:none;font-size:12px;padding:6px 12px">${LANG==='es'?'Cambiar':'Change'}</button>
+      <button class="btn" onclick="removeAdminPwdFlow()" style="background:#DC2626;color:#FFF;border:none;font-size:12px;padding:6px 12px">${LANG==='es'?'Quitar':'Remove'}</button>`;
+  } else {
+    statusEl.innerHTML=`<span style="color:#92400E">⚠ ${LANG==='es'?'Sin contraseña':'Not set'}</span> — ${LANG==='es'?'cualquier dispositivo puede entrar como admin':'any device can sign in as admin'}`;
+    actionsEl.innerHTML=`<button class="btn" onclick="setNewAdminPwdFlow()" style="background:#2563EB;color:#FFF;border:none;font-size:12px;padding:6px 12px">${LANG==='es'?'Crear':'Set password'}</button>`;
+  }
+}
+
+// Set a new password from the Techs modal (no current password yet)
+async function setNewAdminPwdFlow(){
+  const p1=await showPrompt(LANG==='es'?'Nueva contraseña (mín. 4 caracteres):':'New password (min 4 chars):','',{type:'password'});
+  if(p1===null)return;
+  if(!p1||p1.length<4){showToast(LANG==='es'?'Mínimo 4 caracteres':'Minimum 4 characters','warn');return;}
+  const p2=await showPrompt(LANG==='es'?'Confirmar contraseña:':'Confirm password:','',{type:'password'});
+  if(p2===null)return;
+  if(p1!==p2){showToast(LANG==='es'?'Las contraseñas no coinciden':'Passwords do not match','err');return;}
+  await setAdminPwd(p1);
+  showToast(LANG==='es'?'✓ Contraseña creada':'✓ Password created','ok');
+  renderAdminPwdPanel();
+}
+
+// Change existing password — verify current first
+async function changeAdminPwdFlow(){
+  const cur=await showPrompt(LANG==='es'?'Contraseña actual:':'Current password:','',{type:'password'});
+  if(cur===null)return;
+  const ok=await verifyAdminPwd(cur);
+  if(!ok){showToast(LANG==='es'?'Contraseña incorrecta':'Incorrect password','err');return;}
+  const p1=await showPrompt(LANG==='es'?'Nueva contraseña (mín. 4 caracteres):':'New password (min 4 chars):','',{type:'password'});
+  if(p1===null)return;
+  if(!p1||p1.length<4){showToast(LANG==='es'?'Mínimo 4 caracteres':'Minimum 4 characters','warn');return;}
+  const p2=await showPrompt(LANG==='es'?'Confirmar nueva contraseña:':'Confirm new password:','',{type:'password'});
+  if(p2===null)return;
+  if(p1!==p2){showToast(LANG==='es'?'Las contraseñas no coinciden':'Passwords do not match','err');return;}
+  await setAdminPwd(p1);
+  showToast(LANG==='es'?'✓ Contraseña actualizada':'✓ Password updated','ok');
+  renderAdminPwdPanel();
+}
+
+// Remove password — verify current first then confirm
+async function removeAdminPwdFlow(){
+  const cur=await showPrompt(LANG==='es'?'Contraseña actual:':'Current password:','',{type:'password'});
+  if(cur===null)return;
+  const ok=await verifyAdminPwd(cur);
+  if(!ok){showToast(LANG==='es'?'Contraseña incorrecta':'Incorrect password','err');return;}
+  const confirmed=await showConfirm(LANG==='es'
+    ?'¿Quitar contraseña? Cualquier persona en este dispositivo podrá entrar como admin.'
+    :'Remove password? Anyone on this device will be able to sign in as admin.');
+  if(!confirmed)return;
+  await setAdminPwd('');
+  showToast(LANG==='es'?'✓ Contraseña eliminada':'✓ Password removed','ok');
+  renderAdminPwdPanel();
+}
+
+// Show the list of technicians to pick from (drawn inside the same overlay card)
+function showTechSelection(){
+  const card=document.getElementById('role-pick-card');
+  if(!card)return;
+  if(!TECHS||TECHS.length===0){
+    card.innerHTML=`<h2>${LANG==='es'?'No hay técnicos registrados':'No technicians registered'}</h2>
+      <div class="sub">${LANG==='es'?'Pide al admin que añada técnicos primero (botón Techs)':'Ask admin to add technicians first (Techs button)'}</div>
+      <button class="role-btn" onclick="showRoleSelection()" style="margin-top:14px"><div class="role-btn-icon">←</div><div class="role-btn-text"><div class="role-btn-title">${LANG==='es'?'Atrás':'Back'}</div></div></button>`;
+    return;
+  }
+  const list=TECHS.map(tk=>`
+    <button class="tech-pick-btn" onclick="loginAsTech('${esc(tk.name).replace(/'/g,'&#39;')}')">
+      👷 ${esc(tk.name)}
+    </button>`).join('');
+  card.innerHTML=`
+    <h2>${LANG==='es'?'¿Cuál técnico eres?':'Which technician are you?'}</h2>
+    <div class="sub">${LANG==='es'?'Elige tu nombre':'Pick your name'}</div>
+    <div class="tech-pick-list">${list}</div>
+    <button class="tech-pick-btn" onclick="showRoleSelection()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:14px;padding:10px 14px">
+      ← ${LANG==='es'?'Atrás':'Back'}
+    </button>`;
+}
+
+function loginAsTech(name){
+  CURRENT_ROLE='tech'; CURRENT_TECH=name;
+  localStorage.setItem('aspen_role','tech');
+  localStorage.setItem('aspen_tech_name',name);
+  // Reset session week pick so they choose for today
+  sessionStorage.removeItem('tech_chosen_week');
+  hideRoleSelection();
+  applyRole();
+  renderTechView();
+}
+
+// Switch user button — confirm then show role selection again
+async function switchUser(){
+  const ok = await showConfirm(LANG==='es'?'¿Cambiar de usuario?':'Switch user?');
+  if(!ok) return;
+  CURRENT_ROLE=null; CURRENT_TECH=null;
+  localStorage.removeItem('aspen_role');
+  localStorage.removeItem('aspen_tech_name');
+  sessionStorage.removeItem('tech_chosen_week');
+  applyRole();
+  showRoleSelection();
+}
+
+// ─── Tech view rendering ────────────────────────────────────────────────────
+function renderTechView(){
+  if(CURRENT_ROLE!=='tech' || !CURRENT_TECH) return;
+  // Header
+  document.getElementById('tech-view-name').textContent = CURRENT_TECH;
+  // Determine today's day key + auto-detect this week's A/B from ISO week
+  const today=new Date();
+  const dayOfWeek=today.getDay(); // 0=Sun, 1=Mon...
+  const dayMap={1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri'};
+  const dayKey=dayMap[dayOfWeek];
+  const isoWk=getISOWeek(today);
+  const detectedWeek=(isoWk%2===1)?'A':'B';
+  // Pretty day label
+  const dn=getDN();
+  const dayIdx=DAYS.indexOf(dayKey);
+  const dayLabel = dayIdx>=0 ? dn[dayIdx] : null;
+  const dateLabel = today.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{day:'numeric',month:'long',year:'numeric'});
+  // Weekend? No clients
+  if(!dayLabel){
+    document.getElementById('tech-view-day-info').innerHTML = `${dateLabel}`;
+    document.getElementById('tech-view-content').innerHTML = `
+      <div class="tech-empty">
+        <div style="font-size:48px;margin-bottom:14px">🌴</div>
+        <h2>${LANG==='es'?'Hoy es fin de semana':"Today's the weekend"}</h2>
+        <p>${LANG==='es'?'No hay clientes programados.':'No clients scheduled.'}</p>
+      </div>`;
+    return;
+  }
+  // Auto-detect week — but allow tech override (kept in sessionStorage so resets daily)
+  const overrideWeek = sessionStorage.getItem('tech_chosen_week');
+  const chosenWeek = overrideWeek || detectedWeek;
+  document.getElementById('tech-view-day-info').innerHTML =
+    `${dayLabel} <span class="tech-week-badge">Semana ${chosenWeek}</span> · ${dateLabel}`;
+  // Render today's clients for the auto-detected (or overridden) week
+  renderTechDayClients(dayKey, chosenWeek, detectedWeek);
+}
+
+// Manual override — toggles the week (A↔B) for the rest of today's session
+function techToggleWeek(){
+  const today=new Date();
+  const isoWk=getISOWeek(today);
+  const detectedWeek=(isoWk%2===1)?'A':'B';
+  const cur = sessionStorage.getItem('tech_chosen_week') || detectedWeek;
+  const next = cur==='A'?'B':'A';
+  if(next===detectedWeek) sessionStorage.removeItem('tech_chosen_week');
+  else sessionStorage.setItem('tech_chosen_week', next);
+  renderTechView();
+}
+
+function renderTechDayClients(dayKey, wt, detectedWeek){
+  const today=new Date();
+  const dateKey = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Get clients scheduled for this day + week (active only)
+  const dayClients = C.filter(c =>
+    c.status==='active' && c.day===dayKey && (c.week===wt || c.week==='A&B')
+  );
+  // Order them per the saved drag-drop order
+  const ordered = getOrderedClients(dayClients, dayKey, wt);
+  // Override link only shows if user is currently NOT on the auto-detected week
+  const overridden = (wt!==detectedWeek);
+  const switchLine = overridden
+    ? `<button onclick="techToggleWeek()" style="background:none;border:none;color:#7C3AED;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">↩ ${LANG==='es'?'Volver a Semana':'Back to Week'} ${detectedWeek} (${LANG==='es'?'auto':'auto'})</button>`
+    : `<button onclick="techToggleWeek()" style="background:none;border:none;color:#64748B;font-weight:500;font-size:12px;cursor:pointer;font-family:inherit">${LANG==='es'?'Cambiar a Semana':'Switch to Week'} ${wt==='A'?'B':'A'}</button>`;
+
+  if(ordered.length===0){
+    document.getElementById('tech-view-content').innerHTML = `
+      <div class="tech-empty">
+        <div style="font-size:48px;margin-bottom:14px">🎉</div>
+        <h2>${LANG==='es'?'¡Sin clientes hoy!':'No clients today!'}</h2>
+        <p>${LANG==='es'?'No tienes paradas programadas para Semana ':'No stops scheduled for Week '}${wt}.</p>
+        <div style="margin-top:14px">${switchLine}</div>
+      </div>`;
+    return;
+  }
+  // Count progress (visited today) — only "done" counts as completed
+  const visitedCount = ordered.filter(c=>VL[c.id]&&VL[c.id][dateKey]&&VL[c.id][dateKey].status==='done').length;
+  const noVisitCount = ordered.filter(c=>VL[c.id]&&VL[c.id][dateKey]&&VL[c.id][dateKey].status==='not_done').length;
+  const handledCount = visitedCount + noVisitCount;
+  const pct = Math.round((handledCount/ordered.length)*100);
+  // Build cards
+  const cards = ordered.map((c,i)=>{
+    const v = VL[c.id] && VL[c.id][dateKey];
+    const visited = v && v.status==='done';
+    const noVisit = v && v.status==='not_done';
+    let stamp='';
+    if((visited||noVisit) && v._timestamp){
+      const d=new Date(v._timestamp);
+      stamp = d.toLocaleTimeString(LANG==='es'?'es-MX':'en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+    }
+    const phoneClean = (c.phone||'').replace(/[^\d+]/g,'');
+    const cardClass = visited ? 'tech-card visited' : (noVisit ? 'tech-card no-visit' : 'tech-card');
+    const numColor = visited ? '' : (noVisit ? ' style="background:#DC2626"' : '');
+    return `<div class="${cardClass}">
+      <div class="tcc-header">
+        <div class="tcc-num"${numColor}>${i+1}</div>
+        <div class="tcc-name">${esc(c.name)}</div>
+        ${visited?'<div class="tcc-check">✓</div>':''}
+        ${noVisit?'<div class="tcc-check" style="color:#DC2626">✗</div>':''}
+      </div>
+      ${c.addr?`<div class="tcc-line"><span class="tcc-icon">📍</span><a href="https://maps.google.com/?q=${encodeURIComponent(c.addr)}" target="_blank" rel="noopener">${esc(c.addr)}</a></div>`:''}
+      ${c.phone?`<div class="tcc-line"><span class="tcc-icon">📞</span><a href="tel:${esc(phoneClean)}">${esc(c.phone)}</a></div>`:''}
+      ${c.san?`<div class="tcc-line"><span class="tcc-icon">🧪</span>${esc(c.san)}</div>`:''}
+      ${c.notes?`<div class="tcc-line"><span class="tcc-icon">📝</span>${esc(c.notes)}</div>`:''}
+      ${visited
+        ? `<div class="tcc-visited-bar">
+            <span>✓ ${LANG==='es'?'Visitado':'Visited'}${stamp?` ${LANG==='es'?'a las':'at'} ${stamp}`:''}${v._location?' 📍':''}</span>
+            <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
+          </div>`
+        : (noVisit
+          ? `<div class="tcc-novisit-bar">
+              <span>✗ ${LANG==='es'?'No visitado':'No visit'}${stamp?` ${LANG==='es'?'a las':'at'} ${stamp}`:''}${v._location?' 📍':''}</span>
+              <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
+            </div>`
+          : `<div class="tcc-action-row">
+              <button class="tcc-visit-btn" onclick="techMarkVisited(${c.id})">✓ ${LANG==='es'?'VISITADO':'VISITED'}</button>
+              <button class="tcc-novisit-btn" onclick="techMarkNoVisit(${c.id})">✗ ${LANG==='es'?'NO VISITADO':'NO VISIT'}</button>
+            </div>`)
+      }
+    </div>`;
+  }).join('');
+  document.getElementById('tech-view-content').innerHTML = `
+    <div class="tech-progress">
+      <div>📋 ${handledCount}/${ordered.length} ${LANG==='es'?'completados':'handled'}</div>
+      <div class="tech-progress-bar"><div class="tech-progress-fill" style="width:${pct}%"></div></div>
+      <div>${pct}%</div>
+    </div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <span>${ordered.length} ${LANG==='es'?'clientes':'clients'} · Semana ${wt}${overridden?' <span style="color:#7C3AED;font-weight:700">('+(LANG==='es'?'manual':'manual')+')</span>':''}</span>
+      ${switchLine}
+    </div>
+    ${cards}`;
+}
+
+// ── Geolocation helper — tries to get the tech's current GPS, with timeout fallback ──
+// Returns {lat, lon, accuracy} or null. Does NOT block — gracefully resolves null on denial/timeout.
+function _captureLocation(){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation){ resolve(null); return; }
+    let settled=false;
+    const finish=(val)=>{ if(!settled){ settled=true; resolve(val); } };
+    // Hard timeout — never let this block longer than 8 seconds
+    setTimeout(()=>finish(null), 8000);
+    try{
+      navigator.geolocation.getCurrentPosition(
+        (pos)=>finish({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy||0)
+        }),
+        (err)=>{ dbgWarn('geolocation', err && err.message); finish(null); },
+        { enableHighAccuracy:true, timeout:7000, maximumAge:30000 }
+      );
+    } catch(e){ dbgWarn('geo throw',e); finish(null); }
+  });
+}
+
+// Mark a client as VISITED today (with current tech name + timestamp + GPS)
+async function techMarkVisited(cid){ return _techRecordVisit(cid, 'done'); }
+
+// Mark a client as NOT visited today (red flag — counted in admin's "missed" reports)
+async function techMarkNoVisit(cid){
+  const reason = await showPrompt(LANG==='es'?'Razón (opcional):':'Reason (optional):', '');
+  if(reason===null) return; // user cancelled
+  return _techRecordVisit(cid, 'not_done', reason);
+}
+
+async function _techRecordVisit(cid, status, notes){
+  const today=new Date();
+  const dateKey = today.toISOString().split('T')[0];
+  // Show inline "saving + getting location" indicator on the card
+  const btnRow = document.querySelectorAll(`.tech-card`);
+  // Lightweight visual feedback
+  showToast(LANG==='es'?'📍 Capturando ubicación...':'📍 Capturing location...','info');
+  const location = await _captureLocation();
+  if(!VL[cid]) VL[cid]={};
+  VL[cid][dateKey] = {
+    status,
+    tech: CURRENT_TECH,
+    notes: notes||'',
+    _timestamp: Date.now(),
+    _location: location  // {lat, lon, accuracy} or null if denied/unavailable
+  };
+  saveData();  // persists locally + syncs to Firebase — admin sees the update automatically
+  if(!location){
+    showToast(LANG==='es'?'⚠ Sin GPS — registrado igualmente':'⚠ No GPS — saved anyway','warn');
+  } else {
+    showToast(LANG==='es'?'✓ Registrado con ubicación':'✓ Saved with location','ok');
+  }
+  renderTechView();
+}
+
+// Undo (only available for today's visit, not historical)
+function techUndoVisit(cid){
+  const today=new Date();
+  const dateKey = today.toISOString().split('T')[0];
+  if(VL[cid] && VL[cid][dateKey]){
+    delete VL[cid][dateKey];
+    if(Object.keys(VL[cid]).length===0) delete VL[cid];
+  }
+  saveData();
+  renderTechView();
+}
+
 function loadFirebaseOnStartup(){
   // Auto-connect with hardcoded Aspen Spas config
   const hardcoded={
@@ -5001,6 +5673,16 @@ rd();
 updateBackupIndicator();
 loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
+
+// ─── Apply saved role (or prompt for one if first-time visit) ──────────────
+applyRole();
+if(!CURRENT_ROLE){
+  // First-time visitor on this device: ask whether they're Admin or Tech
+  showRoleSelection();
+} else if(CURRENT_ROLE==='tech'){
+  // Returning tech: render their day-view immediately
+  renderTechView();
+}
 
 // ─── Background warmup: pre-fill the geocode cache so opening any day map / printing a route is instant ──
 // Runs silently after 4 seconds, processes 5 addresses at a time with a 2s gap between batches.
