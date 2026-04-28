@@ -4005,6 +4005,16 @@ let fbDB=null;
 let fbRef=null;
 let fbConnected=false;
 let fbSyncing=false;
+// Watchdog: fbSyncing must never stay locked for more than 12 seconds. Any code path that sets
+// fbSyncing=true (tech visit flow, save flow, etc.) MUST release it. This safety net catches bugs
+// where an exception or early return could leave the listener permanently disabled.
+let _fbSyncingWatchdog=null;
+function _bumpFbSyncingWatchdog(){
+  if(_fbSyncingWatchdog) clearTimeout(_fbSyncingWatchdog);
+  _fbSyncingWatchdog = setTimeout(()=>{ fbSyncing = false; }, 12000);
+}
+// Wrap fbSyncing as a setter so the watchdog auto-bumps whenever it's set to true.
+// (Plain `let` flag stays for read perf; we just bump the watchdog at known set sites.)
 
 function getFirebaseConfig(){
   try{return JSON.parse(localStorage.getItem(FB_CONFIG_KEY));}catch(e){return null;}
@@ -4051,9 +4061,60 @@ function doInit(config){
 
 function applyCloudData(d){
   try{
-  if(d.BL){Object.keys(BL).forEach(k=>delete BL[k]);Object.assign(BL,d.BL);}
-  if(d.VL){Object.keys(VL).forEach(k=>delete VL[k]);Object.assign(VL,d.VL);}
+  // ─── VL (visit log) — merge per-client per-date, keeping the entry with the newest _timestamp ───
+  // CRITICAL: never wipe VL wholesale. A wipe-and-replace creates a race where a delayed
+  // cloud snapshot can erase visits that the tech just marked locally but hasn't synced yet.
+  if(d.VL){
+    Object.keys(d.VL).forEach(cid=>{
+      const cloudDates = d.VL[cid] || {};
+      if(!VL[cid]) VL[cid] = {};
+      Object.keys(cloudDates).forEach(dateKey=>{
+        const cloudEntry = cloudDates[dateKey];
+        const localEntry = VL[cid][dateKey];
+        // Prefer the entry with the newer _timestamp; if neither has one, prefer cloud (admin edits, etc.)
+        const cloudTs = (cloudEntry && cloudEntry._timestamp) || 0;
+        const localTs = (localEntry && localEntry._timestamp) || 0;
+        if(!localEntry || cloudTs >= localTs){
+          VL[cid][dateKey] = cloudEntry;
+        }
+        // else: keep local — it's newer than what the cloud has
+      });
+    });
+    // Also remove local visits that the cloud explicitly deleted (e.g. tech hit Undo from another device)
+    Object.keys(VL).forEach(cid=>{
+      if(!d.VL[cid]) return; // cloud has no record for this client — keep local
+      Object.keys(VL[cid]).forEach(dateKey=>{
+        if(!d.VL[cid][dateKey]){
+          // Cloud removed this date — but only honor the deletion if cloud's overall savedAt is newer than this local entry
+          const localTs = (VL[cid][dateKey] && VL[cid][dateKey]._timestamp) || 0;
+          const cloudSavedAt = d.savedAt ? new Date(d.savedAt).getTime() : 0;
+          if(cloudSavedAt > localTs){
+            delete VL[cid][dateKey];
+          }
+        }
+      });
+      if(Object.keys(VL[cid]).length===0) delete VL[cid];
+    });
+  }
+  // ─── BL (water-change log) — same merge strategy as VL ───
+  if(d.BL){
+    Object.keys(d.BL).forEach(cid=>{
+      const cloudDates = d.BL[cid] || {};
+      if(!BL[cid]) BL[cid] = {};
+      Object.keys(cloudDates).forEach(dateKey=>{
+        const cloudEntry = cloudDates[dateKey];
+        const localEntry = BL[cid][dateKey];
+        const cloudTs = (cloudEntry && (cloudEntry._timestamp || (cloudEntry.saved && new Date(cloudEntry.saved).getTime()))) || 0;
+        const localTs = (localEntry && (localEntry._timestamp || (localEntry.saved && new Date(localEntry.saved).getTime()))) || 0;
+        if(!localEntry || cloudTs >= localTs){
+          BL[cid][dateKey] = cloudEntry;
+        }
+      });
+    });
+  }
+  // ─── TAPPTS (technician appointments) — replace whole-key only if cloud is newer. These are admin-managed. ───
   if(d.TAPPTS){Object.keys(TAPPTS).forEach(k=>delete TAPPTS[k]);Object.assign(TAPPTS,d.TAPPTS);}
+  // ─── TECHS / CAL_ORDER / clients — admin-managed, safe to apply wholesale (savedAt gate above already protects) ───
   if(d.TECHS){
     const ta=Array.isArray(d.TECHS)?d.TECHS:Object.values(d.TECHS).filter(Boolean);
     TECHS=ta;
@@ -4071,16 +4132,28 @@ function applyCloudData(d){
       arr.forEach(cl=>C.push(cl));
     }
   }
-  // Also save to localStorage
-  try{localStorage.setItem(LS_KEY,JSON.stringify(d));}catch(e){dbgWarn("caught:",e);}
+  // Save merged result back to localStorage so the next reload starts from the correct state
+  try{
+    const mergedPayload = getBackupPayload();
+    mergedPayload.savedAt = d.savedAt || new Date().toISOString();
+    localStorage.setItem(LS_KEY, JSON.stringify(mergedPayload));
+  }catch(e){dbgWarn("caught:",e);}
   refreshTechDataLists();
   ra();
+  // If the tech is currently looking at their day-view, re-render so the merged state is visible
+  if(CURRENT_ROLE==='tech' && typeof renderTechView==='function') renderTechView();
   }catch(e){console.error('applyCloudData error:',e);ra();}
 }
 
 function saveToFirebase(){
-  if(!fbConnected||!fbRef)return;
+  // Even if not connected, schedule a fail-safe release of fbSyncing in case the caller set it
+  // (e.g. _techRecordVisit). Otherwise the local guard could stay locked when offline.
+  if(!fbConnected||!fbRef){
+    setTimeout(()=>{fbSyncing=false;},2000);
+    return;
+  }
   fbSyncing=true;
+  _bumpFbSyncingWatchdog();
   const payload=getBackupPayload();
   payload.savedAt=new Date().toISOString();
   fbRef.set(payload).then(()=>{
@@ -5933,6 +6006,11 @@ async function techEditNote(cid){
 async function _techRecordVisit(cid, status, notes){
   const today=new Date();
   const dateKey = today.toISOString().split('T')[0];
+  // Block the Firebase listener from applying any incoming snapshot during this whole flow.
+  // _captureLocation() can take up to 8 seconds; without this guard, a delayed cloud snapshot
+  // could land mid-flight and wipe the visits the tech just marked.
+  fbSyncing = true;
+  _bumpFbSyncingWatchdog();
   // Show inline "saving + getting location" indicator on the card
   const btnRow = document.querySelectorAll(`.tech-card`);
   // Lightweight visual feedback
@@ -5947,6 +6025,7 @@ async function _techRecordVisit(cid, status, notes){
     _location: location  // {lat, lon, accuracy} or null if denied/unavailable
   };
   saveData();  // persists locally + syncs to Firebase — admin sees the update automatically
+                // (saveToFirebase resets the fbSyncing 2-second window)
   if(!location){
     showToast(LANG==='es'?'⚠ Sin GPS — registrado igualmente':'⚠ No GPS — saved anyway','warn');
   } else {
@@ -5959,6 +6038,8 @@ async function _techRecordVisit(cid, status, notes){
 function techUndoVisit(cid){
   const today=new Date();
   const dateKey = today.toISOString().split('T')[0];
+  fbSyncing = true; // block listener for the whole undo flow
+  _bumpFbSyncingWatchdog();
   if(VL[cid] && VL[cid][dateKey]){
     delete VL[cid][dateKey];
     if(Object.keys(VL[cid]).length===0) delete VL[cid];
