@@ -209,6 +209,12 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
 .tcc-line a{color:#2563EB;text-decoration:none;font-weight:600}
 .tcc-line a:hover{text-decoration:underline}
 .tcc-icon{flex-shrink:0;font-size:14px;line-height:1.4}
+.tcc-map-alt{display:flex;gap:6px;margin:3px 0 8px 22px;flex-wrap:wrap}
+.tcc-map-alt a{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;background:#F1F5F9;color:#475569 !important;text-decoration:none !important;font-size:11.5px;font-weight:600;border:1px solid #E2E8F0;line-height:1.5}
+.tcc-map-alt a:hover{background:#E2E8F0;text-decoration:none !important}
+.tcc-map-alt a.tcc-map-apple{background:#F8FAFC}
+.tcc-map-alt a.tcc-map-google{background:#FEF7E6;border-color:#FCD9A6;color:#854D0E !important}
+.tcc-map-alt a.tcc-map-google:hover{background:#FEEBC8}
 .tcc-phone-line{flex-wrap:wrap}
 .tcc-phone-num{flex-shrink:0}
 .tcc-sms-btn{margin-left:auto;background:#16A34A;color:#FFF;border:none;padding:6px 11px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .15s}
@@ -1165,12 +1171,39 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
   </div>
   <div class="mfoot">
     <button class="btn" onclick="cm('mdaymap')">Cerrar / Close</button>
-    <button class="btn btn-brand" onclick="openRouteInGoogleMaps()">📍 Google Maps</button>
+    <button class="btn btn-brand" onclick="openRouteInMaps('apple')">🍎 Apple Maps</button>
+    <button class="btn btn-brand" onclick="openRouteInMaps('google')">🌐 Google Maps</button>
   </div>
 </div>
 </div>
 
 <script>
+/* ══════════════════════════════════════════════
+   MAPS HELPERS — native-app detection + URL builder
+   ══════════════════════════════════════════════ */
+// Returns true if the current device prefers Apple Maps as its native app
+// (iPhone, iPad, iPod, Mac). Everything else (Android, Windows, Linux) → Google Maps.
+// Note: iPadOS 13+ desktop-mode reports as Macintosh in its UA, so the Mac check covers it.
+function isAppleNative(){
+  const ua = navigator.userAgent || '';
+  if(/iPhone|iPad|iPod/i.test(ua)) return true;
+  if(/Macintosh|Mac OS X/i.test(ua)) return true;
+  return false;
+}
+// Build a maps URL for an address (or "lat,lon" string).
+// provider: 'apple' | 'google' | 'native' (auto-pick based on device).
+function mapsUrl(query, provider){
+  const q = encodeURIComponent(query);
+  const p = (provider === 'native' || !provider) ? (isAppleNative() ? 'apple' : 'google') : provider;
+  return p === 'apple'
+    ? `https://maps.apple.com/?q=${q}`
+    : `https://maps.google.com/?q=${q}`;
+}
+// Convenience for "lat,lon" coordinate pairs.
+function mapsUrlCoords(lat, lon, provider){
+  return mapsUrl(`${lat},${lon}`, provider || 'native');
+}
+
 /* ══════════════════════════════════════════════
    i18n — ENGLISH / SPANISH TOGGLE
    ══════════════════════════════════════════════ */
@@ -3112,7 +3145,7 @@ function rcheckins(){
     let distCell=`<span style="color:#94A3B8;font-size:11.5px">—</span>`;
     if(v._location && v._location.lat){
       const loc=v._location;
-      const mapsUrl=`https://maps.google.com/?q=${loc.lat},${loc.lon}`;
+      const mapsUrl=mapsUrlCoords(loc.lat,loc.lon,'native');
       const acc = loc.accuracy ? `<span style="font-size:10.5px;color:#94A3B8;display:block">±${loc.accuracy}m</span>` : '';
       gpsCell=`<a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:none;font-size:12px" title="${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}">🗺️ Ver mapa</a>${acc}`;
       // Distance to client address
@@ -3164,7 +3197,7 @@ function exportCheckinsCSV(){
   if(search) rows=rows.filter(r=>r.clientName.toLowerCase().includes(search) || (r.visit.tech||'').toLowerCase().includes(search));
   if(rows.length===0){showToast(LANG==='es'?'Sin registros para exportar':'No records to export','warn');return;}
   const escCSV=v=>{const s=String(v==null?'':v);return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;};
-  const header=['Fecha','Hora','Cliente','Direccion del cliente','Tecnico','Estado','GPS Lat','GPS Lon','GPS Precision (m)','Distancia (m)','Google Maps URL','Notas'];
+  const header=['Fecha','Hora','Cliente','Direccion del cliente','Tecnico','Estado','GPS Lat','GPS Lon','GPS Precision (m)','Distancia (m)','Maps URL','Notas'];
   const lines=[header.map(escCSV).join(',')];
   rows.forEach(r=>{
     const v=r.visit;
@@ -3629,7 +3662,7 @@ function openVisitModal(cid,dateKey){
     const loc=vl._location;
     const ts = vl._timestamp ? new Date(vl._timestamp).toLocaleString(LANG==='es'?'es-MX':'en-US',{hour:'numeric',minute:'2-digit',hour12:true,month:'short',day:'numeric'}) : '';
     const accuracy = loc.accuracy ? ` (±${loc.accuracy}m)` : '';
-    const mapsUrl = `https://maps.google.com/?q=${loc.lat},${loc.lon}`;
+    const mapsUrl = mapsUrlCoords(loc.lat,loc.lon,'native');
     const distLine = c.addr ? `<div id="vis-loc-dist" style="font-size:11.5px;color:#64748B;margin-top:3px"></div>` : '';
     locContent.innerHTML = `
       <a href="${mapsUrl}" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:none">🗺️ ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}${accuracy}</a>
@@ -4847,13 +4880,24 @@ function focusRoutePoint(i){
   _leafletMap.setView([pt.coords.lat,pt.coords.lon],15);
   _leafletMap.eachLayer(l=>{if(l instanceof L.Marker){const ll=l.getLatLng();if(Math.abs(ll.lat-pt.coords.lat)<0.0001&&Math.abs(ll.lng-pt.coords.lon)<0.0001)l.openPopup();}});
 }
-function openRouteInGoogleMaps(){
+function openRouteInMaps(provider){
   if(!_routeClients.length)return;
-  const a=_routeClients.map(c=>{
-    const norm=_normAddr(c.addr||'')||(c.addr||'');
+  // Pick provider: 'apple' | 'google' | 'native' (auto-detect)
+  const p = (provider === 'native' || !provider) ? (isAppleNative() ? 'apple' : 'google') : provider;
+  const addrs = _routeClients.map(c=>{
+    const norm = _normAddr(c.addr||'') || (c.addr||'');
     return encodeURIComponent(norm);
-  }).join('/');
-  window.open('https://www.google.com/maps/dir/'+a,'_blank');
+  });
+  let url;
+  if(p === 'apple'){
+    // Apple Maps multi-stop: ?daddr=A+to:B+to:C
+    // The literal "+to:" separator is what Apple Maps recognizes for multiple stops.
+    url = 'https://maps.apple.com/?daddr=' + addrs.join('+to:');
+  } else {
+    // Google Maps multi-stop: /maps/dir/A/B/C
+    url = 'https://www.google.com/maps/dir/' + addrs.join('/');
+  }
+  window.open(url, '_blank');
 }
 
 /* ── PRINT WEEK OPTIONS ── */
@@ -5754,7 +5798,8 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
         ${visited?'<div class="tcc-check">✓</div>':''}
         ${noVisit?'<div class="tcc-check" style="color:#DC2626">✗</div>':''}
       </div>
-      ${c.addr?`<div class="tcc-line"><span class="tcc-icon">📍</span><a href="https://maps.google.com/?q=${encodeURIComponent(c.addr)}" target="_blank" rel="noopener">${esc(c.addr)}</a></div>`:''}
+      ${c.addr?`<div class="tcc-line"><span class="tcc-icon">📍</span><a href="${mapsUrl(c.addr,'native')}" target="_blank" rel="noopener">${esc(c.addr)}</a></div>
+      <div class="tcc-map-alt"><a href="${mapsUrl(c.addr,'apple')}" target="_blank" rel="noopener" class="tcc-map-apple" title="Apple Maps">🍎 Apple Maps</a><a href="${mapsUrl(c.addr,'google')}" target="_blank" rel="noopener" class="tcc-map-google" title="Google Maps">🌐 Google Maps</a></div>`:''}
       ${c.phone?`<div class="tcc-line tcc-phone-line"><span class="tcc-icon">📞</span><a href="tel:${esc(phoneClean)}" class="tcc-phone-num">${esc(c.phone)}</a><button class="tcc-sms-btn" onclick="techSendOnTheWaySMS('${esc(phoneClean)}','${esc(c.name).replace(/'/g,"&#39;")}')">💬 ${LANG==='es'?'En camino':"On my way"}</button></div>`:''}
       ${c.san?`<div class="tcc-line"><span class="tcc-icon">🧪</span>${esc(c.san)}</div>`:''}
       ${c.notes?`<div class="tcc-line"><span class="tcc-icon">📝</span>${esc(c.notes)}</div>`:''}
