@@ -266,7 +266,7 @@ body.role-admin #tech-view,
 body:not(.role-tech) #tech-view{display:none}
 /* Switch-user button — small, fixed top-right corner, visible in both modes */
 .switch-user-btn{position:fixed;top:10px;right:10px;z-index:200;background:rgba(255,255,255,.92);border:1px solid #CBD5E1;color:#1E40AF;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.1);font-family:inherit;display:none}
-body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
+body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organizer .switch-user-btn{display:block}
 .switch-user-btn:hover{background:#FFF;box-shadow:0 4px 10px rgba(0,0,0,.15)}
 
 /* ─── Tech view (mobile-first, big touch targets) ────────────────────────── */
@@ -1995,13 +1995,63 @@ function renderOrganizersList(){
   const el=document.getElementById('orgs-list');
   if(!el)return;
   if(!ORGANIZERS.length){el.innerHTML=`<p style="font-size:14.4px;color:var(--muted);padding:8px 0">${LANG==='es'?'No hay organizadores registrados':'No organizers registered'}</p>`;return;}
-  el.innerHTML=ORGANIZERS.map((o,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border)">
+  el.innerHTML=ORGANIZERS.map((o,i)=>{
+    const hasPwd = !!(o.pwdHash);
+    const lockIcon = hasPwd
+      ? `<span title="${LANG==='es'?'Tiene contraseña':'Has password'}" style="font-size:13px">🔒</span>`
+      : `<span title="${LANG==='es'?'Sin contraseña':'No password'}" style="font-size:13px;opacity:.4">🔓</span>`;
+    const pwdBtnLbl = hasPwd ? (LANG==='es'?'Cambiar 🔒':'Change 🔒') : (LANG==='es'?'Poner 🔒':'Set 🔒');
+    return `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border);flex-wrap:wrap">
       <span style="font-size:16.1px">🗂</span>
       <span style="font-weight:600;color:#7C3AED;flex:1;font-size:14.9px;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(o.name)}</span>
+      ${lockIcon}
       <span style="font-size:13.2px;color:var(--muted);white-space:nowrap">${esc(o.phone)||''}</span>
+      <button class="btn" style="font-size:11px;padding:3px 8px;flex-shrink:0;background:#EDE9FE;color:#5B21B6;border-color:#A78BFA" onclick="setOrganizerPassword(${i})" title="${LANG==='es'?'Gestionar contraseña':'Manage password'}">${pwdBtnLbl}</button>
       <button class="btn btn-red" style="font-size:11.5px;padding:3px 8px;flex-shrink:0" onclick="removeOrganizer(${i})">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+// Set or change an organizer's password (admin-only action, called from the Techs modal)
+async function setOrganizerPassword(idx){
+  const o = ORGANIZERS[idx];
+  if(!o) return;
+  const hasPwd = !!o.pwdHash;
+  if(hasPwd){
+    // Offer: change or remove
+    const choice = await showConfirm(
+      LANG==='es'
+        ? `"${o.name}" ya tiene contraseña. ¿Quieres cambiarla?\n\nToca Cancelar para eliminarla en lugar de cambiarla.`
+        : `"${o.name}" already has a password. Change it?\n\nTap Cancel to remove it instead of changing.`
+    );
+    if(!choice){
+      // Remove path
+      const confirmRemove = await showConfirm(
+        LANG==='es'?`¿Eliminar la contraseña de "${o.name}"?`:`Remove password for "${o.name}"?`,
+        {danger:true}
+      );
+      if(!confirmRemove) return;
+      o.pwdHash = '';
+      renderOrganizersList(); saveData();
+      showToast(LANG==='es'?'Contraseña eliminada':'Password removed','warn');
+      return;
+    }
+  }
+  // Set/change path
+  const pwd = await showPrompt(
+    LANG==='es'?`Nueva contraseña para "${o.name}":`:`New password for "${o.name}":`,
+    '',
+    {type:'password'}
+  );
+  if(pwd === null) return;
+  if(pwd.length < 4){
+    showToast(LANG==='es'?'Mínimo 4 caracteres':'Minimum 4 characters','warn');
+    return;
+  }
+  o.pwdHash = await _hashPwd(pwd);
+  renderOrganizersList(); saveData();
+  showToast(LANG==='es'?'✓ Contraseña actualizada':'✓ Password updated','ok');
 }
 function addTechnician(){
   const nameEl=document.getElementById('new-tech-name');
@@ -2019,7 +2069,7 @@ async function removeTechnician(idx){
   TECHS.splice(idx,1);
   renderTechsList();refreshTechDataLists();saveData();
 }
-function addOrganizer(){
+async function addOrganizer(){
   const nameEl=document.getElementById('new-org-name');
   const phoneEl=document.getElementById('new-org-phone');
   const name=(nameEl.value||'').trim();
@@ -2027,10 +2077,30 @@ function addOrganizer(){
   if(ORGANIZERS.find(o=>o.name.toLowerCase()===name.toLowerCase())){
     showToast(LANG==='es'?'Ese organizador ya existe':'That organizer already exists');return;
   }
-  ORGANIZERS.push({name,phone:(phoneEl.value||'').trim()});
+  // Optional password — admin can choose to set one or leave it open
+  const wantPwd = await showConfirm(
+    LANG==='es'
+      ? `¿Quieres poner una contraseña para "${name}"?\n\n(Opcional — puedes saltarlo y agregarla después)`
+      : `Set a password for "${name}"?\n\n(Optional — you can skip and add one later)`
+  );
+  let pwdHash = '';
+  if(wantPwd){
+    const pwd = await showPrompt(
+      LANG==='es' ? 'Contraseña para este organizador:' : 'Password for this organizer:',
+      '',
+      { type:'password' }
+    );
+    if(pwd === null) return; // cancelled — don't add the organizer at all
+    if(pwd.length < 4){
+      showToast(LANG==='es'?'Mínimo 4 caracteres — organizador no agregado':'Min 4 chars — organizer not added','warn');
+      return;
+    }
+    pwdHash = await _hashPwd(pwd);
+  }
+  ORGANIZERS.push({name, phone:(phoneEl.value||'').trim(), pwdHash});
   nameEl.value='';phoneEl.value='';
   renderOrganizersList();saveData();
-  showToast(LANG==='es'?`✓ "${name}" agregado como organizador`:`✓ "${name}" added as organizer`,'ok');
+  showToast(LANG==='es'?`✓ "${name}" agregado${pwdHash?' con contraseña':''}`:`✓ "${name}" added${pwdHash?' with password':''}`,'ok');
 }
 async function removeOrganizer(idx){
   const o=ORGANIZERS[idx];
@@ -3431,8 +3501,10 @@ function rv(){
     allDates.sort();
     const vls=VL[c.id]||{};
     const dots=allDates.map(dk=>{
-      const vl=vls[dk];const isPast=new Date(dk+'T12:00:00')<tn2;
-      const st=vl?vl.status:'pending';
+      const vl=vls[dk];
+      const isTombstone = vl && vl._deleted;
+      const isPast=new Date(dk+'T12:00:00')<tn2;
+      const st = (vl && !isTombstone) ? vl.status : 'pending';
       const bg=st==='done'?'#16A34A':(st==='skip'||st==='not_done')?'#EF4444':isPast?'#EF4444':'#F59E0B';
       const op=st==='done'||st==='not_done'||st==='skip'||isPast?1:0.45;
       const titleSuffix = st==='done' ? ' ✓' : (st==='not_done' ? ' ✗ no visitado' : '');
@@ -3466,6 +3538,8 @@ function _collectAllCheckins(){
       if(!v||!v.status)return;
       // Skip plain "pending" rows — those aren't actual check-ins
       if(v.status==='pending')return;
+      // Skip tombstones — they represent undone visits, not real check-ins
+      if(v._deleted)return;
       rows.push({cid,clientName,clientAddr,dateKey:dk,visit:v});
     });
   });
@@ -3767,7 +3841,8 @@ function buildWeekSection(wt,clients,q){
       const wbadge=isAB?'<span class="wb-ab">A+B</span>':wt==='A'?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>';
       const vls=VL[c.id]||{};
       const dates=getVisitDatesForWeek(c,q,wt);
-      const done=dates.filter(d=>vls[d]&&vls[d].status==='done').length;
+      // Tombstones (entries with _deleted) are ignored in counts and shown as pending
+      const done=dates.filter(d=>vls[d]&&!vls[d]._deleted&&vls[d].status==='done').length;
       const total=dates.length;
       const progC=total===0?'#aaa':done===total?'#16A34A':done>0?'#F59E0B':'#888';
       const ordNum=ci+1;
@@ -3779,13 +3854,14 @@ function buildWeekSection(wt,clients,q){
 
       const visitHtml=dates.map(dk=>{
         const vl=vls[dk];
-        const st=vl?vl.status:'pending';
+        const isTombstone = vl && vl._deleted;
+        const st = (vl && !isTombstone) ? vl.status : 'pending';
         const isPast=new Date(dk+'T12:00:00')<today2;
         const isMissed = (st==='skip'||st==='not_done');
         const dotC=st==='done'?'vd-done':isMissed?'vd-skip':'vd-pend';
         const dlbl=new Date(dk+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'});
-        const note=vl&&vl.notes?vl.notes.substring(0,16):'';
-        const tech=vl&&vl.tech?vl.tech:'';
+        const note=vl&&!isTombstone&&vl.notes?vl.notes.substring(0,16):'';
+        const tech=vl&&!isTombstone&&vl.tech?vl.tech:'';
         const label=note||tech||(st==='done'?t('visitedCal'):isMissed?t('notVisitedCal'):isPast?t('overdue'):'');
         return`<div class="visit-row" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span><span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span></div>`;
       }).join('');
@@ -4056,7 +4132,9 @@ function updateScheduleDayStats(allClients,q){
 
 function openVisitModal(cid,dateKey){
   const c=C.find(x=>x.id===cid);if(!c)return;
-  const vl=VL[cid]&&VL[cid][dateKey];
+  const raw=VL[cid]&&VL[cid][dateKey];
+  // If the entry is a tombstone, treat it as no-record-yet for the modal — admin should see fresh fields
+  const vl = (raw && !raw._deleted) ? raw : null;
   refreshTechDataLists();
   document.getElementById('vis-cid').value=cid;document.getElementById('vis-date').value=dateKey;
   document.getElementById('vis-cname').value=c.name;
@@ -4103,29 +4181,33 @@ function saveVisit(){
   const cid=parseInt(document.getElementById('vis-cid').value);
   const dk=document.getElementById('vis-date').value;
   if(!VL[cid])VL[cid]={};
-  // Preserve existing _location / _timestamp so admin edits don't wipe the tech's GPS evidence
+  // Preserve existing _location so admin edits don't wipe the tech's GPS evidence.
+  // BUT bump _timestamp to now() so this edit wins over older tombstones / older cloud entries during merges.
   const prev = VL[cid][dk] || {};
   VL[cid][dk]={
     status:document.getElementById('vis-status').value,
     notes:document.getElementById('vis-notes').value.trim(),
     tech:document.getElementById('vis-tech').value.trim(),
     saved:new Date().toISOString(),
-    _timestamp: prev._timestamp || Date.now(),
-    _location: prev._location || null
+    _timestamp: Date.now(),
+    _location: (prev && !prev._deleted) ? (prev._location || null) : null
   };
+  saveData();
   cm('mvisit');rcal();
 }
 
 function toggleVisitQuick(cid,dk){
   if(!VL[cid])VL[cid]={};
   const vl=VL[cid][dk];
-  if(vl&&vl.status==='done'){
-    // Undo — set back to pending
-    VL[cid][dk]={...vl,status:'pending',saved:new Date().toISOString()};
+  const isTombstone = vl && vl._deleted;
+  if(vl && !isTombstone && vl.status==='done'){
+    // Undo — write a tombstone (so the deletion propagates cross-device cleanly)
+    VL[cid][dk]={_deleted:true, _timestamp:Date.now(), tech:vl.tech||'', saved:new Date().toISOString()};
   } else {
-    // Mark as done with default tech
-    const tech=vl&&vl.tech?vl.tech:(TECHS.length?TECHS[0].name:'');
-    VL[cid][dk]={status:'done',notes:vl&&vl.notes||'',tech,saved:new Date().toISOString()};
+    // Mark as done with default tech (tombstone or pending → done)
+    const prevTech = vl && !isTombstone && vl.tech ? vl.tech : (TECHS.length?TECHS[0].name:'');
+    const prevNotes = vl && !isTombstone ? (vl.notes||'') : '';
+    VL[cid][dk]={status:'done', notes:prevNotes, tech:prevTech, _timestamp:Date.now(), saved:new Date().toISOString()};
   }
   saveData();rcal();
 }
@@ -4137,8 +4219,9 @@ function showHist(cid){
   const dB=(c.week==='B'||c.week==='A&B')?getVisitDatesForWeek(c,q,'B'):[];
   const all=[...new Set([...dA,...dB])].sort();
   const vls=VL[cid]||{};
-  const done=all.filter(d=>vls[d]&&vls[d].status==='done').length;
-  const skip=all.filter(d=>vls[d]&&vls[d].status==='skip').length;
+  // Filter out tombstones from history counts
+  const done=all.filter(d=>vls[d]&&!vls[d]._deleted&&vls[d].status==='done').length;
+  const skip=all.filter(d=>vls[d]&&!vls[d]._deleted&&vls[d].status==='skip').length;
   document.getElementById('vhist-name').textContent=c.name+' — '+q;
   document.getElementById('vhist-body').innerHTML=`
     <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
@@ -4148,16 +4231,19 @@ function showHist(cid){
       <span style="font-size:13.8px;color:var(--muted)">Total: ${all.length}</span>
     </div>
     ${all.map(d=>{
-      const vl=vls[d];const s=vl?vl.status:'pending';
+      const vl=vls[d];
+      const isTombstone = vl && vl._deleted;
+      const s = (vl && !isTombstone) ? vl.status : 'pending';
       const isA=dA.includes(d);
       const dl2=new Date(d+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
       const dc=s==='done'?'#16A34A':s==='skip'?'#EF4444':'#F59E0B';
       const sl=s==='done'?t('visitedCal'):s==='skip'?t('notVisitedCal'):t('statusPending');
+      const showNotes = vl && !isTombstone;
       return`<div class="vm-row">
         <span style="width:9px;height:9px;border-radius:50%;background:${dc};display:inline-block;flex-shrink:0"></span>
         <span style="font-size:13.8px;min-width:80px;font-weight:500">${dl2} ${isA?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>'}</span>
         <span style="font-size:13.2px;color:${dc};min-width:60px">${sl}</span>
-        <span style="font-size:12.6px;color:var(--muted);flex:1">${vl&&vl.notes?vl.notes:''} ${vl&&vl.tech?'· '+vl.tech:''}</span>
+        <span style="font-size:12.6px;color:var(--muted);flex:1">${showNotes&&vl.notes?vl.notes:''} ${showNotes&&vl.tech?'· '+vl.tech:''}</span>
         <button class="btn" style="font-size:11.5px" onclick="cm('mhist');openVisitModal(${cid},'${d}')">${t('editBtn')}</button>
       </div>`;
     }).join('')}`;
@@ -4227,6 +4313,20 @@ function loadData(){
         if(!C.find(x=>x.id===ov.id))C.push(ov);
       });
     }
+    // Garbage-collect old tombstones (entries with _deleted:true) older than 30 days.
+    // After 30 days, all devices have surely synced the deletion, so the tombstone
+    // is no longer needed to propagate the undo.
+    const tombstoneCutoff = Date.now() - 30 * 86400000;
+    Object.keys(VL).forEach(cid => {
+      const dates = VL[cid] || {};
+      Object.keys(dates).forEach(dk => {
+        const v = dates[dk];
+        if(v && v._deleted && (v._timestamp || 0) < tombstoneCutoff){
+          delete dates[dk];
+        }
+      });
+      if(Object.keys(dates).length === 0) delete VL[cid];
+    });
   }catch(e){console.warn('Load error:',e);}
 }
 
@@ -4475,8 +4575,17 @@ function doInit(config){
 function applyCloudData(d){
   try{
   // ─── VL (visit log) — merge per-client per-date, keeping the entry with the newest _timestamp ───
-  // CRITICAL: never wipe VL wholesale. A wipe-and-replace creates a race where a delayed
-  // cloud snapshot can erase visits that the tech just marked locally but hasn't synced yet.
+  // CRITICAL: never wipe VL wholesale, AND never auto-delete local visits based on cloud absence.
+  //
+  // History of the bug this guards against:
+  //   When admin device saves to Firebase, fbRef.set(payload) REPLACES the entire data node with the
+  //   admin's local payload. If admin's local VL is stale (admin hadn't received tech's recent visits
+  //   yet), the cloud's VL gets overwritten with the stale state. The tech then receives the snapshot
+  //   and an "auto-delete based on cloud absence" rule would erase the tech's visits.
+  //
+  // The fix: cloud absence is NOT proof of deletion. Only an explicit tombstone (entry with
+  // _deleted:true and a _timestamp) propagates a deletion across devices. Without a tombstone,
+  // local data wins by default.
   if(d.VL){
     Object.keys(d.VL).forEach(cid=>{
       const cloudDates = d.VL[cid] || {};
@@ -4485,6 +4594,7 @@ function applyCloudData(d){
         const cloudEntry = cloudDates[dateKey];
         const localEntry = VL[cid][dateKey];
         // Prefer the entry with the newer _timestamp; if neither has one, prefer cloud (admin edits, etc.)
+        // Tombstones (cloudEntry._deleted) follow the same rule — newer timestamp wins.
         const cloudTs = (cloudEntry && cloudEntry._timestamp) || 0;
         const localTs = (localEntry && localEntry._timestamp) || 0;
         if(!localEntry || cloudTs >= localTs){
@@ -4493,21 +4603,8 @@ function applyCloudData(d){
         // else: keep local — it's newer than what the cloud has
       });
     });
-    // Also remove local visits that the cloud explicitly deleted (e.g. tech hit Undo from another device)
-    Object.keys(VL).forEach(cid=>{
-      if(!d.VL[cid]) return; // cloud has no record for this client — keep local
-      Object.keys(VL[cid]).forEach(dateKey=>{
-        if(!d.VL[cid][dateKey]){
-          // Cloud removed this date — but only honor the deletion if cloud's overall savedAt is newer than this local entry
-          const localTs = (VL[cid][dateKey] && VL[cid][dateKey]._timestamp) || 0;
-          const cloudSavedAt = d.savedAt ? new Date(d.savedAt).getTime() : 0;
-          if(cloudSavedAt > localTs){
-            delete VL[cid][dateKey];
-          }
-        }
-      });
-      if(Object.keys(VL[cid]).length===0) delete VL[cid];
-    });
+    // INTENTIONALLY no "delete local entries that are missing from cloud" loop here.
+    // That logic caused data loss when admin's stale full-payload save overwrote the cloud's VL.
   }
   // ─── BL (water-change log) — same merge strategy as VL ───
   if(d.BL){
@@ -5510,7 +5607,8 @@ function updatePrintNotesEditor(weekOffset){
     html+=`<div class="prn-day">
       <div class="prn-day-hd">${DN[di]} <span style="font-weight:400;color:var(--muted);font-size:12px">${dateLabel}</span></div>`;
     dayC.forEach(c=>{
-      const existing=(VL[c.id]&&VL[c.id][dateKey]&&VL[c.id][dateKey].notes)||'';
+      const ve = VL[c.id] && VL[c.id][dateKey];
+      const existing = (ve && !ve._deleted && ve.notes) || '';
       html+=`<div class="prn-row">
         <span class="prn-client">${esc(c.name)}</span>
         <input type="text" class="prn-input"
@@ -5533,14 +5631,17 @@ function savePrintNotes(){
     const dk=inp.dataset.dk;
     const val=inp.value.trim();
     if(!VL[cid])VL[cid]={};
-    const existing=VL[cid][dk]||{};
+    const raw=VL[cid][dk]||{};
+    // If existing entry is a tombstone, treat it as empty (a print-note shouldn't resurrect a deleted visit)
+    const existing = raw._deleted ? {} : raw;
     const oldNote=existing.notes||'';
     if(val!==oldNote){
       VL[cid][dk]={
         status:existing.status||'pending',
         notes:val,
         tech:existing.tech||'',
-        saved:new Date().toISOString()
+        saved:new Date().toISOString(),
+        _timestamp: Date.now()
       };
       changed=true;
     }
@@ -5621,7 +5722,7 @@ function printWeek(weekOffset){
         // Get reminder note for this specific visit date
         const dateKey=dayDates[di].iso;
         const vl=VL[c.id]&&VL[c.id][dateKey];
-        const reminder=vl&&vl.notes?vl.notes:'';
+        const reminder = vl && !vl._deleted && vl.notes ? vl.notes : '';
         const generalNote=c.notes||'';
 
         // Build notes cell — reminder highlighted, then general note
@@ -6194,10 +6295,13 @@ function showOrganizerSelection(){
       <button class="role-btn" onclick="showRoleSelection()" style="margin-top:14px"><div class="role-btn-icon">←</div><div class="role-btn-text"><div class="role-btn-title">${LANG==='es'?'Atrás':'Back'}</div></div></button>`;
     return;
   }
-  const list=ORGANIZERS.map(o=>`
-    <button class="tech-pick-btn" onclick="loginAsOrganizer('${esc(o.name).replace(/'/g,'&#39;')}')" style="border-color:#A78BFA">
-      🗂 ${esc(o.name)}
-    </button>`).join('');
+  const list=ORGANIZERS.map((o,i)=>{
+    const lockBadge = o.pwdHash ? '<span style="font-size:11px;color:#94A3B8;margin-left:auto">🔒</span>' : '';
+    return `
+    <button class="tech-pick-btn" onclick="_orgPickName(${i})" style="border-color:#A78BFA">
+      🗂 <span style="flex:1;text-align:left">${esc(o.name)}</span>${lockBadge}
+    </button>`;
+  }).join('');
   card.innerHTML=`
     <h2>${LANG==='es'?'¿Cuál organizador eres?':'Which organizer are you?'}</h2>
     <div class="sub">${LANG==='es'?'Elige tu nombre':'Pick your name'}</div>
@@ -6205,6 +6309,60 @@ function showOrganizerSelection(){
     <button class="tech-pick-btn" onclick="showRoleSelection()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:14px;padding:10px 14px">
       ← ${LANG==='es'?'Atrás':'Back'}
     </button>`;
+}
+
+// User picked an organizer — if it has a password, prompt for it; otherwise log in directly.
+function _orgPickName(idx){
+  const o = ORGANIZERS[idx];
+  if(!o) return;
+  if(o.pwdHash){
+    promptOrganizerPassword(idx);
+  } else {
+    loginAsOrganizer(o.name);
+  }
+}
+
+function promptOrganizerPassword(idx, opts){
+  opts = opts || {};
+  const o = ORGANIZERS[idx];
+  if(!o) return;
+  const card = document.getElementById('role-pick-card');
+  if(!card) return;
+  const errMsg = opts.error
+    ? `<div style="background:#FEE2E2;color:#991B1B;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:13px;font-weight:500">⚠ ${opts.error}</div>`
+    : '';
+  card.innerHTML = `
+    <h2>🗂 ${esc(o.name)}</h2>
+    <div class="sub">${LANG==='es'?'Ingresa tu contraseña':'Enter your password'}</div>
+    ${errMsg}
+    <input id="org-pwd-input" type="password" autocomplete="current-password"
+      placeholder="${LANG==='es'?'Contraseña':'Password'}"
+      style="width:100%;padding:14px 16px;border:2px solid #E2E8F0;border-radius:10px;font-size:16px;font-family:inherit;margin-bottom:14px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')_submitOrgPwd(${idx})">
+    <div style="display:grid;gap:10px">
+      <button class="role-btn" onclick="_submitOrgPwd(${idx})" style="background:#7C3AED;border-color:#7C3AED;color:#FFF;justify-content:center">
+        <div class="role-btn-icon" style="color:#FFF">✓</div>
+        <div class="role-btn-text"><div class="role-btn-title" style="color:#FFF">${LANG==='es'?'Entrar':'Sign in'}</div></div>
+      </button>
+      <button class="tech-pick-btn" onclick="showOrganizerSelection()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:14px;padding:10px 14px;justify-content:center">
+        ← ${LANG==='es'?'Atrás':'Back'}
+      </button>
+    </div>`;
+  setTimeout(()=>{const i=document.getElementById('org-pwd-input');if(i)i.focus();},80);
+}
+
+async function _submitOrgPwd(idx){
+  const o = ORGANIZERS[idx];
+  if(!o) return;
+  const input = document.getElementById('org-pwd-input');
+  if(!input) return;
+  const entered = input.value;
+  const hash = await _hashPwd(entered);
+  if(hash === o.pwdHash){
+    loginAsOrganizer(o.name);
+  } else {
+    promptOrganizerPassword(idx, { error: LANG==='es'?'Contraseña incorrecta':'Incorrect password' });
+  }
 }
 
 function loginAsTech(name){
@@ -6313,14 +6471,14 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
       </div>`;
     return;
   }
-  // Count progress (visited today) — only "done" counts as completed
-  const visitedCount = ordered.filter(c=>VL[c.id]&&VL[c.id][dateKey]&&VL[c.id][dateKey].status==='done').length;
-  const noVisitCount = ordered.filter(c=>VL[c.id]&&VL[c.id][dateKey]&&VL[c.id][dateKey].status==='not_done').length;
+  // Count progress (visited today) — only "done" counts as completed. getVisit() filters out tombstones.
+  const visitedCount = ordered.filter(c=>{const v=getVisit(c.id,dateKey);return v&&v.status==='done';}).length;
+  const noVisitCount = ordered.filter(c=>{const v=getVisit(c.id,dateKey);return v&&v.status==='not_done';}).length;
   const handledCount = visitedCount + noVisitCount;
   const pct = Math.round((handledCount/ordered.length)*100);
   // Build cards
   const cards = ordered.map((c,i)=>{
-    const v = VL[c.id] && VL[c.id][dateKey];
+    const v = getVisit(c.id, dateKey);  // tombstones return null → tech sees the card as "not yet visited"
     const visited = v && v.status==='done';
     const noVisit = v && v.status==='not_done';
     let stamp='';
@@ -6436,6 +6594,16 @@ function _readTechNote(cid){
   return el ? (el.value||'').trim() : '';
 }
 
+// Returns the "real" visit entry, treating tombstones (entries with _deleted:true) as no-visit.
+// Use this everywhere a visit is read for display/counting purposes.
+// Tombstones still exist in VL — they're just invisible to read-side code, while during merge
+// they propagate the deletion across devices via their _timestamp.
+function getVisit(cid, dateKey){
+  const v = VL[cid] && VL[cid][dateKey];
+  if(!v || v._deleted) return null;
+  return v;
+}
+
 // Mark a client as VISITED today (with current tech name + timestamp + GPS + note)
 async function techMarkVisited(cid){
   const note = _readTechNote(cid);
@@ -6458,13 +6626,15 @@ async function techMarkNoVisit(cid){
 async function techEditNote(cid){
   const today = new Date();
   const dateKey = today.toISOString().split('T')[0];
-  const cur = (VL[cid] && VL[cid][dateKey] && VL[cid][dateKey].notes) || '';
+  const v = getVisit(cid, dateKey); // returns null for tombstones
+  const cur = (v && v.notes) || '';
   const newNote = await showPrompt(LANG==='es'?'Nota:':'Note:', cur);
   if(newNote===null) return;
-  if(!VL[cid] || !VL[cid][dateKey]){
+  if(!v){
     showToast(LANG==='es'?'Sin registro hoy':'No record today','warn'); return;
   }
-  VL[cid][dateKey].notes = (newNote||'').trim();
+  // Bump _timestamp on note edit so this update wins over older snapshots in cross-device merges
+  VL[cid][dateKey] = { ...v, notes: (newNote||'').trim(), _timestamp: Date.now() };
   saveData();
   showToast(LANG==='es'?'✓ Nota guardada':'✓ Note saved','ok');
   renderTechView();
@@ -6502,15 +6672,16 @@ async function _techRecordVisit(cid, status, notes){
 }
 
 // Undo (only available for today's visit, not historical)
+// Writes a tombstone instead of literally deleting the entry — the tombstone has a fresh
+// _timestamp so it wins over any older "visited" entry during cross-device merges.
+// Read-side code (renderTechDayClients, audit, etc.) treats tombstones as "no visit recorded".
 function techUndoVisit(cid){
   const today=new Date();
   const dateKey = today.toISOString().split('T')[0];
   fbSyncing = true; // block listener for the whole undo flow
   _bumpFbSyncingWatchdog();
-  if(VL[cid] && VL[cid][dateKey]){
-    delete VL[cid][dateKey];
-    if(Object.keys(VL[cid]).length===0) delete VL[cid];
-  }
+  if(!VL[cid]) VL[cid] = {};
+  VL[cid][dateKey] = { _deleted: true, _timestamp: Date.now(), tech: CURRENT_TECH || '' };
   saveData();
   renderTechView();
 }
