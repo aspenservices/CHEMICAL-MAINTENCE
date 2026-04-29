@@ -10,7 +10,38 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Aspen Spas">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%231E40AF'/><path d='M14 6 L14 16 L7 32 Q6 36 10 36 L30 36 Q34 36 33 32 L26 16 L26 6 Z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/><path d='M9 24 Q14 22 20 24 Q26 26 31 24 L33 32 Q33 34 31 34 L9 34 Q7 34 7 32 Z' fill='%2360A5FA'/><circle cx='15' cy='29' r='1.5' fill='white' opacity='0.85'/><circle cx='25' cy='30' r='1.3' fill='white' opacity='0.7'/><line x1='13' y1='6' x2='27' y2='6' stroke='white' stroke-width='2.4' stroke-linecap='round'/></svg>">
+<!-- Favicon (browser tab) — same flask logo used in the header -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231E40AF'/%3E%3Cpath d='M14 6 L14 16 L7 32 Q6 36 10 36 L30 36 Q34 36 33 32 L26 16 L26 6 Z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M9 24 Q14 22 20 24 Q26 26 31 24 L33 32 Q33 34 31 34 L9 34 Q7 34 7 32 Z' fill='%2360A5FA'/%3E%3Ccircle cx='15' cy='29' r='1.5' fill='white' opacity='0.85'/%3E%3Ccircle cx='25' cy='30' r='1.3' fill='white' opacity='0.7'/%3E%3Cline x1='13' y1='6' x2='27' y2='6' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- Apple Home-Screen icon (when "Add to Home Screen" on iPhone/iPad) — uses the same flask logo, sized to fill 180×180 -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%231E40AF'/%3E%3Cpath d='M63 27 L63 72 L31 144 Q27 162 45 162 L135 162 Q153 162 149 144 L117 72 L117 27 Z' fill='none' stroke='white' stroke-width='9' stroke-linejoin='round'/%3E%3Cpath d='M40 108 Q63 99 90 108 Q117 117 140 108 L149 144 Q149 153 140 153 L40 153 Q31 153 31 144 Z' fill='%2360A5FA'/%3E%3Ccircle cx='67' cy='130' r='6.7' fill='white' opacity='0.85'/%3E%3Ccircle cx='112' cy='135' r='5.8' fill='white' opacity='0.7'/%3E%3Ccircle cx='95' cy='118' r='4.5' fill='white' opacity='0.6'/%3E%3Cline x1='58' y1='27' x2='121' y2='27' stroke='white' stroke-width='10.8' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- Android / Chrome PWA: inline manifest using a Blob URL set via JS so the home-screen icon matches the header -->
+<link rel="manifest" id="aspen-manifest">
+<script>
+// Inline web app manifest — same flask logo used everywhere (favicon + Apple touch + Android home-screen).
+// Generating it inline (vs. a separate file) keeps the entire app self-contained in one HTML.
+(function(){
+  const flaskIconSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%231E40AF'/><path d='M179 77 L179 205 L88 410 Q77 461 128 461 L384 461 Q435 461 424 410 L333 205 L333 77 Z' fill='none' stroke='white' stroke-width='26' stroke-linejoin='round'/><path d='M115 307 Q179 282 256 307 Q333 333 397 307 L424 410 Q424 435 397 435 L115 435 Q88 435 88 410 Z' fill='%2360A5FA'/><circle cx='192' cy='371' r='19' fill='white' opacity='0.85'/><circle cx='320' cy='384' r='17' fill='white' opacity='0.7'/><circle cx='269' cy='333' r='13' fill='white' opacity='0.6'/><line x1='166' y1='77' x2='346' y2='77' stroke='white' stroke-width='31' stroke-linecap='round'/></svg>";
+  const manifest = {
+    name: "Aspen Spas — Chemical Maintenance",
+    short_name: "Aspen Spas",
+    start_url: location.pathname,
+    scope: location.pathname,
+    display: "standalone",
+    orientation: "any",
+    background_color: "#1E40AF",
+    theme_color: "#2563EB",
+    icons: [
+      { src: "data:image/svg+xml," + flaskIconSvg, sizes: "any", type: "image/svg+xml", purpose: "any maskable" }
+    ]
+  };
+  try {
+    const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.getElementById("aspen-manifest");
+    if (link) link.href = url;
+  } catch(e) { /* manifest is a nice-to-have; safe to skip on old browsers */ }
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -67,6 +98,8 @@ tr:hover td{background:#F0F9FF}
 .btn-green{background:#DCFCE7;color:#166534;border-color:#86EFAC}.btn-green:hover{background:#86EFAC}
 .btn-red{background:#FEE2E2;color:#991B1B;border-color:#FECACA}.btn-red:hover{background:#FECACA}
 .btn-purple{background:#EDE9FE;color:#5B21B6;border-color:#A78BFA}.btn-purple:hover{background:#C4B5FD}
+/* Organizer role: hide all client-deletion controls (server-of-truth gate is in JS too) */
+body.role-organizer .role-admin-only{display:none!important}
 .arow{display:flex;gap:4px;flex-wrap:wrap}
 /* Clients table: compact uniform rows + stacked action buttons of equal width */
 #ctbody td{vertical-align:middle;line-height:1.4}
@@ -117,59 +150,107 @@ tr:hover td{background:#F0F9FF}
 
 /* ── MOBILE RESPONSIVE ── */
 @media(max-width:768px){
-  .header{padding:10px 12px;gap:6px;grid-template-columns:1fr;grid-template-rows:auto auto auto}
+  .header{padding:10px 12px;gap:8px;grid-template-columns:1fr;grid-template-rows:auto auto auto}
   .logo-mark{width:36px;height:36px}
   .brand-name{font-size:18px}
-  .brand-sub{font-size:10px}
-  .header-primary,.header-secondary{gap:4px;width:100%;justify-self:stretch;justify-content:flex-start;overflow-x:auto;padding-bottom:4px}
-  .hbtn{padding:5px 8px;font-size:11.5px;white-space:nowrap}
-  .hbtn-sm{padding:4px 7px;font-size:11px}
-  .tabs-bar{padding:0 8px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .tab{padding:9px 10px;font-size:13px;white-space:nowrap}
+  .brand-sub{font-size:10px;letter-spacing:.6px}
+  .header-primary,.header-secondary{gap:6px;width:100%;justify-self:stretch;justify-content:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:thin}
+  .header-primary::-webkit-scrollbar,.header-secondary::-webkit-scrollbar{height:3px}
+  .hbtn{padding:7px 10px;font-size:12.5px;white-space:nowrap;flex-shrink:0;min-height:34px}
+  .hbtn-sm{padding:6px 9px;font-size:12px;min-height:32px}
+  .tabs-bar{padding:0 6px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .tab{padding:10px 12px;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:40px}
   .body{padding:10px 8px}
   .metrics{grid-template-columns:repeat(2,1fr);gap:6px}
-  .metric{padding:8px 10px}
+  .metric{padding:9px 11px}
   .mval{font-size:22px}
   .mlabel{font-size:11px}
   .two-col{grid-template-columns:1fr;gap:8px}
-  .card-head{padding:8px 10px}
-  .card-title{font-size:13px}
-  .fbar{gap:4px}
-  .fbar input,.fbar select{font-size:12px;padding:4px 6px;width:100px!important}
-  table{font-size:12px}
-  th,td{padding:6px 8px}
+  .card-head{padding:10px 12px;gap:8px}
+  .card-title{font-size:14px}
+  .fbar{gap:6px;width:100%;flex-wrap:wrap}
+  .fbar input,.fbar select{font-size:13px;padding:7px 10px;min-height:38px}
+  .fbar input{flex:1 1 100%;width:100%!important;min-width:0}
+  .fbar select{flex:1 1 calc(50% - 3px);min-width:0}
+  .fbar .btn{flex:1 1 calc(50% - 3px);min-height:38px;font-size:12.5px}
+  /* Clients table on mobile: keep horizontal scroll, but make action buttons taller for touch */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:12.5px;min-width:100%}
+  th,td{padding:7px 9px}
+  th{font-size:11px}
+  .arow-v{min-width:90px;gap:4px}
+  .arow-v .btn{padding:5px 6px;font-size:11.5px;min-height:30px}
   /* Calendar mobile */
   .cal-toolbar{padding:8px 10px;gap:6px}
   .cal-week-tabs{gap:2px;flex-wrap:wrap}
-  .cal-wtab{padding:5px 10px;font-size:12px}
+  .cal-wtab{padding:5px 10px;font-size:12px;min-height:32px}
   .cal-grid{grid-template-columns:1fr!important;border-left:none}
   .cal-day-col{border-right:none;border-bottom:1px solid var(--border);min-height:auto}
-  .cal-day-head{padding:8px 10px;text-align:left;display:flex;align-items:center;gap:8px;border-bottom:2px solid var(--brand)}
+  .cal-day-head{padding:9px 11px;text-align:left;display:flex;align-items:center;gap:8px;border-bottom:2px solid var(--brand)}
   .cal-day-name{font-size:15px}
   .cal-day-count{font-size:12px;margin-top:0}
-  .cal-legend{gap:6px;padding:6px 10px}
+  .cal-legend{gap:6px;padding:7px 10px}
   .cal-li{font-size:11px}
-  .cc-name{font-size:12px;max-width:none}
-  .cc-actions{flex-wrap:wrap}
-  .cc-actions .btn{font-size:11px;flex:none}
-  .modal{padding:1rem;max-width:95vw}
+  .cc-name{font-size:13px;max-width:none}
+  .cc-actions{flex-wrap:wrap;gap:4px}
+  .cc-actions .btn{font-size:11.5px;flex:none;min-height:30px;padding:5px 8px}
+  /* Modals: more breathing room on mobile, full-screen-ish */
+  .modal-bg{padding:8px;align-items:flex-start;padding-top:8px}
+  .modal{padding:1rem;max-width:100%;width:100%;max-height:calc(100vh - 16px);border-radius:12px}
   .modal h3{font-size:16px}
+  .mfoot{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .mfoot .btn{flex:1 1 auto;min-height:40px;font-size:14px}
+  /* Bulk-action toolbar on mobile: stack buttons full-width */
+  #bulk-bar{margin:0 8px 10px!important;padding:10px 12px!important}
+  #bulk-bar .btn{flex:1 1 calc(50% - 4px);min-height:36px;font-size:12.5px}
+  /* Modal addrow (Techs/Organizers): stack input + phone + plus button */
+  .mtechs-addrow{flex-wrap:wrap}
+  .mtechs-addrow input{flex:1 1 100%!important;width:100%!important}
+  .mtechs-addrow .btn{flex:1 1 100%;min-height:40px;font-size:14px}
   .chips{padding:6px 10px;gap:4px}
   .chip{font-size:12px;padding:3px 8px}
   .legend-row{gap:8px;padding:5px 10px}
-  .pager{padding:6px 10px}
+  .pager{padding:8px 10px;flex-wrap:wrap;gap:6px}
+  .pager .btn{min-height:36px}
   .edit-field{flex-direction:column;gap:3px}
   .edit-field label{min-width:auto}
   .q-dropdown-menu{min-width:280px;right:-40px}
+  /* Bigger tap targets for any button on mobile */
+  .btn{min-height:32px}
+  /* Make sure form inputs don't trigger zoom on iOS focus */
+  input,select,textarea{font-size:16px!important}
+  .frow input,.frow select,.frow textarea{font-size:16px}
+  /* Tech card buttons (visited / undo / etc.) — larger touch targets */
+  .tcc-visit-btn,.tcc-novisit-btn{min-height:46px;font-size:15px}
+  .tcc-undo{min-height:34px}
+  /* Map alt buttons — keep them compact but tappable */
+  .tcc-map-alt a{min-height:30px;padding:5px 11px}
 }
 
 @media(max-width:420px){
-  .header-primary,.header-secondary{flex-wrap:wrap}
-  .metrics{grid-template-columns:1fr 1fr;gap:4px}
-  .mval{font-size:20px}
-  .cal-wtab{padding:4px 8px;font-size:11px}
+  .header{padding:8px 10px}
+  .header-primary,.header-secondary{flex-wrap:nowrap}
+  .brand-name{font-size:16px}
+  .brand-sub{font-size:9.5px}
+  .logo-mark{width:32px;height:32px}
+  .metrics{grid-template-columns:1fr 1fr;gap:5px}
+  .metric{padding:8px 10px}
+  .mval{font-size:19px}
+  .mlabel{font-size:10.5px}
+  .cal-wtab{padding:5px 9px;font-size:11.5px}
   .cc-actions{gap:3px}
-  .cc-actions .btn{font-size:10px;padding:3px 6px}
+  .cc-actions .btn{font-size:10.5px;padding:4px 7px;min-height:28px}
+  .tab{padding:9px 10px;font-size:12.5px}
+  /* Stack the bulk bar buttons even more aggressively on small phones */
+  #bulk-bar .btn{flex:1 1 100%}
+  #bulk-bar{flex-direction:column;align-items:stretch!important}
+  /* Modal padding tighter */
+  .modal{padding:.85rem}
+  /* Action column for clients: keep stacked but tighter */
+  .arow-v{min-width:78px}
+  .arow-v .btn{padding:4px 5px;font-size:10.8px}
+  /* Filter bar: full-width selects, single column */
+  .fbar select,.fbar .btn{flex:1 1 100%}
 }
 
 ::-webkit-scrollbar{width:6px;height:6px}
@@ -640,6 +721,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
         <select id="fstat" onchange="rc()"><option value="">Estado</option><option value="active">Activo</option><option value="paused">Pausado</option><option value="cancelled">Cancelado</option></select>
         <select id="fday" onchange="rc()"><option value="">Día</option><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
         <button class="btn" onclick="exportClientsCSV()" title="Export to CSV">📊 CSV</button>
+        <button class="btn btn-amber" onclick="findDuplicates()" id="find-dupes-btn" title="Detectar clientes duplicados">🔍 <span id="find-dupes-label">Buscar duplicados</span></button>
         <button class="btn" onclick="openPricingConfig()" title="Pricing config">💲 <span id="pricing-btn-label">Precios</span></button>
       </div>
     </div>
@@ -649,6 +731,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
       <button class="btn btn-amber" onclick="bulkAction('pause')">⏸ Pausar</button>
       <button class="btn btn-green" onclick="bulkAction('activate')">▶ Activar</button>
       <button class="btn btn-red" onclick="bulkAction('cancel')">✕ Cancelar</button>
+      <button class="btn btn-red role-admin-only" onclick="bulkAction('delete')" style="background:#DC2626;color:#FFF;border-color:#B91C1C">🗑 Eliminar</button>
       <button class="btn" onclick="bulkClear()" style="margin-left:auto">Limpiar selección</button>
     </div>
     <div class="tw">
@@ -948,6 +1031,16 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
   <div class="mfoot"><button class="btn btn-brand" onclick="cm('mhist')">Cerrar</button></div>
 </div></div>
 
+<!-- ENCONTRAR DUPLICADOS / FIND DUPLICATES -->
+<div class="modal-bg" id="mdupes">
+<div class="modal" style="max-width:760px">
+  <h3 id="mdupes-title">🔍 Buscar duplicados</h3><div class="divider"></div>
+  <div id="mdupes-body" style="max-height:60vh;overflow-y:auto"></div>
+  <div class="mfoot">
+    <button class="btn" onclick="cm('mdupes')">Cerrar / Close</button>
+  </div>
+</div></div>
+
 <!-- OPCIONES DE IMPRESIÓN -->
 <div class="modal-bg" id="mprint">
 <div class="modal" style="max-width:680px">
@@ -1089,7 +1182,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
 
 <!-- MANAGE TECHNICIANS -->
 <div class="modal-bg" id="mtechs">
-<div class="modal" style="max-width:460px">
+<div class="modal" style="max-width:480px">
   <h3 id="mtechs-title">👷 Manage Technicians</h3><div class="divider"></div>
 
   <!-- Admin password management ────────────────────────────────────────── -->
@@ -1103,13 +1196,26 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn{display:block}
     </div>
   </div>
 
-  <div id="techs-list" style="margin-bottom:12px"></div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input id="new-tech-name" placeholder="New technician name..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
-    <input id="new-tech-phone" placeholder="Phone (optional)" style="width:130px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
-    <button class="btn btn-brand" onclick="addTechnician()">+</button>
+  <!-- Technicians ────────────────────────────────────────────────────── -->
+  <div style="font-size:13px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px" id="mtechs-techs-label">👷 Técnicos</div>
+  <div id="techs-list" style="margin-bottom:8px"></div>
+  <div class="mtechs-addrow" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
+    <input id="new-tech-name" placeholder="Nombre del técnico..." style="flex:1;min-width:140px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
+    <input id="new-tech-phone" placeholder="Teléfono (opcional)" style="width:130px;flex:0 0 130px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
+    <button class="btn btn-brand" onclick="addTechnician()" style="flex-shrink:0">+</button>
   </div>
-  <div class="mfoot"><button class="btn btn-brand" onclick="cm('mtechs')">Close</button></div>
+
+  <!-- Organizers ─────────────────────────────────────────────────────── -->
+  <div style="font-size:13px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px" id="mtechs-orgs-label">🗂 Organizadores</div>
+  <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" id="mtechs-orgs-help">Acceso completo a la app, excepto eliminar clientes.</div>
+  <div id="orgs-list" style="margin-bottom:8px"></div>
+  <div class="mtechs-addrow" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input id="new-org-name" placeholder="Nombre del organizador..." style="flex:1;min-width:140px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
+    <input id="new-org-phone" placeholder="Teléfono (opcional)" style="width:130px;flex:0 0 130px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit;color:var(--text)">
+    <button class="btn btn-brand" onclick="addOrganizer()" style="flex-shrink:0">+</button>
+  </div>
+
+  <div class="mfoot"><button class="btn btn-brand" onclick="cm('mtechs')">Cerrar / Close</button></div>
 </div></div>
 
 <!-- FIREBASE CONFIG -->
@@ -1237,7 +1343,7 @@ const T={
     monS:'Lun',tueS:'Mar',wedS:'Mié',thuS:'Jue',friS:'Vie',
     phone:'Teléfono',email:'Email',address:'Dirección',freq:'Frec.',sem:'Sem.',sanitizer:'Sanitizador',
     lastWC:'Últ. C.A.',nextWC:'Próx. C.A.',notes:'Notas',actions:'Acciones',
-    view:'Ver',edit:'✎ Editar',pause:'Pausar',activate:'Activar',
+    view:'Ver',edit:'✎ Editar',pause:'Pausar',activate:'Activar',delete:'🗑 Eliminar',findDupes:'🔍 Buscar duplicados',
     prev:'← Ant',next:'Sig →',noResults:'Sin resultados',of:'de',
     addClient:'+ Agregar nuevo cliente',name:'Nombre',phoneLbl:'Teléfono',addressLbl:'Dirección',emailLbl:'Email',
     freqLbl:'Frecuencia',dayLbl:'Día',weekLbl:'Semana',sanitizerLbl:'Sanitizador',lastWCLbl:'Último cambio de agua',
@@ -1327,7 +1433,7 @@ const T={
     monS:'Mon',tueS:'Tue',wedS:'Wed',thuS:'Thu',friS:'Fri',
     phone:'Phone',email:'Email',address:'Address',freq:'Freq.',sem:'Wk.',sanitizer:'Sanitizer',
     lastWC:'Last W.C.',nextWC:'Next W.C.',notes:'Notes',actions:'Actions',
-    view:'View',edit:'✎ Edit',pause:'Pause',activate:'Activate',
+    view:'View',edit:'✎ Edit',pause:'Pause',activate:'Activate',delete:'🗑 Delete',findDupes:'🔍 Find duplicates',
     prev:'← Prev',next:'Next →',noResults:'No results',of:'of',
     addClient:'+ Add New Client',name:'Name',phoneLbl:'Phone',addressLbl:'Address',emailLbl:'Email',
     freqLbl:'Frequency',dayLbl:'Day',weekLbl:'Week',sanitizerLbl:'Sanitizer',lastWCLbl:'Last water change',
@@ -1419,6 +1525,8 @@ function rebuildUI(){
   // Bulk-bar label
   const bulkLbl=document.getElementById('bulk-label');if(bulkLbl)bulkLbl.textContent=LANG==='es'?'seleccionados':'selected';
   const pricingBtn=document.getElementById('pricing-btn-label');if(pricingBtn)pricingBtn.textContent=LANG==='es'?'Precios':'Pricing';
+  const dupesBtn=document.getElementById('find-dupes-label');if(dupesBtn)dupesBtn.textContent=LANG==='es'?'Buscar duplicados':'Find duplicates';
+  const mdupesTitle=document.getElementById('mdupes-title');if(mdupesTitle)mdupesTitle.textContent=LANG==='es'?'🔍 Buscar duplicados':'🔍 Find duplicates';
   // Filters
   const srch=document.getElementById('srch');if(srch)srch.placeholder=t('searchName');
   const ffreq=document.getElementById('ffreq');if(ffreq){ffreq.options[0].text=t('frequency');ffreq.options[1].text=t('weeklyLabel');ffreq.options[2].text=t('biweeklyLabel');}
@@ -1653,6 +1761,9 @@ const CLIENTS_BASE=R.filter(c=>{
 let C=JSON.parse(JSON.stringify(CLIENTS_BASE));
 let BL={},VL={},TAPPTS={};
 let TECHS=[{name:'Jarred',phone:''},{name:'Alberto',phone:''}];
+// Organizers: users with admin-level access EXCEPT deleting clients (delete-protected).
+// Stored as [{name, phone}]; managed from the Techs modal alongside the tech list.
+let ORGANIZERS=[];
 let pg=0;const PS=20;
 let vf='all',ctab='dash',calWeek='AB',allExp=false;
 
@@ -1855,16 +1966,42 @@ function refreshTechDataLists(){
 }
 function renderTechsList(){
   const el=document.getElementById('techs-list');
-  if(!TECHS.length){el.innerHTML=`<p style="font-size:14.4px;color:var(--muted);padding:8px 0">${LANG==='es'?'No hay técnicos registrados':'No technicians registered'}</p>`;return;}
-  el.innerHTML=TECHS.map((tk,i)=>`
+  if(!TECHS.length){el.innerHTML=`<p style="font-size:14.4px;color:var(--muted);padding:8px 0">${LANG==='es'?'No hay técnicos registrados':'No technicians registered'}</p>`;}
+  else el.innerHTML=TECHS.map((tk,i)=>`
     <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border)">
       <span style="font-size:16.1px">👷</span>
-      <span style="font-weight:600;color:var(--brand);flex:1;font-size:14.9px">${tk.name}</span>
-      <span style="font-size:13.2px;color:var(--muted)">${tk.phone||''}</span>
-      <button class="btn btn-red" style="font-size:11.5px;padding:3px 8px" onclick="removeTechnician(${i})">✕</button>
+      <span style="font-weight:600;color:var(--brand);flex:1;font-size:14.9px;min-width:0;overflow:hidden;text-overflow:ellipsis">${tk.name}</span>
+      <span style="font-size:13.2px;color:var(--muted);white-space:nowrap">${tk.phone||''}</span>
+      <button class="btn btn-red" style="font-size:11.5px;padding:3px 8px;flex-shrink:0" onclick="removeTechnician(${i})">✕</button>
     </div>`).join('');
   // Also refresh the admin-password section every time this modal renders
   if(typeof renderAdminPwdPanel==='function') renderAdminPwdPanel();
+  // Render organizers too (sibling section)
+  renderOrganizersList();
+  // Localize section labels
+  const techsLbl=document.getElementById('mtechs-techs-label');
+  if(techsLbl)techsLbl.textContent=LANG==='es'?'👷 Técnicos':'👷 Technicians';
+  const orgsLbl=document.getElementById('mtechs-orgs-label');
+  if(orgsLbl)orgsLbl.textContent=LANG==='es'?'🗂 Organizadores':'🗂 Organizers';
+  const orgsHelp=document.getElementById('mtechs-orgs-help');
+  if(orgsHelp)orgsHelp.textContent=LANG==='es'?'Acceso completo a la app, excepto eliminar clientes.':'Full app access, except deleting clients.';
+  // Localize input placeholders
+  const ntn=document.getElementById('new-tech-name');if(ntn)ntn.placeholder=LANG==='es'?'Nombre del técnico...':'New technician name...';
+  const ntp=document.getElementById('new-tech-phone');if(ntp)ntp.placeholder=LANG==='es'?'Teléfono (opcional)':'Phone (optional)';
+  const non=document.getElementById('new-org-name');if(non)non.placeholder=LANG==='es'?'Nombre del organizador...':'New organizer name...';
+  const nop=document.getElementById('new-org-phone');if(nop)nop.placeholder=LANG==='es'?'Teléfono (opcional)':'Phone (optional)';
+}
+function renderOrganizersList(){
+  const el=document.getElementById('orgs-list');
+  if(!el)return;
+  if(!ORGANIZERS.length){el.innerHTML=`<p style="font-size:14.4px;color:var(--muted);padding:8px 0">${LANG==='es'?'No hay organizadores registrados':'No organizers registered'}</p>`;return;}
+  el.innerHTML=ORGANIZERS.map((o,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border)">
+      <span style="font-size:16.1px">🗂</span>
+      <span style="font-weight:600;color:#7C3AED;flex:1;font-size:14.9px;min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(o.name)}</span>
+      <span style="font-size:13.2px;color:var(--muted);white-space:nowrap">${esc(o.phone)||''}</span>
+      <button class="btn btn-red" style="font-size:11.5px;padding:3px 8px;flex-shrink:0" onclick="removeOrganizer(${i})">✕</button>
+    </div>`).join('');
 }
 function addTechnician(){
   const nameEl=document.getElementById('new-tech-name');
@@ -1881,6 +2018,26 @@ async function removeTechnician(idx){
   if(!await showConfirm((LANG==='es'?'¿Eliminar a ':'Remove ')+tk.name+'?',{danger:true}))return;
   TECHS.splice(idx,1);
   renderTechsList();refreshTechDataLists();saveData();
+}
+function addOrganizer(){
+  const nameEl=document.getElementById('new-org-name');
+  const phoneEl=document.getElementById('new-org-phone');
+  const name=(nameEl.value||'').trim();
+  if(!name){showToast(LANG==='es'?'Ingresa el nombre del organizador':'Enter organizer name');return;}
+  if(ORGANIZERS.find(o=>o.name.toLowerCase()===name.toLowerCase())){
+    showToast(LANG==='es'?'Ese organizador ya existe':'That organizer already exists');return;
+  }
+  ORGANIZERS.push({name,phone:(phoneEl.value||'').trim()});
+  nameEl.value='';phoneEl.value='';
+  renderOrganizersList();saveData();
+  showToast(LANG==='es'?`✓ "${name}" agregado como organizador`:`✓ "${name}" added as organizer`,'ok');
+}
+async function removeOrganizer(idx){
+  const o=ORGANIZERS[idx];
+  if(!o)return;
+  if(!await showConfirm((LANG==='es'?'¿Eliminar al organizador ':'Remove organizer ')+o.name+'?',{danger:true}))return;
+  ORGANIZERS.splice(idx,1);
+  renderOrganizersList();saveData();
 }
 
 /* ─── DASHBOARD ─── */
@@ -2269,6 +2426,7 @@ function rc(){
         <button class="btn" onclick="vc(${c.id})">${t('view')}</button>
         <button class="btn btn-amber" onclick="openEdit(${c.id})">${t('edit')}</button>
         <button class="btn ${c.status==='active'?'btn-amber':'btn-green'}" onclick="${c.status==='cancelled'?`activateClient(${c.id})`:`tp(${c.id})`}">${c.status==='active'?t('pause'):t('activate')}</button>
+        <button class="btn btn-red role-admin-only" onclick="deleteClient(${c.id})" title="${LANG==='es'?'Eliminar permanentemente':'Delete permanently'}">${t('delete')}</button>
       </div></td></tr>`;
   }).join('');
   bulkUpdate();
@@ -2310,6 +2468,75 @@ function bulkToggleAll(master){
 function bulkClear(){_bulkSel.clear();rc();}
 async function bulkAction(action){
   if(_bulkSel.size===0)return;
+  // ─── DELETE: handled separately because it removes records, not just changes status ───
+  if(action==='delete'){
+    if(CURRENT_ROLE==='organizer'){
+      showToast(LANG==='es'?'Los organizadores no pueden eliminar clientes':'Organizers cannot delete clients','warn');
+      return;
+    }
+    const ids = Array.from(_bulkSel);
+    const names = ids.map(id=>(C.find(x=>x.id===id)||{}).name).filter(Boolean);
+    const preview = names.slice(0,5).join(', ') + (names.length>5?` +${names.length-5}`:'');
+    const msg1 = LANG==='es'
+      ? `¿Eliminar permanentemente ${ids.length} cliente(s)?\n\n${preview}\n\nSe borrarán también todas sus visitas, cambios de agua y citas técnicas.\n\nEsta acción se puede deshacer durante esta sesión, pero NO después de cerrar la app.`
+      : `Permanently delete ${ids.length} client(s)?\n\n${preview}\n\nAll their visits, water-changes, and tech appointments will also be erased.\n\nThis can be undone during this session only, NOT after closing the app.`;
+    if(!await showConfirm(msg1,{danger:true}))return;
+    // Snapshot everything for undo
+    const snapshots = ids.map(id=>{
+      const c = C.find(x=>x.id===id); if(!c) return null;
+      const calOrderSnapshot = {A:{},B:{}};
+      ['A','B'].forEach(wt=>{
+        Object.keys(CAL_ORDER[wt]||{}).forEach(dk=>{
+          const arr = CAL_ORDER[wt][dk] || [];
+          if(arr.includes(id)) calOrderSnapshot[wt][dk] = [...arr];
+        });
+      });
+      return {
+        id,
+        client: JSON.parse(JSON.stringify(c)),
+        clientIdx: C.indexOf(c),
+        vl: VL[id] ? JSON.parse(JSON.stringify(VL[id])) : null,
+        bl: BL[id] ? JSON.parse(JSON.stringify(BL[id])) : null,
+        tappts: TAPPTS[id] ? JSON.parse(JSON.stringify(TAPPTS[id])) : null,
+        calOrder: calOrderSnapshot,
+      };
+    }).filter(Boolean);
+    // Apply deletions (highest index first so splice doesn't shift remaining indices)
+    snapshots.sort((a,b)=>b.clientIdx-a.clientIdx).forEach(s=>{
+      C.splice(s.clientIdx, 1);
+      delete VL[s.id]; delete BL[s.id]; delete TAPPTS[s.id];
+      ['A','B'].forEach(wt=>{
+        Object.keys(CAL_ORDER[wt]||{}).forEach(dk=>{
+          if((CAL_ORDER[wt][dk]||[]).includes(s.id)){
+            CAL_ORDER[wt][dk] = CAL_ORDER[wt][dk].filter(cid=>cid!==s.id);
+          }
+        });
+      });
+    });
+    pushUndo(
+      (LANG==='es'?`Eliminados ${snapshots.length} cliente(s)`:`Deleted ${snapshots.length} client(s)`),
+      ()=>{
+        // Restore in original order (lowest index first)
+        snapshots.sort((a,b)=>a.clientIdx-b.clientIdx).forEach(s=>{
+          C.splice(s.clientIdx, 0, s.client);
+          if(s.vl) VL[s.id] = s.vl;
+          if(s.bl) BL[s.id] = s.bl;
+          if(s.tappts) TAPPTS[s.id] = s.tappts;
+          ['A','B'].forEach(wt=>{
+            Object.keys(s.calOrder[wt]).forEach(dk=>{
+              CAL_ORDER[wt][dk] = s.calOrder[wt][dk];
+            });
+          });
+        });
+        saveData();ra();
+      }
+    );
+    _bulkSel.clear();
+    saveData();ra();
+    showToast(LANG==='es'?`✓ ${snapshots.length} cliente(s) eliminados`:`✓ ${snapshots.length} client(s) deleted`,'ok');
+    return;
+  }
+  // ─── Status changes (pause/activate/cancel) ───
   const labels={pause:LANG==='es'?'pausar':'pause',activate:LANG==='es'?'activar':'activate',cancel:LANG==='es'?'cancelar':'cancel'};
   if(!await showConfirm((LANG==='es'?`¿${labels[action]} ${_bulkSel.size} cliente(s)?`:`${labels[action]} ${_bulkSel.size} client(s)?`).replace(/^./,c=>c.toUpperCase()),{danger:action==='cancel'}))return;
   const newStatus={pause:'paused',activate:'active',cancel:'cancelled'}[action];
@@ -2432,6 +2659,190 @@ function activateClient(id){
   c.status='active';
   cm('mdet');ra();
   setTimeout(()=>vc(id),80);
+}
+
+// Permanently delete a client and all associated data (visits, water-change log, tech appointments).
+// Requires double confirmation because the action is irreversible. Pushes an Undo entry too,
+// which restores the client + all its data exactly as it was — but the Undo only persists for the session.
+async function deleteClient(id){
+  // Organizer role cannot delete clients — gate this server-of-truth at the function entry too,
+  // not just by hiding the button (which a savvy user could bypass via dev tools).
+  if(CURRENT_ROLE==='organizer'){
+    showToast(LANG==='es'?'Los organizadores no pueden eliminar clientes':'Organizers cannot delete clients','warn');
+    return;
+  }
+  const c=C.find(x=>x.id===id);
+  if(!c)return;
+  // First confirmation — what's about to happen
+  const msg1 = LANG==='es'
+    ? `¿Eliminar permanentemente al cliente "${c.name}"?\n\nSe borrará:\n• El cliente completo\n• Todas sus visitas registradas\n• Su historial de cambios de agua\n• Sus visitas técnicas agendadas\n\nEsta acción se puede deshacer durante esta sesión, pero NO después de cerrar la app.`
+    : `Permanently delete client "${c.name}"?\n\nThis will erase:\n• The client record\n• All recorded visits\n• Water-change history\n• Scheduled tech appointments\n\nThis can be undone during this session only, NOT after closing the app.`;
+  if(!await showConfirm(msg1,{danger:true}))return;
+  // Snapshot for undo
+  const snapshot = {
+    client: JSON.parse(JSON.stringify(c)),
+    clientIdx: C.indexOf(c),
+    vl: VL[id] ? JSON.parse(JSON.stringify(VL[id])) : null,
+    bl: BL[id] ? JSON.parse(JSON.stringify(BL[id])) : null,
+    tappts: TAPPTS[id] ? JSON.parse(JSON.stringify(TAPPTS[id])) : null,
+    bulkSel: _bulkSel.has(id),
+  };
+  // Remove from CAL_ORDER too so the schedule view doesn't reference a ghost client
+  const calOrderSnapshot = {A:{},B:{}};
+  ['A','B'].forEach(wt=>{
+    Object.keys(CAL_ORDER[wt]||{}).forEach(dk=>{
+      const arr = CAL_ORDER[wt][dk] || [];
+      if(arr.includes(id)){
+        calOrderSnapshot[wt][dk] = [...arr];
+        CAL_ORDER[wt][dk] = arr.filter(cid=>cid!==id);
+      }
+    });
+  });
+  // Apply the deletion
+  C.splice(snapshot.clientIdx, 1);
+  delete VL[id];
+  delete BL[id];
+  delete TAPPTS[id];
+  _bulkSel.delete(id);
+  // Push undo
+  pushUndo(
+    (LANG==='es'?'Cliente eliminado: ':'Client deleted: ') + c.name,
+    ()=>{
+      C.splice(snapshot.clientIdx, 0, snapshot.client);
+      if(snapshot.vl) VL[id] = snapshot.vl;
+      if(snapshot.bl) BL[id] = snapshot.bl;
+      if(snapshot.tappts) TAPPTS[id] = snapshot.tappts;
+      ['A','B'].forEach(wt=>{
+        Object.keys(calOrderSnapshot[wt]).forEach(dk=>{
+          CAL_ORDER[wt][dk] = calOrderSnapshot[wt][dk];
+        });
+      });
+      if(snapshot.bulkSel) _bulkSel.add(id);
+      saveData();ra();
+    }
+  );
+  saveData();ra();
+  showToast(LANG==='es'?`✓ "${c.name}" eliminado`:`✓ "${c.name}" deleted`,'ok');
+  // If a detail modal is open for this client, close it
+  cm('mdet');
+}
+
+// ─── DUPLICATE DETECTION ─────────────────────────────────────────────────
+// Normalizes a string for comparison: lowercase, strip punctuation, collapse whitespace.
+function _normForCompare(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9áéíóúñü\s]/gi,' ').replace(/\s+/g,' ').trim();
+}
+// Normalize phone: keep only digits, drop leading 1 (US country code) for comparison
+function _normPhone(s){
+  const d = String(s||'').replace(/\D/g,'');
+  return d.length === 11 && d.startsWith('1') ? d.slice(1) : d;
+}
+// Group clients into duplicate buckets. A bucket is created when 2+ clients share ANY of:
+//   • normalized name (exact match after lowercasing & stripping punctuation)
+//   • normalized phone (digits only, ignoring country code)
+//   • normalized address (lowercased, punctuation-stripped)
+// Each client lands in at most one bucket (transitive: if A=B by name and B=C by phone, A,B,C are grouped).
+function findDuplicateGroups(){
+  const buckets = []; // each = { ids:Set, reasons:Set }
+  const idToBucket = {};
+  function joinBuckets(a, b){
+    if(a === b) return a;
+    a.ids.forEach(id=>{ b.ids.add(id); idToBucket[id]=b; });
+    b.reasons = new Set([...a.reasons, ...b.reasons]);
+    const idx = buckets.indexOf(a); if(idx>=0) buckets.splice(idx,1);
+    return b;
+  }
+  function indexBy(getKey, reasonLabel){
+    const map = {};
+    C.forEach(c=>{
+      const k = getKey(c);
+      if(!k) return;
+      if(!map[k]) map[k] = [];
+      map[k].push(c);
+    });
+    Object.keys(map).forEach(k=>{
+      const group = map[k];
+      if(group.length < 2) return;
+      // Find or create a bucket spanning all these clients
+      let bucket = null;
+      group.forEach(c=>{ if(idToBucket[c.id]) bucket = bucket ? joinBuckets(bucket, idToBucket[c.id]) : idToBucket[c.id]; });
+      if(!bucket){
+        bucket = { ids:new Set(), reasons:new Set() };
+        buckets.push(bucket);
+      }
+      bucket.reasons.add(reasonLabel);
+      group.forEach(c=>{ bucket.ids.add(c.id); idToBucket[c.id] = bucket; });
+    });
+  }
+  indexBy(c => _normForCompare(c.name), LANG==='es'?'mismo nombre':'same name');
+  indexBy(c => _normPhone(c.phone), LANG==='es'?'mismo teléfono':'same phone');
+  indexBy(c => _normForCompare(c.addr), LANG==='es'?'misma dirección':'same address');
+  return buckets;
+}
+
+// Open the duplicate-finder modal
+function findDuplicates(){
+  const groups = findDuplicateGroups();
+  const body = document.getElementById('mdupes-body');
+  if(groups.length === 0){
+    body.innerHTML = `<div style="padding:30px 20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:10px">✨</div>
+      <div style="font-size:16px;font-weight:600;color:#16A34A;margin-bottom:4px">
+        ${LANG==='es'?'Sin duplicados':'No duplicates'}
+      </div>
+      <div style="font-size:13px;color:var(--muted)">
+        ${LANG==='es'?'No se detectaron clientes duplicados por nombre, teléfono o dirección.':'No clients detected with matching name, phone, or address.'}
+      </div>
+    </div>`;
+    om('mdupes');
+    return;
+  }
+  // Build HTML for each duplicate group
+  const totalDupes = groups.reduce((s,g)=>s+g.ids.size, 0);
+  let html = `<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13.5px;color:#78350F">
+    ⚠ <b>${groups.length}</b> ${LANG==='es'?'grupo(s) de duplicados encontrados — total ':'duplicate group(s) found — total '}<b>${totalDupes}</b> ${LANG==='es'?'cliente(s)':'client(s)'}
+    <div style="margin-top:6px;font-size:12.5px">${LANG==='es'?'Para cada grupo, mantén el cliente con más historial y elimina los repetidos.':'For each group, keep the client with the most history and delete the duplicates.'}</div>
+  </div>`;
+  groups.forEach((g, gi)=>{
+    const ids = Array.from(g.ids);
+    // For each client, count its associated data so the user knows which one to keep
+    const cards = ids.map(id=>{
+      const c = C.find(x=>x.id===id);
+      if(!c) return '';
+      const visitCount = VL[id] ? Object.keys(VL[id]).length : 0;
+      const wcCount = BL[id] ? Object.keys(BL[id]).length : 0;
+      const apptCount = TAPPTS[id] ? TAPPTS[id].length : 0;
+      const totalRecords = visitCount + wcCount + apptCount;
+      const recordsLabel = LANG==='es'
+        ? `${visitCount} visita(s) · ${wcCount} C.A. · ${apptCount} cita(s)`
+        : `${visitCount} visit(s) · ${wcCount} W.C. · ${apptCount} appt(s)`;
+      const recordColor = totalRecords > 0 ? '#16A34A' : '#94A3B8';
+      const statusBadge = c.status==='active' ? '<span style="background:#DCFCE7;color:#166534;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600">'+(LANG==='es'?'Activo':'Active')+'</span>'
+                       : c.status==='paused' ? '<span style="background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600">'+(LANG==='es'?'Pausado':'Paused')+'</span>'
+                       : '<span style="background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600">'+(LANG==='es'?'Cancelado':'Cancelled')+'</span>';
+      return `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:11px 13px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700;color:var(--brand);font-size:14.5px">${esc(c.name)} ${statusBadge}</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:3px">${esc(c.phone)||'—'} · ${esc(c.addr)||'—'}</div>
+          <div style="font-size:11.5px;color:${recordColor};margin-top:4px;font-weight:600">${recordsLabel}</div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:2px">ID: ${c.id}${c.day?' · '+esc(c.day):''}${c.week?' · Wk '+esc(c.week):''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <button class="btn" onclick="cm('mdupes');setTimeout(()=>vc(${c.id}),100)" style="font-size:11.5px;padding:4px 10px">${LANG==='es'?'Ver':'View'}</button>
+          <button class="btn btn-red role-admin-only" onclick="deleteClient(${c.id}).then(()=>{if(!C.find(x=>x.id===${c.id}))findDuplicates();})" style="font-size:11.5px;padding:4px 10px">🗑 ${LANG==='es'?'Eliminar':'Delete'}</button>
+        </div>
+      </div>`;
+    }).join('');
+    const reasons = Array.from(g.reasons).join(', ');
+    html += `<div style="margin-bottom:14px;padding:12px;background:#FFF;border:2px solid #FCA5A5;border-radius:10px">
+      <div style="font-size:13px;font-weight:600;color:#991B1B;margin-bottom:8px">
+        ${LANG==='es'?'Grupo':'Group'} ${gi+1} — <span style="font-weight:400">${reasons}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">${cards}</div>
+    </div>`;
+  });
+  body.innerHTML = html;
+  om('mdupes');
 }
 
 function owc(id){
@@ -3769,7 +4180,7 @@ function flashSave(){
 function saveData(){
   try{
     const payload={
-      BL,VL,TAPPTS,CAL_ORDER,TECHS,
+      BL,VL,TAPPTS,CAL_ORDER,TECHS,ORGANIZERS,
       clients:C.map(cl=>({
         id:cl.id,name:cl.name,phone:cl.phone,email:cl.email,
         addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,san:cl.san,
@@ -3799,6 +4210,7 @@ function loadData(){
     if(d.VL)Object.assign(VL,d.VL);
     if(d.TAPPTS)Object.assign(TAPPTS,d.TAPPTS);
     if(d.TECHS&&Array.isArray(d.TECHS))TECHS=d.TECHS;
+    if(d.ORGANIZERS&&Array.isArray(d.ORGANIZERS))ORGANIZERS=d.ORGANIZERS;
     if(d.CAL_ORDER){
       ['A','B'].forEach(wt=>{
         if(d.CAL_ORDER[wt])Object.assign(CAL_ORDER[wt],d.CAL_ORDER[wt]);
@@ -3833,7 +4245,7 @@ function getBackupPayload(){
   return {
     version:'aspen_cm_v2',
     exportedAt:new Date().toISOString(),
-    BL,VL,TAPPTS,CAL_ORDER,TECHS,
+    BL,VL,TAPPTS,CAL_ORDER,TECHS,ORGANIZERS,
     clients:C.map(cl=>({
       id:cl.id,name:cl.name,phone:cl.phone,email:cl.email,
       addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,san:cl.san,
@@ -3932,6 +4344,7 @@ async function restoreBackup(input){
       if(d.VL){Object.keys(VL).forEach(k=>delete VL[k]);Object.assign(VL,d.VL);}
       if(d.TAPPTS){Object.keys(TAPPTS).forEach(k=>delete TAPPTS[k]);Object.assign(TAPPTS,d.TAPPTS);}
       if(d.TECHS){const ta=Array.isArray(d.TECHS)?d.TECHS:Object.values(d.TECHS).filter(Boolean);TECHS=ta;}
+      if(d.ORGANIZERS){const oa=Array.isArray(d.ORGANIZERS)?d.ORGANIZERS:Object.values(d.ORGANIZERS).filter(Boolean);ORGANIZERS=oa;}
       if(d.CAL_ORDER){
         ['A','B'].forEach(wt=>{
           if(d.CAL_ORDER[wt])Object.assign(CAL_ORDER[wt],d.CAL_ORDER[wt]);
@@ -4118,6 +4531,10 @@ function applyCloudData(d){
   if(d.TECHS){
     const ta=Array.isArray(d.TECHS)?d.TECHS:Object.values(d.TECHS).filter(Boolean);
     TECHS=ta;
+  }
+  if(d.ORGANIZERS){
+    const oa=Array.isArray(d.ORGANIZERS)?d.ORGANIZERS:Object.values(d.ORGANIZERS).filter(Boolean);
+    ORGANIZERS=oa;
   }
   if(d.CAL_ORDER){
     ['A','B'].forEach(wt=>{
@@ -5477,8 +5894,9 @@ async function printWeekRoute(weekOffset, techName){
 
 // Apply a CSS class on <body> so the layout switches between admin chrome and tech view
 function applyRole(){
-  document.body.classList.remove('role-admin','role-tech','role-none');
+  document.body.classList.remove('role-admin','role-tech','role-organizer','role-none');
   if(CURRENT_ROLE==='admin') document.body.classList.add('role-admin');
+  else if(CURRENT_ROLE==='organizer') document.body.classList.add('role-organizer');
   else if(CURRENT_ROLE==='tech') document.body.classList.add('role-tech');
   else document.body.classList.add('role-none');
   // Localize switch-user button
@@ -5499,6 +5917,13 @@ function showRoleSelection(){
         <div class="role-btn-text">
           <div class="role-btn-title">Admin</div>
           <div class="role-btn-sub">${LANG==='es'?'Control completo de la app':'Full app control'}</div>
+        </div>
+      </button>
+      <button class="role-btn" onclick="chooseRole('organizer')" style="border-color:#A78BFA">
+        <div class="role-btn-icon">🗂</div>
+        <div class="role-btn-text">
+          <div class="role-btn-title">${LANG==='es'?'Organizador':'Organizer'}</div>
+          <div class="role-btn-sub">${LANG==='es'?'Acceso completo, sin eliminar clientes':'Full access, no client deletion'}</div>
         </div>
       </button>
       <button class="role-btn" onclick="chooseRole('tech')">
@@ -5537,6 +5962,8 @@ async function setAdminPwd(plainPwd){
   }
   const h=await _hashPwd(plainPwd);
   localStorage.setItem('aspen_admin_pwd_hash',h);
+  // Clear the "skip" flag — user has a real password now
+  localStorage.removeItem('aspen_admin_pwd_skipped');
 }
 async function verifyAdminPwd(plainPwd){
   const stored=getStoredAdminPwdHash();
@@ -5550,10 +5977,16 @@ function chooseRole(role){
     // If a password is already set → require it before granting admin access
     if(getStoredAdminPwdHash()){
       promptAdminPassword();
+    } else if(localStorage.getItem('aspen_admin_pwd_skipped')==='1'){
+      // User previously chose "skip password" — don't nag them every time. Grant admin directly.
+      // They can still set a password later from the Techs modal (admin-pwd-section).
+      _grantAdmin();
     } else {
       // First-time admin login → offer to create a password (they can also skip)
       promptCreateAdminPassword();
     }
+  } else if(role==='organizer'){
+    showOrganizerSelection();
   } else if(role==='tech'){
     showTechSelection();
   }
@@ -5659,6 +6092,8 @@ async function _submitNewAdminPwd(){
 }
 function _skipAdminPwd(){
   // Sign in without setting a password (they can add one later from Techs modal)
+  // Remember this choice so we don't pester them on every admin login.
+  localStorage.setItem('aspen_admin_pwd_skipped','1');
   _grantAdmin();
 }
 
@@ -5749,6 +6184,29 @@ function showTechSelection(){
     </button>`;
 }
 
+// Organizer selection — same pattern as tech, separate list
+function showOrganizerSelection(){
+  const card=document.getElementById('role-pick-card');
+  if(!card)return;
+  if(!ORGANIZERS||ORGANIZERS.length===0){
+    card.innerHTML=`<h2>${LANG==='es'?'No hay organizadores registrados':'No organizers registered'}</h2>
+      <div class="sub">${LANG==='es'?'El admin puede agregar organizadores desde el botón "Techs"':'Admin can add organizers from the "Techs" button'}</div>
+      <button class="role-btn" onclick="showRoleSelection()" style="margin-top:14px"><div class="role-btn-icon">←</div><div class="role-btn-text"><div class="role-btn-title">${LANG==='es'?'Atrás':'Back'}</div></div></button>`;
+    return;
+  }
+  const list=ORGANIZERS.map(o=>`
+    <button class="tech-pick-btn" onclick="loginAsOrganizer('${esc(o.name).replace(/'/g,'&#39;')}')" style="border-color:#A78BFA">
+      🗂 ${esc(o.name)}
+    </button>`).join('');
+  card.innerHTML=`
+    <h2>${LANG==='es'?'¿Cuál organizador eres?':'Which organizer are you?'}</h2>
+    <div class="sub">${LANG==='es'?'Elige tu nombre':'Pick your name'}</div>
+    <div class="tech-pick-list">${list}</div>
+    <button class="tech-pick-btn" onclick="showRoleSelection()" style="border-color:#CBD5E1;background:#F8FAFC;color:#475569;font-size:14px;padding:10px 14px">
+      ← ${LANG==='es'?'Atrás':'Back'}
+    </button>`;
+}
+
 function loginAsTech(name){
   CURRENT_ROLE='tech'; CURRENT_TECH=name;
   localStorage.setItem('aspen_role','tech');
@@ -5758,6 +6216,15 @@ function loginAsTech(name){
   hideRoleSelection();
   applyRole();
   renderTechView();
+}
+
+function loginAsOrganizer(name){
+  CURRENT_ROLE='organizer'; CURRENT_TECH=name; // reuse tech_name slot for who-is-logged-in
+  localStorage.setItem('aspen_role','organizer');
+  localStorage.setItem('aspen_tech_name',name);
+  hideRoleSelection();
+  applyRole();
+  if(typeof rd==='function') rd();
 }
 
 // Switch user button — confirm then show role selection again
