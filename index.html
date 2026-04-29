@@ -856,6 +856,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
           <th style="width:90px;text-align:center">📍 GPS</th>
           <th style="width:100px;text-align:center">Distancia</th>
           <th>Notas</th>
+          <th style="width:90px;text-align:center" id="ck-th-action">Acción</th>
         </tr></thead>
         <tbody id="ck-tbody"></tbody>
       </table>
@@ -1527,6 +1528,8 @@ function rebuildUI(){
   const pricingBtn=document.getElementById('pricing-btn-label');if(pricingBtn)pricingBtn.textContent=LANG==='es'?'Precios':'Pricing';
   const dupesBtn=document.getElementById('find-dupes-label');if(dupesBtn)dupesBtn.textContent=LANG==='es'?'Buscar duplicados':'Find duplicates';
   const mdupesTitle=document.getElementById('mdupes-title');if(mdupesTitle)mdupesTitle.textContent=LANG==='es'?'🔍 Buscar duplicados':'🔍 Find duplicates';
+  // Daily Report header — "Acción" / "Action" column
+  const ckThAction=document.getElementById('ck-th-action');if(ckThAction)ckThAction.textContent=LANG==='es'?'Acción':'Action';
   // Filters
   const srch=document.getElementById('srch');if(srch)srch.placeholder=t('searchName');
   const ffreq=document.getElementById('ffreq');if(ffreq){ffreq.options[0].text=t('frequency');ffreq.options[1].text=t('weeklyLabel');ffreq.options[2].text=t('biweeklyLabel');}
@@ -3605,7 +3608,7 @@ function rcheckins(){
   _ckGeoMemo.clear();
   const tbody=document.getElementById('ck-tbody');
   if(rows.length===0){
-    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">${LANG==='es'?'No hay registros con estos filtros':'No records matching these filters'}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--muted)">${LANG==='es'?'No hay registros con estos filtros':'No records matching these filters'}</td></tr>`;
     return;
   }
   tbody.innerHTML=rows.map(r=>{
@@ -3644,9 +3647,22 @@ function rcheckins(){
         distCell=`<span style="color:${distColor};font-weight:600;font-size:12px" title="${LANG==='es'?'Distancia entre GPS y dirección del cliente':'Distance from GPS to client address'}">${distIcon} ${distLabel}</span>`;
       }
     }
-    // Notes (truncated)
+    // Notes — when present, render as a red alert badge so admin notices immediately.
+    // Empty notes show a small dash. The full note text is in the title for hover.
     const notes=(v.notes||'').replace(/\s+/g,' ').trim();
-    const notesShort = notes.length>40 ? notes.substring(0,40)+'…' : notes;
+    let notesCell;
+    if(notes){
+      const notesShort = notes.length>60 ? notes.substring(0,60)+'…' : notes;
+      notesCell = `<div style="background:#FEE2E2;border-left:3px solid #DC2626;color:#991B1B;padding:6px 9px;border-radius:5px;font-size:12.2px;font-weight:600;line-height:1.35;white-space:normal" title="${esc(notes)}">⚠ ${esc(notesShort)}</div>`;
+    } else {
+      notesCell = `<span style="color:#94A3B8;font-size:11.5px">—</span>`;
+    }
+    // Service Ticket button — opens the tech-appointment modal with this visit's note pre-filled.
+    // Pre-filling means admin doesn't have to retype "the tub was empty, refill with water" — it's already there.
+    // The note is also visible in the modal so the assigned tech sees the full context.
+    const ticketBtn = notes
+      ? `<button class="btn btn-red" style="font-size:11px;padding:4px 8px;white-space:nowrap" onclick="event.stopPropagation();_openServiceTicketFromNote(${r.cid},'${r.dateKey}')" title="${LANG==='es'?'Crear orden de servicio con esta nota':'Create service ticket from this note'}">🔧 ${LANG==='es'?'Ticket':'Ticket'}</button>`
+      : `<button class="btn" style="font-size:11px;padding:4px 8px;white-space:nowrap;color:#94A3B8" onclick="event.stopPropagation();_openServiceTicketFromNote(${r.cid},'${r.dateKey}')" title="${LANG==='es'?'Crear orden de servicio':'Create service ticket'}">🔧</button>`;
     return `<tr style="cursor:pointer" onclick="openVisitModal(${r.cid},'${r.dateKey}')">
       <td><div style="font-weight:600">${dStr}</div><div style="font-size:11px;color:var(--muted);text-transform:capitalize">${dow}</div></td>
       <td style="font-size:13px;font-weight:600;color:#1E40AF">${tStr}</td>
@@ -3655,9 +3671,50 @@ function rcheckins(){
       <td style="text-align:center">${statusPill}</td>
       <td style="text-align:center">${gpsCell}</td>
       <td style="text-align:center">${distCell}</td>
-      <td style="font-size:12.5px;color:#475569" title="${esc(notes)}">${esc(notesShort)}</td>
+      <td>${notesCell}</td>
+      <td style="text-align:center">${ticketBtn}</td>
     </tr>`;
   }).join('');
+}
+
+// Opens the Service Ticket modal pre-populated with this visit's note as the problem description.
+// Workflow: tech leaves note "tub empty, refill with water" → admin sees red alert → click 🔧 Ticket
+//    → modal opens with: client name, date today, status=scheduled, AND the original note as description
+//    → admin picks tech + date/time + presses "Send Ticket" → goes to Service Log with full context.
+function _openServiceTicketFromNote(cid, dateKey){
+  const c = C.find(x=>x.id===cid);
+  if(!c){ showToast(LANG==='es'?'Cliente no encontrado':'Client not found','warn'); return; }
+  const v = (VL[cid] && VL[cid][dateKey]) || {};
+  const techNote = (v.notes||'').trim();
+  const techWhoVisited = v.tech || '';
+  const visitDateLabel = new Date(dateKey+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric',year:'numeric'});
+  // Build a description that gives the assigned tech everything they need to know
+  const descParts = [];
+  if(techNote){
+    descParts.push((LANG==='es'?'Nota del técnico ':'Tech note ') + (techWhoVisited?`(${techWhoVisited})`:'') + (LANG==='es'?` el ${visitDateLabel}:`:` on ${visitDateLabel}:`));
+    descParts.push(techNote);
+  } else {
+    descParts.push(LANG==='es'
+      ? `Crear orden basada en visita del ${visitDateLabel}${techWhoVisited?' por '+techWhoVisited:''}.`
+      : `Create ticket from ${visitDateLabel} visit${techWhoVisited?' by '+techWhoVisited:''}.`);
+  }
+  const fullDesc = descParts.join('\n');
+  refreshTechDataLists();
+  // Populate the tech-appt modal
+  document.getElementById('ta-cid').value=cid;
+  document.getElementById('ta-cname').value=c.name;
+  document.getElementById('ta-date').value=td();
+  document.getElementById('ta-time').value='09:00';
+  document.getElementById('ta-type').value='Reparación general';
+  document.getElementById('ta-desc').value=fullDesc;
+  document.getElementById('ta-status').value='scheduled';
+  // Pre-select the same tech that did the visit (admin can change), or fall back to first tech
+  const taTech = document.getElementById('ta-tech');
+  if(taTech){
+    const matchedTech = techWhoVisited && Array.from(taTech.options).find(o=>o.value===techWhoVisited);
+    taTech.value = matchedTech ? techWhoVisited : (TECHS.length ? TECHS[0].name : '');
+  }
+  om('mtech-appt');
 }
 
 function resetCheckinFilters(){
