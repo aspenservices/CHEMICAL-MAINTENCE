@@ -777,6 +777,10 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .fq-btn.fq-active-a{background:#DBEAFE;color:#1D4ED8;border-color:#3B82F6}
 .fq-btn.fq-active-b{background:#EDE9FE;color:#6D28D9;border-color:#8B5CF6}
 .fq-btn.fq-active-ab{background:#F0FDF4;color:#166534;border-color:#22C55E}
+/* Small orange dot next to "Día (Sem A)" / "Día (Sem B)" when this week's
+   day-of-week is overridden separately from the other week's. Visual cue
+   that A and B are on different days for this client. */
+.day-override-mark{display:inline-block;color:var(--brand);font-size:10px;margin-left:4px;line-height:1;vertical-align:middle}
 
 /* clickable metric */
 .metric{cursor:pointer;transition:box-shadow .15s,transform .1s}
@@ -2672,6 +2676,18 @@ function parseLocalDate(s){
 }
 // Today at local midnight (used for overdue comparisons)
 function todayLocal(){const d=new Date();d.setHours(0,0,0,0);return d;}
+// Day-of-week for a client in a specific week (A or B). A&B (weekly) clients
+// can have separate `c.dayA` / `c.dayB` overrides — e.g., Matteson on Thursday
+// during A-weeks and Wednesday during B-weeks. If no override is set for that
+// week, falls back to `c.day` (the legacy single-day field). Pure A or pure B
+// clients always use `c.day`. Used by getVisitDatesForWeek, getOrderedClients,
+// renderTechDayClients, and anywhere the schedule splits clients by day-column.
+function _dayForWeek(c, wt){
+  if(!c) return null;
+  if(wt === 'A' && c.dayA) return c.dayA;
+  if(wt === 'B' && c.dayB) return c.dayB;
+  return c.day;
+}
 // Days between two YYYY-MM-DD strings (positive = future, negative = past)
 function daysBetween(a,b){
   const da=parseLocalDate(a), db=b?parseLocalDate(b):todayLocal();
@@ -5553,13 +5569,16 @@ function getVisitDatesForWeek(c,q,wt){
   // Today at midnight — the boundary between "upcoming" (computed from c.day)
   // and "past" (anchor-only, must have a record).
   const today=new Date();today.setHours(0,0,0,0);
+  // Use per-week day override (dayA / dayB) when set, falling back to c.day.
+  // Lets A&B clients have different days in different weeks.
+  const dayWanted = _dayForWeek(c, wt);
   // 1. Upcoming computed dates (today onwards) matching c.day for this week parity
   months.forEach(m=>{
     let d=new Date(yr,m-1,1);
     while(d.getMonth()===m-1){
       if(d>=today){
         const dn=d.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
-        if(dn===c.day){
+        if(dn===dayWanted){
           // Use ISO week number for consistent A/B alternation
           const isoWk=getISOWeek(d);
           const isA=(isoWk%2===1); // odd weeks = A, even weeks = B
@@ -5670,7 +5689,11 @@ function buildWeekSection(wt,clients,q){
         // weekday letter (L/M/X/J/V or M/T/W/T/F) so admin sees at a glance
         // "this is from when the client was on Thursdays."
         const dDow = dDate.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
-        const dowDiffers = (dDow !== c.day);
+        // Compare to the day this client SHOULD be on for this week section
+        // (dayA/dayB override or c.day fallback). A historical visit on a
+        // different weekday than the current schedule = anchored from a
+        // previous day assignment.
+        const dowDiffers = (dDow !== _dayForWeek(c, wt));
         const isHistorical = vl && !isTombstone && (st==='done'||st==='not_done'||st==='skip');
         const dowMap = LANG==='es'
           ? {Mon:'L',Tue:'M',Wed:'X',Thu:'J',Fri:'V',Sat:'S',Sun:'D'}
@@ -5730,8 +5753,31 @@ function buildWeekSection(wt,clients,q){
             <button class="fq-btn ${c.week==='A'?'fq-active-a':''}" onclick="changeClientWeek(${c.id},'A')">A</button>
             <button class="fq-btn ${c.week==='B'?'fq-active-b':''}" onclick="changeClientWeek(${c.id},'B')">B</button>
             <button class="fq-btn ${c.week==='A&B'?'fq-active-ab':''}" onclick="changeClientWeek(${c.id},'A&B')">A+B</button>
-            <span style="font-size:10.9px;color:var(--muted);margin-left:6px;margin-right:2px;align-self:center">${t('dayLabel2')}</span>
-            ${['Mon','Tue','Wed','Thu','Fri'].map(d=>`<button class="fq-btn ${c.day===d?'fq-active-a':''}" onclick="changeClientDay(${c.id},'${d}')" style="font-size:9.8px">${['L','M','X','J','V'][['Mon','Tue','Wed','Thu','Fri'].indexOf(d)]}</button>`).join('')}
+            ${(() => {
+              // Day picker — context-aware. The same A&B client renders in BOTH
+              // week sections; each render shows the day selector for THAT week
+              // only. Lets admin set, e.g., Matteson on Thursday during A-weeks
+              // (top section) and on Wednesday during B-weeks (bottom section)
+              // independently. Pure-A/pure-B clients show a single selector
+              // (no week qualifier) since they only render in one section.
+              const isWeekly = (c.week === 'A&B');
+              const labelText = isWeekly
+                ? (LANG==='es' ? `Día (Sem ${wt})` : `Day (Wk ${wt})`)
+                : t('dayLabel2');
+              const activeDay = _dayForWeek(c, wt);
+              const scopeArg = isWeekly ? `,'${wt}'` : '';
+              const overrideHint = isWeekly && (
+                (wt==='A' && c.dayA && c.dayA !== c.day) ||
+                (wt==='B' && c.dayB && c.dayB !== c.day)
+              ) ? `<span class="day-override-mark" title="${esc(LANG==='es'?'Día sobreescrito para esta semana':'Day overridden for this week')}">●</span>` : '';
+              return `<span style="font-size:10.9px;color:var(--muted);margin-left:6px;margin-right:2px;align-self:center">${labelText}${overrideHint}</span>` +
+                ['Mon','Tue','Wed','Thu','Fri'].map(d => {
+                  const isActive = (activeDay === d);
+                  const cls = isActive ? 'fq-active-a' : '';
+                  const letter = ['L','M','X','J','V'][['Mon','Tue','Wed','Thu','Fri'].indexOf(d)];
+                  return `<button class="fq-btn ${cls}" onclick="changeClientDay(${c.id},'${d}'${scopeArg})" style="font-size:9.8px">${letter}</button>`;
+                }).join('');
+            })()}
           </div>
           <div class="cc-visits">${visitHtml||`<div style="padding:4px 8px;font-size:11.5px;color:var(--muted)">${t('noVisitsQ')}</div>`}</div>
           ${techApptHtml}
@@ -5796,7 +5842,9 @@ const CAL_ORDER={A:{Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]},B:{Mon:[],Tue:[],Wed:[],
 
 function getOrderedClients(weekClients, dayKey, wt){
   const order=CAL_ORDER[wt]&&CAL_ORDER[wt][dayKey]?CAL_ORDER[wt][dayKey]:[];
-  const dayC=weekClients.filter(c=>c.day===dayKey);
+  // Use per-week day (dayA/dayB override) so A&B clients can sit in different
+  // day-columns for week A vs week B (e.g., Matteson Thu-A / Wed-B).
+  const dayC=weekClients.filter(c=>_dayForWeek(c,wt)===dayKey);
   if(order.length===0){
     // First time: use WEEK_A_ORDER/WEEK_B_ORDER names
     const ORDER=wt==='A'?WEEK_A_ORDER:WEEK_B_ORDER;
@@ -5858,6 +5906,13 @@ function changeClientWeek(id, newWeek){
   const cl=C.find(x=>x.id===id);if(!cl)return;
   cl.week=newWeek;
   cl.freq=newWeek==='A&B'?'weekly':'biweekly';
+  // If leaving A&B (weekly) mode, drop any per-week day overrides — pure-A
+  // and pure-B clients only show in one week section, so dayA/dayB no longer
+  // make sense. We keep c.day as the single source of truth for them.
+  if(newWeek !== 'A&B'){
+    delete cl.dayA;
+    delete cl.dayB;
+  }
   // Clear old orders for this client
   ['A','B'].forEach(wt=>['Mon','Tue','Wed','Thu','Fri'].forEach(d=>{
     if(CAL_ORDER[wt][d])CAL_ORDER[wt][d]=CAL_ORDER[wt][d].filter(x=>x!==id);
@@ -5865,41 +5920,86 @@ function changeClientWeek(id, newWeek){
   rcal();
 }
 
-function changeClientDay(id, newDay){
+// Move a client to a different day-of-week. Optional `weekScope` ('A' or 'B')
+// applies the change to ONLY that week — used when an A&B (weekly) client
+// should land on different days for week A vs week B (Alberto's request:
+// "que la regla de a y b semanal pueda alterarse"). Without a weekScope, the
+// change applies to both weeks (legacy behavior, pure-A or pure-B clients).
+//
+// Data model:
+//   - `c.day`            legacy single-day field, fallback for both weeks
+//   - `c.dayA`           override used only when computing week A (optional)
+//   - `c.dayB`           override used only when computing week B (optional)
+// The _dayForWeek(c, wt) helper resolves the right one at read time.
+//
+// Persistence: dayA/dayB are saved alongside other client fields. CAL_ORDER
+// (drag-drop ordering) is updated only for the affected week(s) so the other
+// week's order isn't disturbed.
+function changeClientDay(id, newDay, weekScope){
   const cl=C.find(x=>x.id===id);if(!cl)return;
-  const oldDay=cl.day;
-  if(oldDay===newDay) return; // no-op
-  // Count historical visits already recorded — these will stay anchored to
-  // their real dates after the move, but the message helps admin confirm
-  // that nothing is being deleted.
+  // Resolve the "scope" — if not provided, apply to both weeks (legacy)
+  const isWeekly = (cl.week === 'A&B');
+  const scopes = (isWeekly && weekScope) ? [weekScope] : ['A','B'];
+  // Determine the OLD day for each scope so we can move CAL_ORDER entries
+  const oldDays = {};
+  scopes.forEach(wt => { oldDays[wt] = _dayForWeek(cl, wt); });
+  // No-op: if the new day already matches in all affected scopes, skip
+  if(scopes.every(wt => oldDays[wt] === newDay)) return;
+  // Count historical visits already recorded — preserved automatically by
+  // the anchor logic in getVisitDatesForWeek; the message confirms this
+  // for admin confidence.
   let pastVisits=0;
   if(VL[id]){
     Object.values(VL[id]).forEach(v=>{
       if(v && !v._deleted && (v.status==='done'||v.status==='not_done'||v.status==='skip')) pastVisits++;
     });
   }
-  ['A','B'].forEach(wt=>{
-    if(CAL_ORDER[wt][oldDay])CAL_ORDER[wt][oldDay]=CAL_ORDER[wt][oldDay].filter(x=>x!==id);
-    if(!CAL_ORDER[wt][newDay])CAL_ORDER[wt][newDay]=[];
-    if(!CAL_ORDER[wt][newDay].includes(id))CAL_ORDER[wt][newDay].push(id);
+  // Apply the day update to the data model
+  if(isWeekly && weekScope){
+    // Per-week override: set dayA or dayB
+    if(weekScope === 'A') cl.dayA = newDay;
+    else if(weekScope === 'B') cl.dayB = newDay;
+    // If after this change BOTH weeks resolve to the same day, simplify by
+    // collapsing back to c.day and clearing the overrides — keeps the data
+    // model tidy when the admin re-aligns A and B.
+    const resolvedA = cl.dayA || cl.day;
+    const resolvedB = cl.dayB || cl.day;
+    if(resolvedA === resolvedB){
+      cl.day = resolvedA;
+      delete cl.dayA;
+      delete cl.dayB;
+    }
+  } else {
+    // Whole-client move: c.day for both weeks (or for the only week if pure A/B)
+    cl.day = newDay;
+    delete cl.dayA;
+    delete cl.dayB;
+  }
+  // Update CAL_ORDER only for the scopes we changed, preserving the other week's order
+  scopes.forEach(wt => {
+    const oldDay = oldDays[wt];
+    if(CAL_ORDER[wt][oldDay]) CAL_ORDER[wt][oldDay] = CAL_ORDER[wt][oldDay].filter(x => x !== id);
+    if(!CAL_ORDER[wt][newDay]) CAL_ORDER[wt][newDay] = [];
+    if(!CAL_ORDER[wt][newDay].includes(id)) CAL_ORDER[wt][newDay].push(id);
   });
-  cl.day=newDay;
   rcal();
-  // Friendly toast confirming the move + that history is preserved
+  // Friendly toast
   const dayLabels = LANG==='es'
     ? {Mon:'lunes',Tue:'martes',Wed:'miércoles',Thu:'jueves',Fri:'viernes'}
     : {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'};
-  const oldLbl = dayLabels[oldDay] || oldDay;
   const newLbl = dayLabels[newDay] || newDay;
+  const scopeLbl = (isWeekly && weekScope)
+    ? (LANG==='es' ? ` (Sem ${weekScope})` : ` (Wk ${weekScope})`)
+    : '';
   let msg;
   if(pastVisits > 0){
     msg = LANG==='es'
-      ? `✓ ${cl.name} movido a ${newLbl}. ${pastVisits} visita(s) previa(s) en ${oldLbl} se conservan.`
-      : `✓ ${cl.name} moved to ${newLbl}. ${pastVisits} prior ${oldLbl} visit(s) preserved.`;
+      ? `✓ ${cl.name} → ${newLbl}${scopeLbl}. ${pastVisits} visita(s) previa(s) se conservan.`
+      : `✓ ${cl.name} → ${newLbl}${scopeLbl}. ${pastVisits} prior visit(s) preserved.`;
   } else {
     msg = LANG==='es'
-      ? `✓ ${cl.name} movido a ${newLbl}.`
-      : `✓ ${cl.name} moved to ${newLbl}.`;
+      ? `✓ ${cl.name} → ${newLbl}${scopeLbl}.`
+      : `✓ ${cl.name} → ${newLbl}${scopeLbl}.`;
   }
   if(typeof showToast === 'function') showToast(msg, 'ok');
 }
@@ -6186,7 +6286,7 @@ function saveData(){
       BL,VL,TAPPTS,CAL_ORDER,TECHS,ORGANIZERS,DNOTES,
       clients:C.map(cl=>({
         id:cl.id,name:cl.name,phone:cl.phone,email:cl.email,
-        addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,san:cl.san,
+        addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,dayA:cl.dayA||'',dayB:cl.dayB||'',san:cl.san,
         lwc:cl.lwc||'',nwc:cl.nwc||'',notes:cl.notes||'',status:cl.status,
         wcN:cl.wcN||false,wcD:cl.wcD||false,
         techP:cl.techP||false,techI:cl.techI||'',
@@ -6266,7 +6366,7 @@ function getBackupPayload(){
     BL,VL,TAPPTS,CAL_ORDER,TECHS,ORGANIZERS,DNOTES,
     clients:C.map(cl=>({
       id:cl.id,name:cl.name,phone:cl.phone,email:cl.email,
-      addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,san:cl.san,
+      addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,dayA:cl.dayA||'',dayB:cl.dayB||'',san:cl.san,
       lwc:cl.lwc||'',nwc:cl.nwc||'',notes:cl.notes||'',status:cl.status,
       wcN:cl.wcN||false,wcD:cl.wcD||false,
       techP:cl.techP||false,techI:cl.techI||'',
@@ -10206,7 +10306,7 @@ function _isTechDayComplete(){
   const chosenWeek = sessionStorage.getItem('tech_chosen_week') || detectedWeek;
   const dateKey = _localDateKey(today);
   const dayClients = C.filter(c =>
-    c.status==='active' && c.day===dayKey && (c.week===chosenWeek || c.week==='A&B')
+    c.status==='active' && _dayForWeek(c,chosenWeek)===dayKey && (c.week===chosenWeek || c.week==='A&B')
   );
   if(dayClients.length === 0) return false;
   const handled = dayClients.filter(c => {
@@ -10228,7 +10328,7 @@ function _collectTechDayVisits(){
   const chosenWeek = sessionStorage.getItem('tech_chosen_week') || detectedWeek;
   const dateKey = _localDateKey(today);
   const dayClients = C.filter(c =>
-    c.status==='active' && c.day===dayKey && (c.week===chosenWeek || c.week==='A&B')
+    c.status==='active' && _dayForWeek(c,chosenWeek)===dayKey && (c.week===chosenWeek || c.week==='A&B')
   );
   const ordered = (typeof getOrderedClients === 'function')
     ? getOrderedClients(dayClients, dayKey, chosenWeek)
@@ -10499,7 +10599,7 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
   const dateKey = _localDateKey(today); // YYYY-MM-DD
   // Get clients scheduled for this day + week (active only)
   const dayClients = C.filter(c =>
-    c.status==='active' && c.day===dayKey && (c.week===wt || c.week==='A&B')
+    c.status==='active' && _dayForWeek(c,wt)===dayKey && (c.week===wt || c.week==='A&B')
   );
   // Order them per the saved drag-drop order
   const ordered = getOrderedClients(dayClients, dayKey, wt);
