@@ -740,6 +740,11 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .vd-skip{background:#FCA5A5;border-color:#EF4444}
 .vd-tech{background:#A78BFA;border-color:#7C3AED}
 .v-date{font-size:11.5px;color:var(--muted);min-width:34px}
+/* Day-of-week badge — small letter pill that appears next to the date when the
+   actual weekday differs from the client's current `c.day` (i.e. an anchored
+   historical visit from before the client was rescheduled to a new day). */
+.v-dow-mark{font-size:10px;font-weight:700;color:#A16207;background:#FEF3C7;border:1px solid #FCD34D;border-radius:4px;padding:0 4px;line-height:1.4;letter-spacing:.3px;flex-shrink:0;cursor:help}
+.visit-row-anchor{background:linear-gradient(90deg,rgba(254,243,199,.35) 0%,transparent 60%)}
 .v-note{font-size:11.5px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65px}
 .cc-actions{padding:3px 6px 5px;display:flex;gap:4px}
 .wb-a{background:#DBEAFE;color:#1D4ED8;border:1px solid #3B82F6;border-radius:4px;font-size:10.9px;font-weight:700;padding:1px 5px}
@@ -2638,7 +2643,21 @@ function getCurrentYearQuarters(){
 
 const DAYS=['Mon','Tue','Wed','Thu','Fri'];
 function getDN(){return[t('mon'),t('tue'),t('wed'),t('thu'),t('fri')];}
-const td=()=>new Date().toISOString().split('T')[0];
+// Local-timezone YYYY-MM-DD key. CRITICAL: never use `Date.toISOString()` for
+// dateKeys — it converts to UTC and shifts the day at UTC midnight. In St.
+// Louis (CDT = UTC−5), UTC midnight is 7pm local. After 7pm CDT, a tech
+// saving a visit with `new _localDateKey(Date())` would write
+// it under TOMORROW's key, then re-render and read TODAY's key, and the
+// just-saved record appears to vanish. Reported by Alberto: "tickets reset
+// at end of day". Using local Y/M/D components avoids this entirely.
+function _localDateKey(d){
+  d = d || new Date();
+  const y = d.getFullYear();
+  const mo = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${mo}-${dd}`;
+}
+const td=()=>_localDateKey();
 
 // ─── Core helpers (used throughout) ───────────────────────────────────────────
 // HTML escape — use anywhere user-provided fields go into innerHTML/template strings.
@@ -3866,7 +3885,7 @@ function swc(){
   const c=C.find(x=>x.id===id);
   c.lwc=d;c.wcN=false;c.wcD=true;
   const nd=new Date(d);nd.setMonth(nd.getMonth()+6);
-  c.nwc=nd.toISOString().split('T')[0];
+  c.nwc=_localDateKey(nd);
   cm('mwc');ra();
 }
 function otc(id){
@@ -4196,7 +4215,7 @@ async function testServiceLogConnection(){
   console.log('🔍 Testing Service Log connection...');
   const testDoc={
     customer:'🔍 CONNECTION TEST — delete me',
-    date:new Date().toISOString().split('T')[0],
+    date:new _localDateKey(Date()),
     techs:[],workTypes:['Service Call'],
     warranty:{has:null,model:'',year:0,type:'rda',label:'N/W'},
     visitNum:1,noLabor:false,arrival:'',departure:'',
@@ -4701,7 +4720,7 @@ function exportCheckinsCSV(){
   const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download='aspen-daily-report-'+new Date().toISOString().split('T')[0]+'.csv';
+  a.href=url; a.download='aspen-daily-report-'+new _localDateKey(Date())+'.csv';
   document.body.appendChild(a); a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
   showToast(LANG==='es'?`✓ ${rows.length} registros exportados`:`✓ ${rows.length} records exported`,'ok');
@@ -4748,7 +4767,7 @@ function _mondayOf(dateStr){
   const offset = dow === 0 ? -6 : 1 - dow;
   const m = new Date(d);
   m.setDate(d.getDate() + offset);
-  return m.toISOString().split('T')[0];
+  return _localDateKey(m);
 }
 
 // Returns array of 5 weekday dateKeys (Mon-Fri) starting from `monday`
@@ -4758,7 +4777,7 @@ function _weekDays(monday){
   for(let i=0;i<5;i++){
     const d = new Date(m);
     d.setDate(m.getDate()+i);
-    out.push(d.toISOString().split('T')[0]);
+    out.push(_localDateKey(d));
   }
   return out;
 }
@@ -4790,26 +4809,26 @@ function _lastOfQuarter(dateStr){
 function shiftSummaryWeek(direction){
   const dateInput = document.getElementById('sum-date');
   if(!dateInput) return;
-  const cur = dateInput.value || todayLocal().toISOString().split('T')[0];
+  const cur = dateInput.value || _localDateKey(todayLocal());
   const mode = _getSummaryMode();
   const d = new Date(cur + 'T12:00:00');
   if(mode === 'week'){
     const m = _mondayOf(cur);
     const md = new Date(m + 'T12:00:00');
     md.setDate(md.getDate() + direction * 7);
-    dateInput.value = md.toISOString().split('T')[0];
+    dateInput.value = _localDateKey(md);
   } else if(mode === 'month'){
     d.setMonth(d.getMonth() + direction);
     d.setDate(1);
-    dateInput.value = d.toISOString().split('T')[0];
+    dateInput.value = _localDateKey(d);
   } else if(mode === 'quarter'){
     d.setMonth(d.getMonth() + direction * 3);
     d.setDate(1);
-    dateInput.value = d.toISOString().split('T')[0];
+    dateInput.value = _localDateKey(d);
   } else {
     // 'day' — shouldn't normally hit here since the arrows are hidden, but fall through
     d.setDate(d.getDate() + direction);
-    dateInput.value = d.toISOString().split('T')[0];
+    dateInput.value = _localDateKey(d);
   }
   rsummary();
 }
@@ -4885,7 +4904,7 @@ function rsummary(){
 
   // Default the date to today on first paint
   if(!dateInput.value){
-    dateInput.value = todayLocal().toISOString().split('T')[0];
+    dateInput.value = _localDateKey(todayLocal());
   }
 
   // Populate tech filter (re-run each time so newly added techs show up)
@@ -5347,7 +5366,7 @@ function _renderVisitDetailsTable(rows, dateKey){
 }
 
 function resetSummaryFilters(){
-  const dEl = document.getElementById('sum-date'); if(dEl) dEl.value = todayLocal().toISOString().split('T')[0];
+  const dEl = document.getElementById('sum-date'); if(dEl) dEl.value = _localDateKey(todayLocal());
   const tEl = document.getElementById('sum-tech-filter'); if(tEl) tEl.value = '';
   rsummary();
 }
@@ -5368,7 +5387,7 @@ function exportSummaryCSV(){
   if(!dateInput) return;
   const mode = _getSummaryMode();
   const techFilt = techSel ? techSel.value : '';
-  const curDate = dateInput.value || todayLocal().toISOString().split('T')[0];
+  const curDate = dateInput.value || _localDateKey(todayLocal());
   let fromKey, toKey;
   if(mode === 'week'){
     const monday = _mondayOf(curDate);
@@ -5504,22 +5523,81 @@ function toggleCard(el){
   card.querySelector('.chevron').classList.toggle('open');
 }
 
+// Compute the visit dates for client `c` in quarter `q` for week `wt` (A or B).
+//
+// Two sources are merged into one chronological list:
+//
+//   1. UPCOMING DATES (today forward) — every weekday matching `c.day` in the
+//      remaining quarter, filtered by ISO-week parity (odd=A, even=B). This is
+//      what the client SHOULD be visited on going forward.
+//
+//   2. HISTORICAL ANCHOR DATES — any VL[cid][dateKey] record with actual visit
+//      data (status=done/not_done/skip). Pulled in regardless of day-of-week.
+//
+// PAST DATES WITHOUT A RECORD ARE EXCLUDED. This is the key rule: when admin
+// moves a client from Thursday to Wednesday, the new computed Wednesdays in
+// the past (Apr 1, Apr 15, Apr 29 for a B-week client) are NOT shown as
+// "Overdue" — those were never the client's actual visit dates. Only:
+//   • Real Thursdays where visits happened (Apr 2 ✓, Apr 16 ✓, Apr 30 ✓)
+//   • New Wednesdays from today forward (May 13, May 27, Jun 10, Jun 24)
+//
+// Day-of-week of the historical record doesn't have to match the client's
+// current `c.day`. Week parity (A/B) DOES still matter — a Thursday visit in
+// a B-week ISO stays in the B section, not the A section.
+//
+// Edge case — today: included in the upcoming list if it matches `c.day`,
+// even without a record (the tech may not have visited yet). Today's date
+// comparison uses midnight so timezone doesn't shift the boundary.
 function getVisitDatesForWeek(c,q,wt){
-  const months=getQMonths(q);const yr=getQYear(q);const dates=[];
+  const months=getQMonths(q);const yr=getQYear(q);const dates=[];const seen=new Set();
+  // Today at midnight — the boundary between "upcoming" (computed from c.day)
+  // and "past" (anchor-only, must have a record).
+  const today=new Date();today.setHours(0,0,0,0);
+  // 1. Upcoming computed dates (today onwards) matching c.day for this week parity
   months.forEach(m=>{
     let d=new Date(yr,m-1,1);
     while(d.getMonth()===m-1){
-      const dn=d.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
-      if(dn===c.day){
-        // Use ISO week number for consistent A/B alternation
-        const isoWk=getISOWeek(d);
-        const isA=(isoWk%2===1); // odd weeks = A, even weeks = B
-        if(wt==='A'&&isA)dates.push(d.toISOString().split('T')[0]);
-        if(wt==='B'&&!isA)dates.push(d.toISOString().split('T')[0]);
+      if(d>=today){
+        const dn=d.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
+        if(dn===c.day){
+          // Use ISO week number for consistent A/B alternation
+          const isoWk=getISOWeek(d);
+          const isA=(isoWk%2===1); // odd weeks = A, even weeks = B
+          if(wt==='A'&&isA){const dk=_localDateKey(d);dates.push(dk);seen.add(dk);}
+          if(wt==='B'&&!isA){const dk=_localDateKey(d);dates.push(dk);seen.add(dk);}
+        }
       }
       d.setDate(d.getDate()+1);
     }
   });
+  // 2. Historical anchor dates — past visits that already happened, pulled in
+  //    so they don't disappear when admin reschedules the client to a new day.
+  //    Past pending dates (no record) are intentionally NOT included — those
+  //    were either never on this client's schedule (admin moved the client
+  //    from another day) or never got marked, and showing them as "Overdue"
+  //    just adds noise.
+  if(VL[c.id]){
+    const qStart=new Date(yr,months[0]-1,1);
+    const qEnd=new Date(yr,months[months.length-1],0); // last day of last month in q
+    Object.keys(VL[c.id]).forEach(dk=>{
+      if(seen.has(dk)) return; // already in upcoming list
+      const v=VL[c.id][dk];
+      if(!v||v._deleted) return;
+      // Only pull in records that represent a real visit outcome
+      if(v.status!=='done'&&v.status!=='not_done'&&v.status!=='skip') return;
+      const dateObj=new Date(dk+'T12:00:00');
+      if(dateObj<qStart||dateObj>qEnd) return;
+      // Match the week (A vs B) of the historical date
+      const isoWk=getISOWeek(dateObj);
+      const isA=(isoWk%2===1);
+      if(wt==='A'&&!isA) return;
+      if(wt==='B'&&isA) return;
+      dates.push(dk);
+      seen.add(dk);
+    });
+  }
+  // Sort chronologically so the card reads top-to-bottom in real order
+  dates.sort();
   return dates;
 }
 function getISOWeek(date){
@@ -5577,13 +5655,32 @@ function buildWeekSection(wt,clients,q){
         const vl=vls[dk];
         const isTombstone = vl && vl._deleted;
         const st = (vl && !isTombstone) ? vl.status : 'pending';
-        const isPast=new Date(dk+'T12:00:00')<today2;
+        const dDate = new Date(dk+'T12:00:00');
+        const isPast = dDate < today2;
         const isMissed = (st==='skip'||st==='not_done');
         const dotC=st==='done'?'vd-done':isMissed?'vd-skip':'vd-pend';
-        const dlbl=new Date(dk+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'});
+        const dlbl = dDate.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'});
         const note=vl&&!isTombstone&&vl.notes?vl.notes.substring(0,16):'';
         const tech=vl&&!isTombstone&&vl.tech?vl.tech:'';
         const label=note||tech||(st==='done'?t('visitedCal'):isMissed?t('notVisitedCal'):isPast?t('overdue'):'');
+        // Day-of-week badge — only renders for HISTORICAL anchor dates whose
+        // actual weekday doesn't match the client's current `c.day`. Happens
+        // when the client was rescheduled to a new day after already having
+        // recorded visits on the old day. The badge shows the localized
+        // weekday letter (L/M/X/J/V or M/T/W/T/F) so admin sees at a glance
+        // "this is from when the client was on Thursdays."
+        const dDow = dDate.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
+        const dowDiffers = (dDow !== c.day);
+        const isHistorical = vl && !isTombstone && (st==='done'||st==='not_done'||st==='skip');
+        const dowMap = LANG==='es'
+          ? {Mon:'L',Tue:'M',Wed:'X',Thu:'J',Fri:'V',Sat:'S',Sun:'D'}
+          : {Mon:'M',Tue:'T',Wed:'W',Thu:'T',Fri:'F',Sat:'S',Sun:'S'};
+        const dowLongMap = LANG==='es'
+          ? {Mon:'lunes',Tue:'martes',Wed:'miércoles',Thu:'jueves',Fri:'viernes',Sat:'sábado',Sun:'domingo'}
+          : {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
+        const dowBadge = (dowDiffers && isHistorical)
+          ? `<span class="v-dow-mark" title="${esc(LANG==='es'?'Visitado un '+dowLongMap[dDow]+' (cliente movido después)':'Visited on '+dowLongMap[dDow]+' (client rescheduled later)')}">${dowMap[dDow]||dDow}</span>`
+          : '';
         // Per-date day-note (admin pre-visit instruction). Lives in DNOTES[cid][dk].
         // Renders BELOW the date row when set, plus an inline 📝/＋ pill at the
         // end of the row to add/edit. Replaces the old per-client c.dayNote
@@ -5594,7 +5691,7 @@ function buildWeekSection(wt,clients,q){
         const noteRow = dnote
           ? `<div class="visit-note-row" onclick="event.stopPropagation();editVisitDateNote(${c.id},'${dk}')" title="${esc(LANG==='es'?'Click para editar':'Click to edit')}"><span class="vnr-icon">📌</span><span class="vnr-text">${esc(dnote)}</span></div>`
           : '';
-        return`<div class="visit-row" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span><span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${noteBtn}</div>${noteRow}`;
+        return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${noteBtn}</div>${noteRow}`;
       }).join('');
 
       const techApptHtml=ta.map(a=>`
@@ -5771,6 +5868,16 @@ function changeClientWeek(id, newWeek){
 function changeClientDay(id, newDay){
   const cl=C.find(x=>x.id===id);if(!cl)return;
   const oldDay=cl.day;
+  if(oldDay===newDay) return; // no-op
+  // Count historical visits already recorded — these will stay anchored to
+  // their real dates after the move, but the message helps admin confirm
+  // that nothing is being deleted.
+  let pastVisits=0;
+  if(VL[id]){
+    Object.values(VL[id]).forEach(v=>{
+      if(v && !v._deleted && (v.status==='done'||v.status==='not_done'||v.status==='skip')) pastVisits++;
+    });
+  }
   ['A','B'].forEach(wt=>{
     if(CAL_ORDER[wt][oldDay])CAL_ORDER[wt][oldDay]=CAL_ORDER[wt][oldDay].filter(x=>x!==id);
     if(!CAL_ORDER[wt][newDay])CAL_ORDER[wt][newDay]=[];
@@ -5778,6 +5885,23 @@ function changeClientDay(id, newDay){
   });
   cl.day=newDay;
   rcal();
+  // Friendly toast confirming the move + that history is preserved
+  const dayLabels = LANG==='es'
+    ? {Mon:'lunes',Tue:'martes',Wed:'miércoles',Thu:'jueves',Fri:'viernes'}
+    : {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday'};
+  const oldLbl = dayLabels[oldDay] || oldDay;
+  const newLbl = dayLabels[newDay] || newDay;
+  let msg;
+  if(pastVisits > 0){
+    msg = LANG==='es'
+      ? `✓ ${cl.name} movido a ${newLbl}. ${pastVisits} visita(s) previa(s) en ${oldLbl} se conservan.`
+      : `✓ ${cl.name} moved to ${newLbl}. ${pastVisits} prior ${oldLbl} visit(s) preserved.`;
+  } else {
+    msg = LANG==='es'
+      ? `✓ ${cl.name} movido a ${newLbl}.`
+      : `✓ ${cl.name} moved to ${newLbl}.`;
+  }
+  if(typeof showToast === 'function') showToast(msg, 'ok');
 }
 
 // Edit the per-date day-note for a specific visit. Alberto's request:
@@ -7385,7 +7509,7 @@ function updatePrintNotesEditor(weekOffset){
   let html='';
   DAYS_KEYS.forEach((dk,di)=>{
     const date=new Date(monday);date.setDate(monday.getDate()+di);
-    const dateKey=date.toISOString().split('T')[0];
+    const dateKey=_localDateKey(date);
     const dateLabel=date.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'});
 
     let dayC=weekClients.filter(c=>c.day===dk);
@@ -7479,7 +7603,7 @@ function printWeek(weekOffset){
 
   const dayDates=DAYS_KEYS.map((_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
-    return{iso:d.toISOString().split('T')[0],label:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})};
+    return{iso:_localDateKey(d),label:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})};
   });
 
   let html=`<div class="print-page-title">
@@ -7594,7 +7718,7 @@ async function printWeekRoute(weekOffset, techName){
   const dayDates=DAYS_KEYS.map((_,i)=>{
     const d=new Date(monday);d.setDate(monday.getDate()+i);
     return{
-      iso:d.toISOString().split('T')[0],
+      iso:_localDateKey(d),
       label:d.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'long',day:'numeric',year:'numeric'})
     };
   });
@@ -8516,7 +8640,7 @@ function _resizePhotoToB64(file, maxDim){
 function _captureChkFromDOM(cid){
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return null;
-  const today = new Date(); const dateKey = today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const stored = _loadChkState(cid, dateKey) || {};
   const system = root.dataset.system;
   // Check items
@@ -8591,7 +8715,7 @@ function _captureChkFromDOM(cid){
 
 // Open / collapse the whole checklist
 function toggleChkOpen(cid){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   root.classList.toggle('open');
@@ -8603,7 +8727,7 @@ function toggleChkOpen(cid){
 // Manual toggle item (cleaning steps, mineral purifier inspection, etc.)
 function toggleChkItem(cid, iid, ev){
   if(ev) ev.stopPropagation();
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const el = document.querySelector(`.tcc-chk[data-cid="${cid}"] [data-chk-item="${iid}"]`);
   if(!el) return;
   el.classList.toggle('checked');
@@ -8616,7 +8740,7 @@ function toggleChkItem(cid, iid, ev){
 
 // Inline chem input (oz / lbs / tabs) — autosave to localStorage as tech types
 function setChkInlineChem(cid, chemId, value){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const saved = _loadChkState(cid, dateKey) || {};
   saved.chemicals = saved.chemicals || {};
   const v = String(value||'').trim();
@@ -8628,7 +8752,7 @@ function setChkInlineChem(cid, chemId, value){
 // Test-strip pill selection (reading: chlorine/bromine/alk/ph/ca/phosphate)
 function setChkReading(cid, iid, key, val, ev){
   if(ev) ev.stopPropagation();
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   // Update DOM: deselect siblings in this row, select this one
@@ -8659,7 +8783,7 @@ function setChkReading(cid, iid, key, val, ev){
 
 // TruBlu salt and other numeric-only readings
 function setChkReadingNumeric(cid, iid, key, value){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const saved = _loadChkState(cid, dateKey) || {};
   saved.readings = saved.readings || {};
   saved.readings[iid] = saved.readings[iid] || {};
@@ -8683,7 +8807,7 @@ function setChkReadingNumeric(cid, iid, key, value){
 
 // Water level (segmented control: low / normal / full)
 function setChkWaterLevel(cid, level){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   // Update DOM
@@ -8703,7 +8827,7 @@ function setChkWaterLevel(cid, level){
 
 // Check-In: capture GPS + time, mark item checked. UI updates inline.
 async function doChkCheckin(cid){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   const btn = root.querySelector('[data-chk-action="checkin"] .tcc-chk-action-btn');
@@ -8729,7 +8853,7 @@ async function doChkCheckin(cid){
 
 // Check-Out: same as check-in but at end of service
 async function doChkCheckout(cid){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   const btn = root.querySelector('[data-chk-action="checkout"] .tcc-chk-action-btn');
@@ -8757,7 +8881,7 @@ async function doChkCheckout(cid){
 async function handleChkPhoto(cid, iid, evt){
   const file = evt && evt.target && evt.target.files && evt.target.files[0];
   if(!file) return;
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   showToast(LANG==='es'?'📷 Procesando foto...':'📷 Processing photo...','info');
   try{
     const b64 = await _resizePhotoToB64(file, 640);
@@ -8828,7 +8952,7 @@ function _rerenderCardChecklist(cid){
   // Find the client object
   const c = C.find(x => x.id === cid);
   if(!c) return;
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const wasOpen = root.classList.contains('open');
   // Save the open state so it persists
   const saved = _loadChkState(cid, dateKey) || {};
@@ -8845,7 +8969,7 @@ function _rerenderCardChecklist(cid){
 
 // Final attestation toggle (✓ Trabajo realizado satisfactoriamente)
 function toggleChkFinal(cid){
-  const today=new Date(); const dateKey=today.toISOString().split('T')[0];
+  const today=new Date(); const dateKey=_localDateKey(today);
   const el = document.querySelector(`.tcc-chk[data-cid="${cid}"] .tcc-chk-final`);
   if(!el) return;
   el.classList.toggle('checked');
@@ -8875,7 +8999,7 @@ function _refreshChkProgress(cid){
     if(final && !final.classList.contains('checked')){
       final.classList.add('checked');
       const today = new Date();
-      const dateKey = today.toISOString().split('T')[0];
+      const dateKey = _localDateKey(today);
       const saved = _loadChkState(cid, dateKey) || {};
       saved.satisfactory = true;
       _saveChkState(cid, dateKey, saved);
@@ -9804,7 +9928,7 @@ function printVisitReport(){
 //
 // Period shape: { mode, fromKey, toKey, label }
 function _clientPeriod(mode, anchorDate){
-  const d = anchorDate || todayLocal().toISOString().split('T')[0];
+  const d = anchorDate || _localDateKey(todayLocal());
   if(mode === 'week'){
     const monday = _mondayOf(d);
     const days = _weekDays(monday);
@@ -9832,7 +9956,7 @@ let _clientReportState = null; // { cid, mode, anchorDate }
 function openClientReport(cid, mode, anchorDate){
   const c = C.find(x => x.id === cid);
   if(!c){ showToast(LANG==='es'?'Cliente no encontrado':'Client not found','warn'); return; }
-  _clientReportState = { cid, mode: (mode||'week'), anchorDate: anchorDate || todayLocal().toISOString().split('T')[0] };
+  _clientReportState = { cid, mode: (mode||'week'), anchorDate: anchorDate || _localDateKey(todayLocal()) };
   _renderClientReport();
   document.getElementById('client-report-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -9847,7 +9971,7 @@ function closeClientReport(){
 function setClientReportMode(mode){
   if(!_clientReportState) return;
   _clientReportState.mode = mode;
-  _clientReportState.anchorDate = todayLocal().toISOString().split('T')[0];
+  _clientReportState.anchorDate = _localDateKey(todayLocal());
   _renderClientReport();
 }
 
@@ -9857,7 +9981,7 @@ function shiftClientReportPeriod(dir){
   if(_clientReportState.mode === 'week') d.setDate(d.getDate() + dir * 7);
   else if(_clientReportState.mode === 'month') { d.setMonth(d.getMonth() + dir); d.setDate(1); }
   else { d.setMonth(d.getMonth() + dir * 3); d.setDate(1); }
-  _clientReportState.anchorDate = d.toISOString().split('T')[0];
+  _clientReportState.anchorDate = _localDateKey(d);
   _renderClientReport();
 }
 
@@ -10080,7 +10204,7 @@ function _isTechDayComplete(){
   const isoWk = getISOWeek(today);
   const detectedWeek = (isoWk%2===1) ? 'A' : 'B';
   const chosenWeek = sessionStorage.getItem('tech_chosen_week') || detectedWeek;
-  const dateKey = today.toISOString().split('T')[0];
+  const dateKey = _localDateKey(today);
   const dayClients = C.filter(c =>
     c.status==='active' && c.day===dayKey && (c.week===chosenWeek || c.week==='A&B')
   );
@@ -10098,11 +10222,11 @@ function _isTechDayComplete(){
 function _collectTechDayVisits(){
   const today = new Date();
   const dayKey = ({1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri'})[today.getDay()];
-  if(!dayKey) return {ordered: [], dateKey: today.toISOString().split('T')[0]};
+  if(!dayKey) return {ordered: [], dateKey: _localDateKey(today)};
   const isoWk = getISOWeek(today);
   const detectedWeek = (isoWk%2===1) ? 'A' : 'B';
   const chosenWeek = sessionStorage.getItem('tech_chosen_week') || detectedWeek;
-  const dateKey = today.toISOString().split('T')[0];
+  const dateKey = _localDateKey(today);
   const dayClients = C.filter(c =>
     c.status==='active' && c.day===dayKey && (c.week===chosenWeek || c.week==='A&B')
   );
@@ -10372,7 +10496,7 @@ function techToggleWeek(){
 
 function renderTechDayClients(dayKey, wt, detectedWeek){
   const today=new Date();
-  const dateKey = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  const dateKey = _localDateKey(today); // YYYY-MM-DD
   // Get clients scheduled for this day + week (active only)
   const dayClients = C.filter(c =>
     c.status==='active' && c.day===dayKey && (c.week===wt || c.week==='A&B')
@@ -10564,7 +10688,7 @@ async function techMarkNoVisit(cid){
 // Edit (or add) a note AFTER the visit was already saved — does not reset GPS/timestamp.
 async function techEditNote(cid){
   const today = new Date();
-  const dateKey = today.toISOString().split('T')[0];
+  const dateKey = _localDateKey(today);
   const v = getVisit(cid, dateKey); // returns null for tombstones
   const cur = (v && v.notes) || '';
   const newNote = await showPrompt(LANG==='es'?'Nota:':'Note:', cur);
@@ -10581,7 +10705,7 @@ async function techEditNote(cid){
 
 async function _techRecordVisit(cid, status, notes){
   const today=new Date();
-  const dateKey = today.toISOString().split('T')[0];
+  const dateKey = _localDateKey(today);
   // Snapshot the checklist BEFORE we tear down/re-render — DOM has the
   // freshest state including any uncommitted typing in chemical inputs.
   const chk = _captureChkFromDOM(cid);
@@ -10746,7 +10870,7 @@ function showSmsPromptToast(cid, dateKey, status){
 // Read-side code (renderTechDayClients, audit, etc.) treats tombstones as "no visit recorded".
 function techUndoVisit(cid){
   const today=new Date();
-  const dateKey = today.toISOString().split('T')[0];
+  const dateKey = _localDateKey(today);
   fbSyncing = true; // block listener for the whole undo flow
   _bumpFbSyncingWatchdog();
   if(!VL[cid]) VL[cid] = {};
