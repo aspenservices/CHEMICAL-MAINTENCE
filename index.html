@@ -1943,11 +1943,24 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <div class="edit-field"><label>Frecuencia</label>
     <select id="edit-freq"><option value="biweekly">Bi-semanal</option><option value="weekly">Semanal</option></select>
   </div>
-  <div class="edit-field"><label>Día de visita</label>
+  <div class="edit-field" id="edit-day-single-row"><label>Día de visita</label>
     <select id="edit-day"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
   </div>
+  <div class="edit-field" id="edit-day-dual-row" style="display:none;align-items:flex-start">
+    <label style="padding-top:6px">Días A &amp; B</label>
+    <div style="flex:1;display:flex;gap:8px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600;letter-spacing:.3px">SEMANA A</div>
+        <select id="edit-day-a" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:14.4px;background:#FFF;color:var(--text);font-family:inherit"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600;letter-spacing:.3px">SEMANA B</div>
+        <select id="edit-day-b" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:14.4px;background:#FFF;color:var(--text);font-family:inherit"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
+      </div>
+    </div>
+  </div>
   <div class="edit-field"><label>Semana</label>
-    <select id="edit-week"><option value="A">A</option><option value="B">B</option><option value="A&B">A&B (semanal)</option></select>
+    <select id="edit-week" onchange="toggleEditDayFields()"><option value="A">A</option><option value="B">B</option><option value="A&B">A&B (semanal)</option></select>
   </div>
   <div class="edit-field"><label>Sanitizador</label>
     <select id="edit-san" onchange="document.getElementById('edit-san-other').style.display=this.value==='__other__'?'block':'none'">
@@ -3168,6 +3181,14 @@ function openEdit(id){
   document.getElementById("edit-freq").value=c.freq;
   document.getElementById("edit-day").value=c.day||"Mon";
   document.getElementById("edit-week").value=c.week||"A";
+  // Per-week day overrides — when A&B, the client may sit on different days in
+  // Week A vs Week B (set via drag-and-drop or this modal). Pre-fill both
+  // selects so toggling between single/dual day mode is seamless: if the
+  // override isn't set, fall back to c.day so switching weeks doesn't blank
+  // the field.
+  document.getElementById("edit-day-a").value = c.dayA || c.day || "Mon";
+  document.getElementById("edit-day-b").value = c.dayB || c.day || "Mon";
+  toggleEditDayFields();
   document.getElementById("edit-status").value=c.status;
   // Sanitizer: try to match an existing dropdown option (case-insensitive, ignoring hyphens/spaces),
   // otherwise drop the raw text into the "Other" input
@@ -3193,6 +3214,31 @@ function validateEmail(e){if(!e)return true;return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.
 function validateZip(z){if(!z)return true;return /^\d{5}(-\d{4})?$/.test(z);}
 function validateDate(d){if(!d)return true;return /^\d{4}-\d{2}-\d{2}$/.test(d);}
 
+// Toggles the Edit Client modal between single-day (pure A or pure B) and
+// dual-day (A&B weekly) views. Triggered by openEdit and the Semana <select>
+// onchange. When switching INTO A&B, dayA/dayB are pre-seeded from the single
+// day field so the admin doesn't see blank selects; when switching OUT, the
+// single day field is left alone (saveEdit will then clear stale dayA/dayB).
+function toggleEditDayFields(){
+  const w = document.getElementById('edit-week').value;
+  const single = document.getElementById('edit-day-single-row');
+  const dual = document.getElementById('edit-day-dual-row');
+  if(!single || !dual) return;
+  if(w === 'A&B'){
+    // Seed dayA/dayB from the single field if they look empty/stale
+    const dA = document.getElementById('edit-day-a');
+    const dB = document.getElementById('edit-day-b');
+    const single_val = document.getElementById('edit-day').value || 'Mon';
+    if(!dA.value) dA.value = single_val;
+    if(!dB.value) dB.value = single_val;
+    single.style.display = 'none';
+    dual.style.display = 'flex';
+  } else {
+    single.style.display = 'flex';
+    dual.style.display = 'none';
+  }
+}
+
 function saveEdit(){
   const id=parseInt(document.getElementById("edit-id").value);
   const c=C.find(x=>x.id===id);if(!c)return;
@@ -3212,15 +3258,44 @@ function saveEdit(){
   const zipMatch=newAddr.match(/\b(\d{5})\b/);
   if(newAddr && !zipMatch)showToast(LANG==='es'?'⚠ La dirección no tiene ZIP: el mapa de ruta no podrá ubicarla con precisión':'⚠ Address has no ZIP — route map cannot place it accurately','warn');
   if(errors.length){showToast(errors.join(' · '),'err');return;}
-  // Snapshot for undo
-  const prev=JSON.parse(JSON.stringify({name:c.name,phone:c.phone,email:c.email,addr:c.addr,freq:c.freq,day:c.day,week:c.week,san:c.san,lwc:c.lwc,nwc:c.nwc,status:c.status,notes:c.notes}));
+  // Snapshot for undo (includes dayA/dayB so reverting restores the per-week overrides)
+  const prev=JSON.parse(JSON.stringify({name:c.name,phone:c.phone,email:c.email,addr:c.addr,freq:c.freq,day:c.day,dayA:c.dayA,dayB:c.dayB,week:c.week,san:c.san,lwc:c.lwc,nwc:c.nwc,status:c.status,notes:c.notes}));
+  // ─── Resolve OLD per-week days (before mutation) so we can move CAL_ORDER
+  //     entries to the new day-columns. _dayForWeek already handles dayA/dayB
+  //     vs c.day fallback for us.
+  const oldResA = _dayForWeek(c, 'A');
+  const oldResB = _dayForWeek(c, 'B');
+  const oldWeek = c.week;
+  // ─── Apply text/contact fields ────────────────────────────────────────────
   c.name=document.getElementById("edit-name").value.trim()||c.name;
   c.phone=newPhone;
   c.email=newEmail;
   c.addr=newAddr;
   c.freq=document.getElementById("edit-freq").value;
-  c.day=document.getElementById("edit-day").value;
   c.week=document.getElementById("edit-week").value;
+  // ─── Day handling — depends on the new week setting ───────────────────────
+  if(c.week === 'A&B'){
+    // Dual-day mode: read the two per-week selects. If they end up identical
+    // we collapse back to a single c.day so the data model stays tidy
+    // (mirrors changeClientDay's behavior).
+    const dayA = document.getElementById("edit-day-a").value || 'Mon';
+    const dayB = document.getElementById("edit-day-b").value || 'Mon';
+    if(dayA === dayB){
+      c.day = dayA;
+      delete c.dayA;
+      delete c.dayB;
+    } else {
+      c.day = dayA;        // fallback for any code path that still reads c.day
+      c.dayA = dayA;
+      c.dayB = dayB;
+    }
+  } else {
+    // Pure A or pure B — single day, no per-week override possible. Clear any
+    // stale dayA/dayB from previous A&B life.
+    c.day = document.getElementById("edit-day").value || 'Mon';
+    delete c.dayA;
+    delete c.dayB;
+  }
   const sanV=document.getElementById("edit-san").value;
   c.san=(sanV==='__other__')?document.getElementById("edit-san-other").value.trim():sanV;
   c.lwc=newLwc;
@@ -3228,7 +3303,51 @@ function saveEdit(){
   c.status=document.getElementById("edit-status").value;
   c.notes=document.getElementById("edit-notes").value;
   c.lastModified=Date.now();
-  pushUndo((LANG==='es'?'Cliente editado: ':'Client edited: ')+c.name,()=>{Object.assign(c,prev);c.lastModified=Date.now();});
+  // ─── CAL_ORDER bookkeeping — move the client between day-columns so the
+  //     calendar picks up the change immediately, without waiting for a
+  //     getOrderedClients first-render rebuild. Done per-week because the
+  //     client may have moved in only one week (or moved into/out of a week
+  //     entirely when c.week switched between A / B / A&B).
+  const newResA = _dayForWeek(c, 'A');
+  const newResB = _dayForWeek(c, 'B');
+  const oldInA = (oldWeek === 'A' || oldWeek === 'A&B');
+  const oldInB = (oldWeek === 'B' || oldWeek === 'A&B');
+  const newInA = (c.week === 'A' || c.week === 'A&B');
+  const newInB = (c.week === 'B' || c.week === 'A&B');
+  const _rmFromOrder = (wt, dk) => {
+    if(dk && CAL_ORDER[wt] && CAL_ORDER[wt][dk]){
+      CAL_ORDER[wt][dk] = CAL_ORDER[wt][dk].filter(x => x !== id);
+    }
+  };
+  const _addToOrder = (wt, dk) => {
+    if(!dk) return;
+    if(!CAL_ORDER[wt]) CAL_ORDER[wt] = {};
+    if(!CAL_ORDER[wt][dk]) CAL_ORDER[wt][dk] = [];
+    if(!CAL_ORDER[wt][dk].includes(id)) CAL_ORDER[wt][dk].push(id);
+  };
+  // Week A
+  if(oldInA && !newInA){ _rmFromOrder('A', oldResA); }
+  else if(!oldInA && newInA){ _addToOrder('A', newResA); }
+  else if(oldInA && newInA && oldResA !== newResA){
+    _rmFromOrder('A', oldResA);
+    _addToOrder('A', newResA);
+  }
+  // Week B
+  if(oldInB && !newInB){ _rmFromOrder('B', oldResB); }
+  else if(!oldInB && newInB){ _addToOrder('B', newResB); }
+  else if(oldInB && newInB && oldResB !== newResB){
+    _rmFromOrder('B', oldResB);
+    _addToOrder('B', newResB);
+  }
+  pushUndo((LANG==='es'?'Cliente editado: ':'Client edited: ')+c.name,()=>{
+    // Restore all fields including dayA/dayB. assign() won't delete keys that
+    // were absent in prev, so handle those explicitly to avoid leaving stale
+    // overrides after an undo.
+    Object.assign(c,prev);
+    if(prev.dayA === undefined) delete c.dayA;
+    if(prev.dayB === undefined) delete c.dayB;
+    c.lastModified=Date.now();
+  });
   saveData();
   cm("medit");ra();
   // Re-geocode if address changed so stats update with new location
@@ -5550,51 +5669,44 @@ function toggleCard(el){
 //   2. HISTORICAL ANCHOR DATES — any VL[cid][dateKey] record with actual visit
 //      data (status=done/not_done/skip). Pulled in regardless of day-of-week.
 //
-// PAST DATES WITHOUT A RECORD ARE EXCLUDED. This is the key rule: when admin
-// moves a client from Thursday to Wednesday, the new computed Wednesdays in
-// the past (Apr 1, Apr 15, Apr 29 for a B-week client) are NOT shown as
-// "Overdue" — those were never the client's actual visit dates. Only:
-//   • Real Thursdays where visits happened (Apr 2 ✓, Apr 16 ✓, Apr 30 ✓)
-//   • New Wednesdays from today forward (May 13, May 27, Jun 10, Jun 24)
+// PAST PATTERN-MATCHING DATES ARE INCLUDED — they show as overdue/pending so
+// the admin can see and mark visits that the tech forgot to record. Previous
+// behavior (excluding past pending) hid May 11-style "yesterday wasn't marked
+// yet" cases. If admin reassigns a client from Thursday to Wednesday mid-
+// quarter, past Wednesdays will now appear as pending too; admin can skip
+// them. The historical anchor logic below still pulls in past Thursday
+// visits with records so they don't disappear.
 //
 // Day-of-week of the historical record doesn't have to match the client's
 // current `c.day`. Week parity (A/B) DOES still matter — a Thursday visit in
 // a B-week ISO stays in the B section, not the A section.
-//
-// Edge case — today: included in the upcoming list if it matches `c.day`,
-// even without a record (the tech may not have visited yet). Today's date
-// comparison uses midnight so timezone doesn't shift the boundary.
 function getVisitDatesForWeek(c,q,wt){
   const months=getQMonths(q);const yr=getQYear(q);const dates=[];const seen=new Set();
-  // Today at midnight — the boundary between "upcoming" (computed from c.day)
-  // and "past" (anchor-only, must have a record).
-  const today=new Date();today.setHours(0,0,0,0);
   // Use per-week day override (dayA / dayB) when set, falling back to c.day.
   // Lets A&B clients have different days in different weeks.
   const dayWanted = _dayForWeek(c, wt);
-  // 1. Upcoming computed dates (today onwards) matching c.day for this week parity
+  // 1. All scheduled dates in the quarter (past + future) matching the day
+  //    pattern for this week parity. Past without record → shown as pending
+  //    so it's actionable; past with record → deduped by the anchor pass.
   months.forEach(m=>{
     let d=new Date(yr,m-1,1);
     while(d.getMonth()===m-1){
-      if(d>=today){
-        const dn=d.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
-        if(dn===dayWanted){
-          // Use ISO week number for consistent A/B alternation
-          const isoWk=getISOWeek(d);
-          const isA=(isoWk%2===1); // odd weeks = A, even weeks = B
-          if(wt==='A'&&isA){const dk=_localDateKey(d);dates.push(dk);seen.add(dk);}
-          if(wt==='B'&&!isA){const dk=_localDateKey(d);dates.push(dk);seen.add(dk);}
-        }
+      const dn=d.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
+      if(dn===dayWanted){
+        // Use ISO week number for consistent A/B alternation
+        const isoWk=getISOWeek(d);
+        const isA=(isoWk%2===1); // odd weeks = A, even weeks = B
+        if(wt==='A'&&isA){const dk=_localDateKey(d);dates.push(dk);seen.add(dk);}
+        if(wt==='B'&&!isA){const dk=_localDateKey(d);dates.push(dk);seen.add(dk);}
       }
       d.setDate(d.getDate()+1);
     }
   });
-  // 2. Historical anchor dates — past visits that already happened, pulled in
-  //    so they don't disappear when admin reschedules the client to a new day.
-  //    Past pending dates (no record) are intentionally NOT included — those
-  //    were either never on this client's schedule (admin moved the client
-  //    from another day) or never got marked, and showing them as "Overdue"
-  //    just adds noise.
+  // 2. Historical anchor dates — past visits that already happened on a day
+  //    OTHER than the current c.day pattern (e.g., admin moved the client
+  //    from Thu → Mon mid-quarter; old Thursday visits with records still
+  //    need to be visible). Dates already in `seen` (pattern matches) are
+  //    skipped to avoid duplicates.
   if(VL[c.id]){
     const qStart=new Date(yr,months[0]-1,1);
     const qEnd=new Date(yr,months[months.length-1],0); // last day of last month in q
