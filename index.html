@@ -75,7 +75,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .app{max-width:100%;margin:0;padding:0}
 /* Header — solid near-black like the Service Ticket System. White wordmark,
    orange leaf icon, orange tagline. No glassmorphism — clean editorial look. */
-.header{background:#1A1A1A;padding:14px 20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-radius:0;gap:12px 16px;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.header{background:#1A1A1A;padding:14px 20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-radius:0;gap:12px 16px;box-shadow:0 1px 0 rgba(0,0,0,.08),inset 0 -1px 0 rgba(255,255,255,.04)}
 .logo-area{display:flex;align-items:center;gap:12px}
 .logo-mark{width:48px;height:48px;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible}
 .logo-mark svg{overflow:visible}
@@ -83,46 +83,55 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .brand-sub{color:#E8742C;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;margin-top:2px}
 .header-primary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-self:start}
 .header-secondary{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-self:end}
-.hbtn{padding:7px 15px;font-size:13.5px;border-radius:9px;cursor:pointer;font-weight:600;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#FFF;font-family:inherit;transition:background .12s,border-color .12s,transform .08s}
-.hbtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.32)}
+.hbtn{padding:7px 15px;font-size:13.5px;border-radius:9px;cursor:pointer;font-weight:600;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#FFF;font-family:inherit;transition:background .14s ease,border-color .14s ease,transform .08s ease,box-shadow .14s ease}
+.hbtn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.34);box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .hbtn:active{transform:scale(.97)}
 .hbtn-sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
-.hbtn-accent{background:#E8742C;border-color:#E8742C;color:#FFF}
-.hbtn-accent:hover{background:#C95E1A;border-color:#C95E1A}
+.hbtn-accent{background:#E8742C;border-color:#E8742C;color:#FFF;box-shadow:0 1px 4px rgba(232,116,44,.32)}
+.hbtn-accent:hover{background:#C95E1A;border-color:#C95E1A;box-shadow:0 2px 10px rgba(232,116,44,.45)}
 select.hbtn option{color:#2C2418;background:#FFF}
-.tabs-bar{background:#FFFFFF;border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;flex-wrap:wrap}
-.tab{padding:13px 18px;font-size:14.5px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:inherit;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap;font-weight:500;letter-spacing:-.1px;transition:color .12s,border-color .12s}
-.tab.active{color:var(--brand);font-weight:700;border-bottom-color:var(--brand)}
-.tab:hover{color:var(--brand)}
+.tabs-bar{background:#FFFFFF;border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;flex-wrap:wrap;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.tab{padding:13px 18px;font-size:14.5px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:inherit;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;font-weight:600;letter-spacing:-.1px;transition:color .14s ease,border-color .14s ease,background .14s ease;border-radius:6px 6px 0 0}
+.tab.active{color:var(--brand);font-weight:700;border-bottom-color:var(--brand);background:linear-gradient(180deg,rgba(232,116,44,.05),transparent)}
+.tab:hover:not(.active){color:var(--brand);background:rgba(232,116,44,.04)}
 .body{background:#FFFFFF;padding:16px 20px;border-radius:0;border:1px solid var(--border);border-top:none;min-height:500px}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
-.metric{background:#FFF;border:1px solid var(--border);border-radius:8px;padding:12px 14px;border-left:3px solid var(--brand2)}
-.mlabel{font-size:12.6px;color:var(--muted);margin-bottom:4px;font-weight:500}
-.mval{font-size:29.9px;font-weight:600}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+/* Metric card — used on dashboard. Subtle hover lift, clearer hierarchy.
+   The colored left bar is set per-card; default is brand orange. Click-able
+   cards (with onclick) get a pointer cursor and a faint lift on hover. */
+.metric{background:#FFF;border:1px solid var(--border);border-radius:10px;padding:13px 15px;border-left:4px solid var(--brand2);transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;position:relative}
+.metric[onclick]{cursor:pointer}
+.metric[onclick]:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(232,116,44,.10);border-left-color:var(--brand)}
+.metric[onclick]:active{transform:translateY(0)}
+.mlabel{font-size:12.3px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.1px}
+.mval{font-size:30px;font-weight:700;line-height:1.05;letter-spacing:-.5px}
 .mv-brand{color:var(--brand)}.mv-gold{color:#F59E0B}.mv-rust{color:#DC2626}.mv-green{color:#16A34A}
-.card{background:#FFF;border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden}
-.card-head{background:var(--warm2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
-.card-title{font-size:14.9px;font-weight:600;color:var(--brand)}
+.card{background:#FFF;border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;transition:box-shadow .15s ease}
+.card-head{background:var(--warm2);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
+.card-title{font-size:15.2px;font-weight:700;color:var(--brand);letter-spacing:-.1px}
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14.4px}
-th{padding:8px 12px;text-align:left;font-weight:600;font-size:12.6px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--warm2);white-space:nowrap}
-td{padding:8px 12px;border-bottom:0.5px solid #F2E5D0;color:var(--text);vertical-align:top}
+th{padding:9px 12px;text-align:left;font-weight:700;font-size:11.6px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--warm2);white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+td{padding:9px 12px;border-bottom:0.5px solid #F2E5D0;color:var(--text);vertical-align:top}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#F0F9FF}
-.badge{display:inline-block;font-size:12.1px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+tr:hover td{background:#FAF5ED}
+/* Badge — pill-shaped status indicator. Subtle border-radius lets it stay
+   readable at any text scale; bold + dark-on-light gives high contrast. */
+.badge{display:inline-block;font-size:11.8px;padding:2.5px 9px;border-radius:20px;font-weight:700;white-space:nowrap;letter-spacing:.2px}
 .bweekly{background:#DBEAFE;color:#1D4ED8}.bbiw{background:#E0E7FF;color:#4338CA}
 .bactive{background:#DCFCE7;color:#166534}.bpaused{background:#FEF9C3;color:#854D0E}.bcancelled{background:#FEE2E2;color:#991B1B}
-.bwc{background:#FEE2E2;color:#DC2626}.bwcd{background:#DCFCE7;color:#166534}
-.bpending{background:#FEF9C3;color:#854D0E}.bpaid{background:#DCFCE7;color:#166534}
+.bwc{background:#FEE2E2;color:#B91C1C}.bwcd{background:#DCFCE7;color:#166534}
+.bpending{background:#FEF3C7;color:#92400E}.bpaid{background:#DCFCE7;color:#166534}
 .btech{background:#EDE9FE;color:#5B21B6}.bsched{background:#E0E7FF;color:#3730A3}
-.btn{padding:6px 12px;font-size:13px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:#FFF;color:var(--brand);font-family:inherit;font-weight:500;transition:background .12s,border-color .12s,transform .08s}
-.btn:hover{background:#F5F5F7;border-color:var(--border-dark)}
+.btn{padding:6px 12px;font-size:13px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:#FFF;color:var(--brand);font-family:inherit;font-weight:600;transition:background .14s ease,border-color .14s ease,transform .08s ease,box-shadow .14s ease}
+.btn:hover{background:#FFF7ED;border-color:var(--brand);box-shadow:0 1px 4px rgba(232,116,44,.10)}
 .btn:active{transform:scale(.97)}
-.btn-brand{background:var(--brand);color:#FFF;border-color:var(--brand)}.btn-brand:hover{background:var(--brand-dark);border-color:var(--brand-dark)}
-.btn-amber{background:#FEF9C3;color:#854D0E;border-color:#FDE68A}.btn-amber:hover{background:#FDE68A}
-.btn-green{background:#DCFCE7;color:#166534;border-color:#86EFAC}.btn-green:hover{background:#86EFAC}
-.btn-red{background:#FEE2E2;color:#991B1B;border-color:#FECACA}.btn-red:hover{background:#FECACA}
-.btn-purple{background:#EDE9FE;color:#5B21B6;border-color:#A78BFA}.btn-purple:hover{background:#C4B5FD}
+.btn-brand{background:var(--brand);color:#FFF;border-color:var(--brand);box-shadow:0 1px 3px rgba(232,116,44,.22)}
+.btn-brand:hover{background:var(--brand-dark);border-color:var(--brand-dark);box-shadow:0 2px 8px rgba(232,116,44,.32)}
+.btn-amber{background:#FEF9C3;color:#854D0E;border-color:#FDE68A}.btn-amber:hover{background:#FDE68A;border-color:#F59E0B}
+.btn-green{background:#DCFCE7;color:#166534;border-color:#86EFAC}.btn-green:hover{background:#86EFAC;border-color:#16A34A}
+.btn-red{background:#FEE2E2;color:#991B1B;border-color:#FECACA}.btn-red:hover{background:#FECACA;border-color:#DC2626}
+.btn-purple{background:#EDE9FE;color:#5B21B6;border-color:#A78BFA}.btn-purple:hover{background:#C4B5FD;border-color:#7C3AED}
 /* Organizer role: hide all client-deletion controls (server-of-truth gate is in JS too) */
 body.role-organizer .role-admin-only{display:none!important}
 .arow{display:flex;gap:4px;flex-wrap:wrap}
@@ -134,17 +143,23 @@ body.role-organizer .role-admin-only{display:none!important}
 .tcell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @keyframes toast-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .hidden{display:none}
-.alert-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:5px;font-size:13.8px}
-.awc{background:#FEF2F2;border:.5px solid #FECACA}.atc{background:#FFF7ED;border:.5px solid #FED7AA}.aov{background:#FEFCE8;border:.5px solid #FDE68A}
-.adot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:9px;margin-bottom:6px;font-size:13.6px;transition:transform .12s ease,box-shadow .12s ease}
+.alert-item:hover{transform:translateX(2px);box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.awc{background:#FEF2F2;border:1px solid #FECACA;border-left:3px solid #EF4444}
+.atc{background:#FFF7ED;border:1px solid #FED7AA;border-left:3px solid #F97316}
+.aov{background:#FEFCE8;border:1px solid #FDE68A;border-left:3px solid #F59E0B}
+.a-very-overdue{background:#FEF2F2;border-color:#FCA5A5;border-left:3px solid #B91C1C}
+.adot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
 .dred{background:#EF4444}.dcoral{background:#F97316}.damber{background:#F59E0B}
 .fbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .fbar input,.fbar select{font-size:13.8px;padding:5px 9px;border:1px solid var(--border);border-radius:7px;background:#FFF;color:var(--text);font-family:inherit}
 .pager{display:flex;align-items:center;gap:6px;padding:8px 16px;justify-content:flex-end;border-top:1px solid var(--border);background:var(--warm2)}
 .pinfo{font-size:13.2px;color:var(--muted)}
-.chips{display:flex;gap:5px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--warm2);flex-wrap:wrap}
-.chip{padding:4px 11px;border-radius:20px;font-size:13.2px;cursor:pointer;border:1px solid var(--border);background:#FFF;color:var(--muted);font-family:inherit;font-weight:500}
-.chip.active{background:var(--brand);color:#FFF8F0;border-color:var(--brand)}
+.chips{display:flex;gap:6px;padding:9px 16px;border-bottom:1px solid var(--border);background:var(--warm2);flex-wrap:wrap}
+.chip{padding:5px 13px;border-radius:20px;font-size:13.2px;cursor:pointer;border:1px solid var(--border);background:#FFF;color:var(--muted);font-family:inherit;font-weight:600;transition:background .14s ease,color .14s ease,border-color .14s ease,transform .08s ease}
+.chip:hover:not(.active){background:#FFF7ED;color:var(--brand);border-color:var(--brand-light)}
+.chip:active{transform:scale(.96)}
+.chip.active{background:var(--brand);color:#FFF8F0;border-color:var(--brand);box-shadow:0 1px 4px rgba(232,116,44,.28)}
 
 /* Visits tab sub-nav (Per-client / Daily log) — fused tab per Alberto's request.
    Sits flush against the main nav above; renders like a secondary segmented
@@ -299,10 +314,12 @@ body.role-organizer .role-admin-only{display:none!important}
 .tcard h4{font-size:14.9px;font-weight:600;color:var(--brand);margin-bottom:6px}
 .tstat{font-size:13.2px;color:var(--muted);margin-bottom:4px}
 .tstat span{color:var(--text);font-weight:600}
-.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);animation:modal-bg-in .15s ease-out}
 .modal-bg.open{display:flex}
-.modal{background:#FFF;border-radius:14px;border:1px solid var(--border);padding:1.5rem;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
-.modal h3{font-size:18.4px;font-weight:600;color:var(--brand);margin-bottom:.5rem}
+@keyframes modal-bg-in{from{background:rgba(15,23,42,0);backdrop-filter:blur(0)}to{background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}}
+.modal{background:#FFF;border-radius:14px;border:1px solid var(--border);padding:1.5rem;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,.20),0 8px 18px rgba(0,0,0,.08);animation:modal-in .18s cubic-bezier(.2,.9,.4,1.1)}
+@keyframes modal-in{from{transform:translateY(8px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.modal h3{font-size:18.4px;font-weight:700;color:var(--brand);margin-bottom:.5rem;letter-spacing:-.2px}
 .divider{height:2px;background:var(--brand);border-radius:2px;width:100%;margin-bottom:1rem}
 .frow{margin-bottom:11px}
 .frow label{display:block;font-size:13.2px;color:var(--muted);margin-bottom:4px;font-weight:500}
@@ -813,9 +830,9 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 
 /* unpaid section on dashboard */
 .unpaid-section{margin-top:14px}
-.unpaid-row{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:.5px solid var(--border);font-size:14.4px;cursor:pointer}
+.unpaid-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:.5px solid var(--border);font-size:14.2px;cursor:pointer;transition:background .12s ease}
 .unpaid-row:last-child{border-bottom:none}
-.unpaid-row:hover{background:var(--warm2)}
+.unpaid-row:hover{background:#FFF7ED}
 .unpaid-name{font-weight:600;color:var(--brand);flex:1}
 .unpaid-q{font-size:12.6px;color:var(--muted)}
 .unpaid-inv{font-size:12.6px;color:var(--muted)}
@@ -1300,6 +1317,82 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   .vrm-photo-img img{max-height:none!important}
   @page{size:Letter landscape;margin:8mm 8mm}
 }
+
+/* ─── SPOTLIGHT — global search overlay (⌘K) ─────────────────────────────
+   A floating command palette that searches across clients, invoices, visit
+   notes, and exposes quick actions. Opens with ⌘K / Ctrl+K. Arrow keys
+   navigate results, Enter activates, Esc closes. */
+.spot-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.50);z-index:10001;align-items:flex-start;justify-content:center;padding:64px 16px 16px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.spot-bg.open{display:flex}
+.spot-card{background:#FFF;border-radius:14px;width:100%;max-width:660px;max-height:calc(100vh - 100px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 70px rgba(0,0,0,.30);animation:spot-in .15s cubic-bezier(.2,.9,.4,1.1)}
+@keyframes spot-in{from{transform:translateY(-12px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.spot-input-wrap{display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 4px 0 18px}
+.spot-input-wrap::before{content:"🔍";font-size:16px;opacity:.55;margin-right:10px}
+.spot-input{flex:1;padding:17px 4px;font-size:17px;border:none;outline:none;background:transparent;color:var(--text);font-family:inherit}
+.spot-input::placeholder{color:var(--dim)}
+.spot-clear{background:transparent;border:none;font-size:14px;color:var(--muted);padding:6px 12px;cursor:pointer;font-family:inherit}
+.spot-clear:hover{color:var(--brand)}
+.spot-results{overflow-y:auto;padding:6px 6px 8px;flex:1;min-height:0}
+.spot-group{padding:4px 0}
+.spot-group-title{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding:6px 12px 4px}
+.spot-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text);transition:background .08s ease}
+.spot-item:hover,.spot-item.spot-sel{background:var(--brand-light);color:var(--brand)}
+.spot-item.spot-sel{box-shadow:inset 2px 0 0 var(--brand)}
+.spot-item-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spot-item-sub{font-size:11.5px;color:var(--muted);font-weight:400;margin-left:8px}
+.spot-item.spot-sel .spot-item-sub{color:var(--brand)}
+.spot-item-meta{font-size:11.5px;color:var(--muted);flex-shrink:0;margin-left:auto;font-weight:600}
+.spot-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center}
+.spot-empty{padding:36px 18px;text-align:center;color:var(--muted);font-size:14px}
+.spot-empty-hint{font-size:12.5px;color:var(--dim);margin-top:6px}
+.spot-foot{padding:8px 14px;border-top:1px solid var(--border);font-size:11.3px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;background:var(--warm2)}
+.spot-kbd{display:inline-block;padding:1px 7px;border:1px solid var(--border);border-radius:5px;background:#FFF;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;font-weight:600;color:var(--text);box-shadow:0 1px 0 var(--border)}
+.spot-match{color:var(--brand);font-weight:700}
+
+/* ─── INVENTORY / WEEKLY SUMMARY — shared modal style ────────────────────
+   These are wider (760px) than the standard modal because they show
+   tabular data + bar charts. Both reuse .modal/.modal-bg from the main
+   stylesheet — these extras just adjust the look. */
+.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:560px){.inv-grid{grid-template-columns:1fr}}
+.inv-summary-card{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px solid #FDBA74;border-radius:10px;padding:11px 14px}
+.inv-summary-label{font-size:11.5px;color:#9A3412;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.inv-summary-val{font-size:26px;font-weight:700;color:#7C2D12;line-height:1.05}
+.inv-summary-sub{font-size:11.5px;color:#9A3412;margin-top:3px}
+.inv-range{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:9px 11px;background:var(--warm2);border-radius:9px;border:1px solid var(--border)}
+.inv-range-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:#FFF;font-family:inherit;font-size:12.5px;cursor:pointer;font-weight:600;color:var(--muted);transition:background .12s,color .12s,border-color .12s}
+.inv-range-btn:hover{background:#FFF7ED;color:var(--brand)}
+.inv-range-btn.active{background:var(--brand);color:#FFF;border-color:var(--brand)}
+.inv-range-custom{display:flex;gap:4px;align-items:center;margin-left:8px;flex-wrap:wrap}
+.inv-range-custom input{padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12.5px;color:var(--text);background:#FFF}
+.inv-chem-bar{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:.5px solid var(--border);font-size:13.5px}
+.inv-chem-bar:last-child{border-bottom:none}
+.inv-chem-bar:hover{background:#FFF7ED}
+.inv-chem-name{flex:1;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.inv-chem-track{flex:0 0 140px;height:6px;background:#F1F5F9;border-radius:3px;overflow:hidden;position:relative}
+.inv-chem-fill{height:100%;background:linear-gradient(90deg,#F59E0B,#E8742C);border-radius:3px;transition:width .3s ease}
+.inv-chem-amount{flex:0 0 90px;text-align:right;font-weight:700;color:var(--brand);font-size:13.5px}
+.inv-chem-unit{font-size:11px;color:var(--muted);font-weight:500}
+.inv-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:14px}
+.inv-section-title{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:10px 4px 8px;border-top:1px solid var(--border);margin-top:10px}
+.inv-section-title:first-child{border-top:none;margin-top:0}
+
+/* Weekly summary specifics */
+.ws-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.ws-kpi{background:#FFF;border:1px solid var(--border);border-radius:9px;padding:9px 11px;border-left:3px solid var(--brand2)}
+.ws-kpi-label{font-size:11.2px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.ws-kpi-val{font-size:22px;font-weight:700;color:var(--text);line-height:1.05;letter-spacing:-.3px}
+.ws-kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.ws-kpi.green .ws-kpi-val{color:#16A34A}
+.ws-kpi.gold .ws-kpi-val{color:#F59E0B}
+.ws-kpi.brand .ws-kpi-val{color:var(--brand)}
+.ws-kpi.rust .ws-kpi-val{color:#DC2626}
+.ws-day-bar{display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center;padding:6px 0;font-size:13px}
+.ws-day-lbl{font-weight:700;color:var(--brand);font-size:12.5px}
+.ws-day-track{height:18px;background:#F1F5F9;border-radius:5px;overflow:hidden;position:relative}
+.ws-day-fill{height:100%;background:linear-gradient(90deg,#16A34A,#22C55E);border-radius:5px;display:flex;align-items:center;padding-left:8px;color:#FFF;font-size:11.5px;font-weight:700;transition:width .3s ease}
+.ws-day-fill.empty{background:#E5E7EB}
+.ws-day-cnt{text-align:right;font-weight:600;color:var(--text);font-size:12.5px}
 </style>
 </head>
 <body>
@@ -1456,6 +1549,21 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <div class="card">
     <div class="card-head"><span class="card-title" id="ct-clients-day">&#128197; Clientes por día</span></div>
     <div class="day-chart" id="dchart"></div>
+  </div>
+  <!-- Today's roster — quick overview of who's on the schedule today, with
+       one-click share to WhatsApp/SMS for the team. Populated by rd(). -->
+  <div class="card" id="today-card" style="border-left:4px solid var(--brand)">
+    <div class="card-head">
+      <span class="card-title">📅 <span id="today-title">Hoy</span> <span id="today-count" style="font-weight:500;color:var(--muted);font-size:13.5px;margin-left:6px"></span></span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="openSpotlight()" title="Búsqueda global (⌘K)">🔍 <span id="spot-btn-lbl">Buscar</span></button>
+        <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="openChemInventory()" title="Inventario de químicos">💊 <span id="inv-btn-lbl">Inventario</span></button>
+        <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="openWeekSummary()" title="Resumen semanal">📊 <span id="ws-btn-lbl">Semana</span></button>
+        <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="shareTodayRoster('whatsapp')" title="Share to WhatsApp">📱 WhatsApp</button>
+        <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="shareTodayRoster('copy')" title="Copy to clipboard">📋 <span id="copy-lbl">Copiar</span></button>
+      </div>
+    </div>
+    <div id="today-list" style="padding:8px 12px"></div>
   </div>
   <div class="card unpaid-section" id="unpaid-card">
     <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
@@ -1675,14 +1783,25 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
         <select id="wcfilter" onchange="rwc()">
           <option value="">All</option>
           <option value="overdue">Overdue</option>
+          <option value="veryOverdue">+1 year overdue</option>
           <option value="upcoming">Next 30 days</option>
           <option value="pending">Pending (flagged)</option>
+          <option value="noDate">Missing date</option>
         </select>
       </div>
     </div>
+    <!-- Bulk selection toolbar — shown when at least one WC row is checked.
+         Lets Alberto register today's water change for multiple clients at
+         once, or shift their next-WC date by a uniform offset. -->
+    <div id="wc-bulk-bar" style="display:none;background:#EFF6FF;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:9px 14px;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-weight:700;color:var(--brand)"><span id="wc-bulk-count">0</span> <span id="wc-bulk-label">seleccionados</span></span>
+      <button class="btn btn-amber" onclick="wcBulkRegister()" title="Register water change for all selected">💧 <span id="wc-bulk-register-lbl">Registrar CA hoy</span></button>
+      <button class="btn" onclick="wcBulkShiftDate()" title="Set next-WC date for all selected">📅 <span id="wc-bulk-shift-lbl">Cambiar próxima fecha</span></button>
+      <button class="btn" onclick="wcBulkClear()" style="margin-left:auto">✕ <span id="wc-bulk-clear-lbl">Limpiar</span></button>
+    </div>
     <div class="tw">
       <table>
-        <thead><tr id="wc-thead"><th>Client</th><th>Freq.</th><th>Last W.C.</th><th>Next W.C.</th><th>Days</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr id="wc-thead"><th style="width:32px"><input type="checkbox" id="wc-bulk-all" onchange="wcBulkToggleAll(this)" title="Select all"></th><th>Client</th><th>Freq.</th><th>Last W.C.</th><th>Next W.C.</th><th>Days</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="wctbody"></tbody>
       </table>
     </div>
@@ -1920,6 +2039,67 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <button class="btn" onclick="cm('mprint')">Cancelar</button>
     <button class="btn btn-brand" onclick="savePrintNotes()">&#128190; Guardar notas</button>
     <button class="btn btn-brand" onclick="savePrintNotesAndPrint()" style="background:#059669;border-color:#059669">&#128424;&#65039; Imprimir</button>
+  </div>
+</div></div>
+
+<!-- ─── SPOTLIGHT — global search overlay (⌘K) ────────────────────────────
+     Modal-style command palette. Renders at the top of the screen so the
+     search input is in thumb reach on tablets. Results are categorized
+     (clients, invoices, notes, actions) and keyboard-navigable. -->
+<div class="spot-bg" id="spotlight-bg" onclick="if(event.target===this)closeSpotlight()">
+  <div class="spot-card">
+    <div class="spot-input-wrap">
+      <input id="spot-input" class="spot-input" type="text" placeholder="Buscar clientes, facturas, notas, fechas…" autocomplete="off" spellcheck="false">
+      <button class="spot-clear" id="spot-clear-btn" onclick="closeSpotlight()" title="Esc">Esc</button>
+    </div>
+    <div class="spot-results" id="spot-results"></div>
+    <div class="spot-foot">
+      <span><span class="spot-kbd">↑↓</span> <span id="spot-foot-nav">navegar</span></span>
+      <span><span class="spot-kbd">↵</span> <span id="spot-foot-open">abrir</span></span>
+      <span><span class="spot-kbd">esc</span> <span id="spot-foot-close">cerrar</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CHEMICALS INVENTORY ────────────────────────────────────────────── -->
+<div class="modal-bg" id="minv-chem">
+<div class="modal" style="max-width:760px">
+  <h3 id="minv-chem-title">💊 Inventario de químicos consumidos</h3><div class="divider"></div>
+  <div class="inv-range" id="inv-range">
+    <button class="inv-range-btn" data-range="7"  onclick="setInvRange(7,this)">7 <span class="invd-lbl">días</span></button>
+    <button class="inv-range-btn active" data-range="30" onclick="setInvRange(30,this)">30 <span class="invd-lbl">días</span></button>
+    <button class="inv-range-btn" data-range="90" onclick="setInvRange(90,this)">90 <span class="invd-lbl">días</span></button>
+    <button class="inv-range-btn" data-range="q"  onclick="setInvRange('q',this)" id="inv-range-q-btn">Trimestre</button>
+    <button class="inv-range-btn" data-range="y"  onclick="setInvRange('y',this)" id="inv-range-y-btn">Año</button>
+    <span class="inv-range-custom">
+      <input type="date" id="inv-from" onchange="setInvRange('custom',null)">
+      <span style="font-size:12px;color:var(--muted)">→</span>
+      <input type="date" id="inv-to" onchange="setInvRange('custom',null)">
+    </span>
+  </div>
+  <div id="inv-body"></div>
+  <div class="mfoot">
+    <button class="btn" onclick="cm('minv-chem')">Cerrar</button>
+    <button class="btn" onclick="exportInventoryCSV()" title="Export CSV">📊 CSV</button>
+    <button class="btn btn-brand" onclick="printChemInventory()">🖨 <span id="inv-print-lbl">Imprimir</span></button>
+  </div>
+</div></div>
+
+<!-- ─── WEEKLY SUMMARY ────────────────────────────────────────────────── -->
+<div class="modal-bg" id="mweek-sum">
+<div class="modal" style="max-width:780px">
+  <h3 id="mweek-sum-title">📊 Resumen semanal</h3><div class="divider"></div>
+  <div class="inv-range" id="ws-range">
+    <button class="inv-range-btn active" id="ws-range-this" onclick="setWeekSummaryRange('this')">Esta semana</button>
+    <button class="inv-range-btn" id="ws-range-last" onclick="setWeekSummaryRange('last')">Semana pasada</button>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:600" id="ws-range-label"></span>
+  </div>
+  <div id="ws-body"></div>
+  <div class="mfoot">
+    <button class="btn" onclick="cm('mweek-sum')">Cerrar</button>
+    <button class="btn" onclick="shareWeekSummary('copy')" title="Copy">📋 <span id="ws-copy-lbl">Copiar</span></button>
+    <button class="btn" onclick="shareWeekSummary('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
+    <button class="btn btn-brand" onclick="printWeekSummary()">🖨 <span id="ws-print-lbl">Imprimir</span></button>
   </div>
 </div></div>
 
@@ -2499,7 +2679,7 @@ function rebuildUI(){
 const WEEK_A_ORDER={
   Mon:["Wise, Elton","Sinquefield, Rex","Sauter, Melissa","Baumstark, Bart","Palepu, Pavan","Beatty, Jeff","Wheeler, Laura"],
   Tue:["Torf, Andrea","Link, Travis","Babusis, Al","Richter, Chris & Heidi","Bruckel, Matt","Krazer, Michael"],
-  Wed:["Hansen, Jody","Niekamp, Marcie","Embleton, Matt & Carrie","Reisinger, Doug","Silva, Erin & Jonathan","Yokubat, Elaine","Wertman, Stephen","Schmitt, Daniel","Steward, David"],
+  Wed:["Hansen, Jody","Niekamp, Scott","Embleton, Matt & Carrie","Reisinger, Doug","Silva, Erin & Jonathan","Yokubat, Elaine","Wertman, Stephen","Schmitt, Daniel","Steward, David"],
   Thu:["McCarthy, Carolyn","Moshiri, Roya","Minkler, Jodi & Robert","Goggins, Brian & Kaye","Ruck, Linda","Murphy, Mattison","Sjogren, Turbo","Burgis, Peter"],
   Fri:["Clifton, Andrew","Markarian, Valerie","Gaertner, Mark","Roeslein, Rudi","Heffernan, Cindy","Cockriel, Carla","Maclin, Jeremy","Naseer, Khalid"]
 };
@@ -3048,15 +3228,26 @@ function renderAlerts(){
     {key:'tc',label:t('techAlert'),cls:'atc',dot:'dcoral',items:show.filter(a=>a.t==='tc')},
     {key:'ov',label:t('wcOverdue'),cls:'aov',dot:'damber',items:show.filter(a=>a.t==='ov')},
   ];
+  // Compute days-overdue & very-overdue flag once for each overdue alert
+  const now = todayLocal();
+  const _overdueInfo = (dateStr) => {
+    const d = parseLocalDate(dateStr);
+    if(!d) return {days:0,very:false};
+    const days = Math.round((now-d)/86400000);
+    return { days, very: days > 365 };
+  };
   al.innerHTML=groups.filter(g=>g.items.length>0).map(g=>`
     <div style="margin-bottom:8px">
       <div style="font-size:12.1px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;padding-left:2px">${g.label} (${allAlerts.filter(a=>a.t===g.key).length})</div>
-      ${g.items.map(a=>`
-        <div class="alert-item ${g.cls}" onclick="vc(${a.id})" style="cursor:pointer" title="${t('verFicha')} del cliente">
-          <span class="adot ${g.dot}"></span>
-          <span style="flex:1"><strong style="color:var(--brand)">${a.n}</strong>${a.m?' — '+a.m:''}</span>
-          ${a.date?`<span style="font-size:11.5px;color:var(--muted);white-space:nowrap">${a.date}</span>`:''}
-        </div>`).join('')}
+      ${g.items.map(a=>{
+        const ovInfo = g.key==='ov' ? _overdueInfo(a.date) : null;
+        const veryOv = ovInfo && ovInfo.very;
+        return `<div class="alert-item ${g.cls}${veryOv?' a-very-overdue':''}" onclick="vc(${a.id})" style="cursor:pointer" title="${t('verFicha')} del cliente">
+          <span class="adot ${veryOv?'dred':g.dot}"></span>
+          <span style="flex:1"><strong style="color:var(--brand)">${a.n}</strong>${a.m?' — '+a.m:''}${veryOv?' <span class="badge bwc" style="font-size:10.5px;padding:1px 6px;margin-left:4px">🚨 '+(LANG==='es'?'+1 año':'>1yr')+'</span>':''}</span>
+          ${a.date?`<span style="font-size:11.5px;color:${veryOv?'#7F1D1D':'var(--muted)'};white-space:nowrap;font-weight:${veryOv?'700':'400'}">${a.date}${ovInfo?` <span style="font-size:10.5px;color:#9CA3AF">(${ovInfo.days}d)</span>`:''}</span>`:''}
+        </div>`;
+      }).join('')}
     </div>`).join('');
   if(!alertsExpanded&&allAlerts.length>6){
     al.innerHTML+=`<div style="text-align:center;padding:4px 0"><button class="btn" style="font-size:12.6px" onclick="toggleAlerts()">${t('viewAll')} (${allAlerts.length-6} ${t('viewMore')})</button></div>`;
@@ -3066,14 +3257,19 @@ function renderAlerts(){
 function rd(){
   try{
   const ac=C.filter(c=>c.status==="active");
-  const wk=ac.filter(c=>c.week==="A&B").length;
+  // "Weekly" = freq:weekly OR week:A&B (mirrors clientQRate's pricing logic).
+  // "Biweekly" = the rest. This way Pauluzzi/Steward (weekly but listed only
+  // in one week) are counted under "weekly" — matching what they're billed.
+  const isWeekly = c => c.freq === 'weekly' || c.week === 'A&B';
+  const wk=ac.filter(isWeekly).length;
+  const biwk=ac.length - wk;
   const pa=C.filter(c=>c.status==="paused").length;
   const wn=C.filter(c=>c.wcN).length;
   const tn=C.filter(c=>c.techP&&c.techS!=="done").length;
   const md=[
     {t2:"active",l:t("active"),v:ac.length,c:"mv-brand"},
     {t2:"weekly",l:t("weekly"),v:wk,c:"mv-gold"},
-    {t2:"biweekly",l:t("biweekly"),v:ac.length-wk,c:"mv-brand"},
+    {t2:"biweekly",l:t("biweekly"),v:biwk,c:"mv-brand"},
     {t2:"paused",l:t("paused"),v:pa,c:"mv-gold"},
     {t2:"wc",l:t("wcPending"),v:wn,c:"mv-rust"},
     {t2:"tech",l:t("techVisits"),v:tn,c:"mv-gold"},
@@ -3140,13 +3336,139 @@ function rd(){
   document.getElementById("dchart").innerHTML=cnts.map((c,i)=>`<div class="day-bar-col"><span class="day-count">${c}</span><div class="day-bar" style="height:${Math.round((c/mx)*65)+10}px"></div><span class="day-label">${getDN()[i].substring(0,3)}</span></div>`).join("");
   }catch(e){console.error('rd chart error:',e);}
   try{renderUnpaidList();}catch(e){console.error('rd unpaid error:',e);}
+  try{_renderTodayRoster();}catch(e){console.error('rd today error:',e);}
+}
+
+/* ══════════════════════════════════════════════
+   TODAY'S ROSTER — quick dashboard summary
+   ══════════════════════════════════════════════
+   Computes today's day-of-week, detects which week (A or B) we're in via
+   ISO week number, and lists the clients on the schedule for today. The
+   share buttons turn that list into a WhatsApp / clipboard message the
+   admin can fire off to the field crew each morning. */
+function _todayContext(){
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sun
+  const dayMap = {1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri'};
+  const dayKey = dayMap[dayOfWeek];
+  const isoWk = getISOWeek(today);
+  const wt = (isoWk % 2 === 1) ? 'A' : 'B';
+  const dateKey = _localDateKey(today);
+  return { today, dayKey, wt, dateKey, isWeekend: !dayKey };
+}
+
+function _todayClients(){
+  const ctx = _todayContext();
+  if(ctx.isWeekend) return { ctx, list:[] };
+  // Pull the ordered list of clients on today's day from the schedule.
+  // Use getOrderedClients (the same source the agenda uses) so the order
+  // reflects drag-and-drop reordering Alberto's done.
+  const clientsOnDay = C.filter(c => c.status === 'active' && _dayForWeek(c, ctx.wt) === ctx.dayKey
+    && (c.week === ctx.wt || c.week === 'A&B'));
+  let ordered = clientsOnDay;
+  try {
+    if(typeof getOrderedClients === 'function'){
+      ordered = getOrderedClients(clientsOnDay, ctx.dayKey, ctx.wt);
+    }
+  } catch(_) {}
+  return { ctx, list: ordered };
+}
+
+function _renderTodayRoster(){
+  const card = document.getElementById('today-card');
+  const list = document.getElementById('today-list');
+  const titleEl = document.getElementById('today-title');
+  const countEl = document.getElementById('today-count');
+  const copyLbl = document.getElementById('copy-lbl');
+  if(!card || !list) return;
+  const { ctx, list: items } = _todayClients();
+  const isEs = LANG === 'es';
+  if(titleEl) titleEl.textContent = isEs ? 'Hoy' : 'Today';
+  if(copyLbl) copyLbl.textContent = isEs ? 'Copiar' : 'Copy';
+
+  // Weekend → friendly empty state
+  if(ctx.isWeekend){
+    if(countEl) countEl.textContent = '';
+    list.innerHTML = `<div style="padding:14px;text-align:center;color:var(--muted);font-size:13.5px">🌴 ${isEs?'Fin de semana — no hay clientes programados.':'Weekend — no clients scheduled.'}</div>`;
+    return;
+  }
+  const dn = getDN();
+  const dayIdx = DAYS.indexOf(ctx.dayKey);
+  const dayLabel = dayIdx >= 0 ? dn[dayIdx] : ctx.dayKey;
+  const dateStr = ctx.today.toLocaleDateString(isEs?'es-MX':'en-US', {day:'numeric', month:'short'});
+  if(countEl) countEl.textContent = `· ${dayLabel} ${isEs?'sem.':'wk'} ${ctx.wt} · ${dateStr} · ${items.length} ${isEs?'clientes':'clients'}`;
+  if(items.length === 0){
+    list.innerHTML = `<div style="padding:10px 4px;text-align:center;color:var(--muted);font-size:13.5px">${isEs?'No hay clientes en agenda hoy.':'No clients scheduled today.'}</div>`;
+    return;
+  }
+  // Per-client rows — show name, ZIP/area, water-change pending tag if any
+  list.innerHTML = items.map((c,i) => {
+    const v = (VL[c.id] && VL[c.id][ctx.dateKey]) || null;
+    const done = v && v.status === 'done';
+    const skipped = v && (v.status === 'not_done' || v.status === 'skip');
+    const wcDue = c.wcN || (c.nwc && od(c.nwc));
+    const zip = _extractZip(c.addr) || '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:.5px solid var(--border);font-size:14px">
+      <span style="min-width:22px;color:var(--muted);font-size:12.5px;font-weight:700;text-align:right">${i+1}.</span>
+      <span style="flex:1;cursor:pointer;color:${done?'#16A34A':skipped?'#9CA3AF':'var(--text)'};text-decoration:${skipped?'line-through':'none'};${done?'font-weight:600':''}" onclick="vc(${c.id})">${esc(c.name)}</span>
+      ${zip?`<span style="font-size:11.5px;color:var(--muted);font-weight:600">${zip}</span>`:''}
+      ${wcDue?'<span class="badge bwc" style="font-size:10.5px;padding:1px 6px">💧 CA</span>':''}
+      ${done?'<span style="font-size:14px">✓</span>':skipped?'<span style="font-size:14px;color:#9CA3AF">✗</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function _buildTodayShareMessage(){
+  const { ctx, list } = _todayClients();
+  const isEs = LANG === 'es';
+  if(ctx.isWeekend) return isEs ? '🌴 Fin de semana — no hay clientes programados.' : '🌴 Weekend — no clients scheduled.';
+  const dn = getDN();
+  const dayIdx = DAYS.indexOf(ctx.dayKey);
+  const dayLabel = dayIdx >= 0 ? dn[dayIdx] : ctx.dayKey;
+  const dateStr = ctx.today.toLocaleDateString(isEs?'es-MX':'en-US', {day:'numeric', month:'long'});
+  let msg = isEs
+    ? `🧪 *Aspen Spas — Hoy ${dayLabel} ${dateStr} · Semana ${ctx.wt}*\n${list.length} clientes:\n\n`
+    : `🧪 *Aspen Spas — Today ${dayLabel} ${dateStr} · Week ${ctx.wt}*\n${list.length} clients:\n\n`;
+  msg += list.map((c,i) => {
+    const z = _extractZip(c.addr);
+    const zip = z ? ' ('+z+')' : '';
+    const wcDue = c.wcN || (c.nwc && od(c.nwc)) ? ' 💧CA' : '';
+    return `${i+1}. ${c.name}${zip}${wcDue}`;
+  }).join('\n');
+  return msg;
+}
+
+function shareTodayRoster(target){
+  const msg = _buildTodayShareMessage();
+  if(target === 'whatsapp'){
+    // wa.me opens WhatsApp web or the app on mobile with the message pre-filled.
+    const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+    window.open(url, '_blank');
+  } else { // copy
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(() => {
+        showToast(LANG==='es' ? '✓ Resumen copiado al portapapeles' : '✓ Roster copied to clipboard');
+      }).catch(() => {
+        showToast(LANG==='es' ? 'No se pudo copiar — selecciona manualmente' : 'Could not copy — please select manually', 'err');
+      });
+    } else {
+      showToast(LANG==='es' ? 'Portapapeles no disponible en este navegador' : 'Clipboard not available in this browser', 'err');
+    }
+  }
 }
 function showMetricPopup(type){
   let title="",rows=[];
   const open=id=>document.getElementById("mpop").classList.remove("open");
   if(type==="active"){title=t("active");rows=C.filter(c=>c.status==="active").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${c.week==="A&B"?"<span class=\"wb-ab\">A+B</span>":c.week==="A"?"<span class=\"wb-a\">A</span>":"<span class=\"wb-b\">B</span>"} ${dln(c.day)}</span></div>`);}
-  else if(type==="weekly"){title=t("weekly");rows=C.filter(c=>c.status==="active"&&c.week==="A&B").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${dln(c.day)}</span></div>`);}
-  else if(type==="biweekly"){title=t("biweekly");rows=C.filter(c=>c.status==="active"&&c.week!=="A&B").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${dln(c.day)} ${t('sem')}${c.week}</span></div>`);}
+  else if(type==="weekly"){
+    title=t("weekly");
+    // Match the dashboard metric: freq:weekly OR week:A&B counts as weekly.
+    rows=C.filter(c=>c.status==="active" && (c.freq==='weekly' || c.week==='A&B')).map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${dln(c.day)}${c.week!=='A&B'?' <span style="color:var(--rust);font-size:11px">·sólo '+c.week+'</span>':''}</span></div>`);
+  }
+  else if(type==="biweekly"){
+    title=t("biweekly");
+    rows=C.filter(c=>c.status==="active" && c.freq!=='weekly' && c.week!=='A&B').map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${dln(c.day)} ${t('sem')}${c.week}</span></div>`);
+  }
   else if(type==="paused"){title=t("paused");rows=C.filter(c=>c.status==="paused").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${(c.notes||"").substring(0,30)}</span></div>`);}
   else if(type==="wc"){title=t("wcPending");rows=C.filter(c=>c.wcN).map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${t("last")}: ${c.lwc||"\u2014"}</span></div>`);}
   else if(type==="tech"){title=t("techVisits");rows=C.filter(c=>c.techP&&c.techS!=="done").map(c=>`<div class="mpop-row"><span class="mpop-name" onclick="document.getElementById('mpop').classList.remove('open');vc(${c.id})">${esc(c.name)}</span><span class="mpop-val">${(c.techI||"").substring(0,30)}</span></div>`);}
@@ -3255,7 +3577,7 @@ function saveEdit(){
   if(!validateDate(newLwc))errors.push(LANG==='es'?'Fecha "Último C.A." inválida':'Invalid "Last W.C." date');
   if(!validateDate(newNwc))errors.push(LANG==='es'?'Fecha "Próx. C.A." inválida':'Invalid "Next W.C." date');
   // Soft warn for missing ZIP (geocoding falls back to city centroid only when ZIP present)
-  const zipMatch=newAddr.match(/\b(\d{5})\b/);
+  const zipMatch=_extractZip(newAddr);
   if(newAddr && !zipMatch)showToast(LANG==='es'?'⚠ La dirección no tiene ZIP: el mapa de ruta no podrá ubicarla con precisión':'⚠ Address has no ZIP — route map cannot place it accurately','warn');
   if(errors.length){showToast(errors.join(' · '),'err');return;}
   // Snapshot for undo (includes dayA/dayB so reverting restores the per-week overrides)
@@ -3298,8 +3620,16 @@ function saveEdit(){
   }
   const sanV=document.getElementById("edit-san").value;
   c.san=(sanV==='__other__')?document.getElementById("edit-san-other").value.trim():sanV;
+  // If user cleared (or left blank) the nwc field but provided a lwc, derive
+  // nwc = lwc + 6 months. Same convention as swc() and ac(). Prevents the
+  // "lwc present but nwc missing → no WC alerts ever fire" data hole.
+  let resolvedNwc = newNwc;
+  if(newLwc && !resolvedNwc){
+    const d = parseLocalDate(newLwc);
+    if(d){ d.setMonth(d.getMonth()+6); resolvedNwc = _localDateKey(d); }
+  }
   c.lwc=newLwc;
-  c.nwc=newNwc;
+  c.nwc=resolvedNwc;
   c.status=document.getElementById("edit-status").value;
   c.notes=document.getElementById("edit-notes").value;
   c.lastModified=Date.now();
@@ -4542,8 +4872,18 @@ function ac(){
   const name=document.getElementById('nn').value.trim();
   if(!name){showToast(t('nameRequired'));return;}
   const nid=Math.max(...C.map(c=>c.id))+1;
-  const newClient={id:nid,name,phone:document.getElementById('np').value,addr:document.getElementById('na').value,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week:document.getElementById('nw').value,day:document.getElementById('nd').value,san:document.getElementById('ns').value,lwc:document.getElementById('nwc').value,nwc:'',notes:document.getElementById('nnt').value,status:'active',lastModified:Date.now()};
+  // Auto-derive nwc from lwc (+6 months) so admin doesn't have to fill both.
+  const lwc = document.getElementById('nwc').value;
+  let nwc = '';
+  if(lwc){
+    const d = parseLocalDate(lwc);
+    if(d){ d.setMonth(d.getMonth()+6); nwc = _localDateKey(d); }
+  }
+  const addr = document.getElementById('na').value;
+  const newClient={id:nid,name,phone:document.getElementById('np').value,addr,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week:document.getElementById('nw').value,day:document.getElementById('nd').value,san:document.getElementById('ns').value,lwc,nwc,notes:document.getElementById('nnt').value,status:'active',lastModified:Date.now()};
   C.push(newClient);
+  // Soft warn for missing ZIP (geocoding falls back to city centroid only when ZIP present)
+  if(addr && !_extractZip(addr)) showToast(LANG==='es'?'⚠ La dirección no tiene ZIP — el mapa de ruta no podrá ubicarla con precisión':'⚠ Address has no ZIP — route map cannot place it accurately','warn');
   ['nn','np','na','ne','ns','nnt'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nwc').value='';
   cm('madd');ra();
@@ -5592,8 +5932,10 @@ function rwc(){
   let f=C.filter(c=>c.status==='active');
   if(s)f=f.filter(c=>c.name.toLowerCase().includes(s));
   if(fl==='overdue')f=f.filter(c=>{const d=parseLocalDate(c.nwc);return d&&d<now&&!c.wcN;});
+  if(fl==='veryOverdue')f=f.filter(c=>{const d=parseLocalDate(c.nwc);if(!d)return false;return (now-d) > 365*86400000 && !c.wcN;});
   if(fl==='upcoming')f=f.filter(c=>{const d=parseLocalDate(c.nwc);if(!d)return false;const diff=(d-now)/86400000;return diff>=0&&diff<=30;});
   if(fl==='pending')f=f.filter(c=>c.wcN);
+  if(fl==='noDate')f=f.filter(c=>!c.nwc);
   // Sort: overdue first, then by next date
   f.sort((a,b)=>{
     const da=parseLocalDate(a.nwc)||new Date(2099,0,1);
@@ -5604,20 +5946,29 @@ function rwc(){
     const dt=parseLocalDate(c.nwc);
     const daysLeft=dt?Math.ceil((dt-now)/86400000):null;
     const isOverdue=daysLeft!==null&&daysLeft<0;
+    // > 365 days overdue → escalation badge (red with siren). Common pattern
+    // for stale data Alberto should action on.
+    const isVeryOverdue=isOverdue && Math.abs(daysLeft) > 365;
     const isClose=daysLeft!==null&&daysLeft>=0&&daysLeft<=30;
     const isPending=c.wcN;
+    const noDate=!dt;
+    const isChecked = _wcBulkSel.has(c.id);
     let statusBadge='';
     if(isPending)statusBadge=`<span class="badge bwc">${LANG==='es'?'Pendiente':'Pending'}</span>`;
+    else if(isVeryOverdue)statusBadge=`<span class="badge bwc" style="background:#7F1D1D;color:#FFF;font-weight:700">🚨 ${LANG==='es'?'+1 año':'>1yr'} (${Math.abs(daysLeft)}d)</span>`;
     else if(isOverdue)statusBadge=`<span class="badge bwc">${LANG==='es'?'Vencido':'Overdue'} (${Math.abs(daysLeft)}d)</span>`;
     else if(isClose)statusBadge=`<span class="badge bpending">${LANG==='es'?'Próximo':'Soon'} (${daysLeft}d)</span>`;
     else if(daysLeft!==null)statusBadge=`<span class="badge bwcd">OK (${daysLeft}d)</span>`;
-    else statusBadge=`<span style="font-size:11.5px;color:var(--muted)">—</span>`;
-    const daysCol=daysLeft!==null?`<span style="font-weight:600;color:${isOverdue?'#DC2626':isClose?'#F59E0B':'#16A34A'}">${daysLeft}d</span>`:'—';
-    return`<tr>
+    else statusBadge=`<span class="badge" style="background:#E5E7EB;color:#374151;font-weight:600">⚠ ${LANG==='es'?'Sin fecha':'No date'}</span>`;
+    const daysCol = noDate
+      ? '<span style="color:var(--muted);font-style:italic">—</span>'
+      : `<span style="font-weight:600;color:${isVeryOverdue?'#7F1D1D':isOverdue?'#DC2626':isClose?'#F59E0B':'#16A34A'}">${daysLeft}d</span>`;
+    return`<tr${isVeryOverdue?' style="background:#FEF2F2"':''}>
+      <td style="text-align:center"><input type="checkbox" class="wc-bulk-chk" data-cid="${c.id}" ${isChecked?'checked':''} onchange="wcBulkToggle(${c.id},this)"></td>
       <td><strong style="font-weight:600;color:var(--brand);cursor:pointer" onclick="vc(${c.id})">${esc(c.name)}</strong></td>
       <td>${fb(c.freq)}</td>
       <td style="font-size:13.2px">${c.lwc||'—'}</td>
-      <td style="font-size:13.2px;${isOverdue?'color:#DC2626;font-weight:600':''}">${c.nwc||'—'}</td>
+      <td style="font-size:13.2px;${isOverdue?'color:#DC2626;font-weight:600':noDate?'color:var(--muted);font-style:italic':''}">${c.nwc||(LANG==='es'?'(falta)':'(missing)')}</td>
       <td>${daysCol}</td>
       <td>${statusBadge}</td>
       <td><div class="arow">
@@ -5625,6 +5976,94 @@ function rwc(){
         <button class="btn" style="font-size:12.1px" onclick="editWCDate(${c.id})">📅 ${LANG==='es'?'Cambiar fecha':'Change date'}</button>
       </div></td></tr>`;
   }).join('');
+  _wcBulkRefreshBar();
+}
+
+/* ── Bulk WC actions ───────────────────────────────────────────────────────
+   _wcBulkSel  : the live Set of selected client ids
+   wcBulkToggle / wcBulkToggleAll / wcBulkClear : selection management
+   wcBulkRegister : record today as the WC date for every selected client
+   wcBulkShiftDate : set a single next-WC date for every selected client */
+const _wcBulkSel = new Set();
+function wcBulkToggle(cid, el){
+  if(el.checked) _wcBulkSel.add(cid); else _wcBulkSel.delete(cid);
+  _wcBulkRefreshBar();
+}
+function wcBulkToggleAll(master){
+  document.querySelectorAll('#wctbody .wc-bulk-chk').forEach(cb => {
+    const cid = parseInt(cb.getAttribute('data-cid'));
+    if(master.checked){ _wcBulkSel.add(cid); cb.checked = true; }
+    else { _wcBulkSel.delete(cid); cb.checked = false; }
+  });
+  _wcBulkRefreshBar();
+}
+function wcBulkClear(){
+  _wcBulkSel.clear();
+  document.querySelectorAll('#wctbody .wc-bulk-chk').forEach(cb => cb.checked = false);
+  const master = document.getElementById('wc-bulk-all');
+  if(master) master.checked = false;
+  _wcBulkRefreshBar();
+}
+function _wcBulkRefreshBar(){
+  const bar = document.getElementById('wc-bulk-bar');
+  const cnt = document.getElementById('wc-bulk-count');
+  if(!bar || !cnt) return;
+  cnt.textContent = _wcBulkSel.size;
+  bar.style.display = _wcBulkSel.size > 0 ? 'flex' : 'none';
+  // Sync labels with current LANG
+  const lbl = (id, es, en) => { const el = document.getElementById(id); if(el) el.textContent = LANG==='es'?es:en; };
+  lbl('wc-bulk-label','seleccionados','selected');
+  lbl('wc-bulk-register-lbl','Registrar CA hoy','Register WC today');
+  lbl('wc-bulk-shift-lbl','Cambiar próxima fecha','Set next date');
+  lbl('wc-bulk-clear-lbl','Limpiar','Clear');
+}
+async function wcBulkRegister(){
+  if(_wcBulkSel.size === 0) return;
+  const isEs = LANG === 'es';
+  const dateStr = todayLocal().toLocaleDateString(isEs?'es-MX':'en-US',{day:'numeric',month:'long',year:'numeric'});
+  const ok = await showConfirm(
+    (isEs ? `Registrar cambio de agua para ${_wcBulkSel.size} clientes con fecha de hoy (${dateStr})?\n\nSe actualizará Último C.A. y el Próximo C.A. se programará +6 meses.`
+          : `Register water change for ${_wcBulkSel.size} clients with today's date (${dateStr})?\n\nLast W.C. will be updated and Next W.C. set to +6 months.`)
+  );
+  if(!ok) return;
+  const td2 = _localDateKey();
+  const nextD = new Date(); nextD.setMonth(nextD.getMonth()+6);
+  const nextKey = _localDateKey(nextD);
+  let n = 0;
+  _wcBulkSel.forEach(cid => {
+    const c = C.find(x => x.id === cid);
+    if(!c) return;
+    c.lwc = td2; c.nwc = nextKey; c.wcN = false; c.wcD = true; c.lastModified = Date.now();
+    n++;
+  });
+  _wcBulkSel.clear();
+  saveData();
+  ra();
+  showToast(isEs ? `✓ ${n} clientes actualizados` : `✓ ${n} clients updated`);
+}
+async function wcBulkShiftDate(){
+  if(_wcBulkSel.size === 0) return;
+  const isEs = LANG === 'es';
+  const newDate = await showPrompt(
+    isEs ? `Nueva fecha de "Próximo C.A." para ${_wcBulkSel.size} clientes:`
+         : `New "Next W.C." date for ${_wcBulkSel.size} clients:`,
+    '', {type:'date'}
+  );
+  if(!newDate) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){
+    showToast(isEs ? 'Formato inválido (YYYY-MM-DD)' : 'Invalid format (YYYY-MM-DD)', 'err'); return;
+  }
+  let n = 0;
+  _wcBulkSel.forEach(cid => {
+    const c = C.find(x => x.id === cid);
+    if(!c) return;
+    c.nwc = newDate; c.lastModified = Date.now();
+    n++;
+  });
+  _wcBulkSel.clear();
+  saveData();
+  ra();
+  showToast(isEs ? `✓ ${n} clientes con nueva fecha` : `✓ ${n} clients updated`);
 }
 async function editWCDate(id){
   const c=C.find(x=>x.id===id);if(!c)return;
@@ -6461,6 +6900,193 @@ function loadData(){
   }catch(e){console.warn('Load error:',e);}
 }
 
+/* ══════════════════════════════════════════════
+   DATA NORMALIZATION — auto-fix common data issues at boot
+   ══════════════════════════════════════════════
+   Runs once after loadData() and before the first render. Catches:
+    1. Empty `nwc` when `lwc` exists → auto-derive as lwc + 6 months
+    2. Sanitizer field holding a note (e.g. "req Gab for wc") → move to notes
+    3. Sanitizer capitalization drift ("blu salt" vs "Blu-Salt") → normalize
+    4. WEEK_A/B_ORDER references to a client name that's not in C → fuzzy-match
+       by last name and patch the schedule (was: Niekamp Marcie vs Scott bug)
+   Returns a list of {text, cid} warnings for the data-integrity banner. */
+function _normalizeData(){
+  const warnings = [];
+
+  // ── 1. Auto-derive nwc from lwc when missing ───────────────────────────
+  let derived = 0;
+  C.forEach(c => {
+    if(c.lwc && !c.nwc){
+      const d = parseLocalDate(c.lwc);
+      if(d){
+        d.setMonth(d.getMonth() + 6);
+        c.nwc = _localDateKey(d);
+        derived++;
+      }
+    }
+  });
+  if(derived) dbg('normalize: derived', derived, 'nwc from lwc');
+
+  // ── 2. Sanitizer field holding a free-form note ────────────────────────
+  // Anything containing spaces + lowercase verbs is almost certainly a note,
+  // not a sanitizer. Real values are single tokens like "Blu-Salt".
+  C.forEach(c => {
+    const s = String(c.san || '').trim();
+    if(/\b(req|for|wc|change|note|water|cliente|customer)\b/i.test(s) && s.length > 6){
+      // Looks like a note. Move it into notes (prepend, dedupe).
+      const existing = String(c.notes || '').trim();
+      if(!existing.toLowerCase().includes(s.toLowerCase())){
+        c.notes = existing ? (s + ' · ' + existing) : s;
+      }
+      c.san = '';
+      dbg('normalize: moved san→notes for', c.name, '("' + s + '")');
+    }
+  });
+
+  // ── 3. Sanitizer normalization (canonical forms) ───────────────────────
+  // Map free-form values to the canonical forms used in the <select> options.
+  const SAN_CANON = {
+    'blu-salt':'Blu-Salt', 'blu salt':'Blu-Salt', 'blusalt':'Blu-Salt',
+    'blufusion':'BluFusion-Salt', 'blufusion-salt':'BluFusion-Salt', 'blu-fusion':'BluFusion-Salt',
+    'inclear-salt':'Inclear-Salt', 'inclear':'Inclear-Salt', 'in clear':'Inclear-Salt',
+    'frog @ ease':'Frog @ ease', 'frog':'Frog @ ease', 'frogease':'Frog @ ease', 'frog ease':'Frog @ ease',
+    'chlorine':'Chlorine', 'cloro':'Chlorine',
+    'swim blu-salt':'Swim Blu-Salt', 'swim blu salt':'Swim Blu-Salt', 'swim blusalt':'Swim Blu-Salt',
+  };
+  C.forEach(c => {
+    const raw = String(c.san || '').trim().toLowerCase();
+    if(!raw) return;
+    if(SAN_CANON[raw] && SAN_CANON[raw] !== c.san) c.san = SAN_CANON[raw];
+  });
+
+  // ── 4. Patch WEEK_A/B_ORDER for name mismatches ────────────────────────
+  // If the schedule references a name we don't have in C, try to find a
+  // fuzzy match (same last name + day) and silently substitute.
+  const cNames = new Set(C.map(c => c.name));
+  const cByLast = {};
+  C.forEach(c => {
+    const last = String(c.name).split(',')[0].trim().toLowerCase();
+    (cByLast[last] = cByLast[last] || []).push(c);
+  });
+  const _patchOrder = (ORDER, label) => {
+    for(const day of Object.keys(ORDER)){
+      ORDER[day] = ORDER[day].map(name => {
+        if(cNames.has(name)) return name;
+        const last = String(name).split(',')[0].trim().toLowerCase();
+        const candidates = cByLast[last] || [];
+        // Prefer one whose c.day matches and is active
+        const best = candidates.find(c => c.day === day && c.status === 'active') ||
+                     candidates.find(c => c.status === 'active') || candidates[0];
+        if(best){
+          dbg('normalize: schedule', label+'.'+day, '"' + name + '" →', best.name);
+          return best.name;
+        }
+        warnings.push({ cid:null, kind:'orphan', text:(LANG==='es'?'Cliente en agenda no existe: ':'Schedule references missing client: ')+name+' ('+label+'·'+day+')' });
+        return name;
+      });
+    }
+  };
+  _patchOrder(WEEK_A_ORDER, 'A');
+  _patchOrder(WEEK_B_ORDER, 'B');
+
+  // ── 5. Detect freq/week inconsistency (Pauluzzi/Steward case) ──────────
+  // freq:weekly but week:A or B (not A&B) → cliente cobrado como semanal pero
+  // sólo agendado una semana. No tocamos los datos: lo reportamos para que
+  // Alberto decida.
+  C.forEach(c => {
+    if(c.status === 'active' && c.freq === 'weekly' && c.week !== 'A&B'){
+      warnings.push({ cid:c.id, kind:'freq', text:(LANG==='es'
+        ? `${c.name}: frec. semanal pero sólo en semana ${c.week} (verificar precio o agenda)`
+        : `${c.name}: weekly freq but only in week ${c.week} (verify pricing or schedule)`) });
+    }
+  });
+
+  // ── 6. Active clients with WC overdue > 365 days ───────────────────────
+  const now = todayLocal();
+  C.forEach(c => {
+    if(c.status !== 'active' || !c.nwc) return;
+    const d = parseLocalDate(c.nwc);
+    if(d && (now - d) > 365 * 86400000){
+      warnings.push({ cid:c.id, kind:'wc1y', text:(LANG==='es'
+        ? `${c.name}: cambio de agua vencido hace más de 1 año (${c.nwc})`
+        : `${c.name}: water change overdue more than 1 year (${c.nwc})`) });
+    }
+  });
+
+  // ── 7. Active clients with no ZIP code in addr ─────────────────────────
+  C.forEach(c => {
+    if(c.status !== 'active' || !c.addr) return;
+    if(!_extractZip(c.addr)){
+      warnings.push({ cid:c.id, kind:'zip', text:(LANG==='es'
+        ? `${c.name}: dirección sin ZIP (geocoding aproximado)`
+        : `${c.name}: address without ZIP (approximate geocoding)`) });
+    }
+  });
+
+  return warnings;
+}
+
+/* Show a non-blocking banner at the top of the body listing data-integrity
+   warnings found by _normalizeData(). Dismissable; remembered for the session
+   so it doesn't keep popping back. Each warning row has a "Resolver" link
+   that opens the corresponding client edit modal (when cid is known). */
+function _showDataIntegrityBanner(warnings){
+  if(!warnings || !warnings.length) return;
+  if(sessionStorage.getItem('aspen_dq_dismissed') === '1') return;
+  const body = document.querySelector('.body');
+  if(!body) return;
+  // Remove existing banner if any (idempotent)
+  const old = document.getElementById('dq-banner');
+  if(old) old.remove();
+  const banner = document.createElement('div');
+  banner.id = 'dq-banner';
+  banner.style.cssText = 'background:linear-gradient(90deg,#FEF3C7,#FFEDD5);border:1px solid #FCD34D;border-left:4px solid #F59E0B;border-radius:10px;padding:11px 14px;margin:0 0 14px;font-size:13.2px;color:#78350F;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap';
+  const isEs = LANG === 'es';
+  // Group by kind so the banner reads as categories, not a flat dump
+  const byKind = {};
+  warnings.forEach(w => { (byKind[w.kind] = byKind[w.kind] || []).push(w); });
+  const KIND_LABEL = {
+    freq: isEs ? '⚠ Frec. inconsistente' : '⚠ Inconsistent frequency',
+    wc1y: isEs ? '🚨 CA +1 año vencido' : '🚨 WC over 1 year overdue',
+    zip:  isEs ? '📍 Sin ZIP' : '📍 Missing ZIP',
+    orphan: isEs ? '👤 Cliente faltante' : '👤 Missing client',
+  };
+  const fullHtml = Object.keys(byKind).map(kind => `
+    <div style="margin-top:10px">
+      <div style="font-size:11.5px;font-weight:700;color:#92400E;letter-spacing:.3px;text-transform:uppercase;margin-bottom:4px">${KIND_LABEL[kind] || kind} <span style="font-weight:500;color:#9A3412">· ${byKind[kind].length}</span></div>
+      ${byKind[kind].map(w => `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12.5px">
+        <span style="flex:1">• ${esc(w.text)}</span>
+        ${w.cid ? `<button class="btn" style="font-size:11px;padding:3px 9px;background:#FFF;border-color:#FCD34D;color:#9A3412;font-weight:600" onclick="openEdit(${w.cid})">${isEs ? 'Resolver →' : 'Resolve →'}</button>` : ''}
+      </div>`).join('')}
+    </div>
+  `).join('');
+  banner.innerHTML = `
+    <div style="flex:1;min-width:260px">
+      <div style="font-weight:700;margin-bottom:3px">⚠ ${isEs ? 'Aviso de integridad de datos' : 'Data integrity notice'} <span style="font-weight:500;color:#92400E">· ${warnings.length} ${isEs ? 'observaciones' : 'items'}</span></div>
+      <div id="dq-summary" style="font-size:12.5px;color:#92400E">${esc(warnings[0].text)}${warnings.length>1?' · <a id="dq-toggle" href="#" style="color:#9A3412;font-weight:600;text-decoration:underline">'+(isEs?'ver todas':'see all')+'</a>':''}</div>
+      <div id="dq-full" style="display:none;font-size:12.5px;line-height:1.5">${fullHtml}</div>
+    </div>
+    <button id="dq-dismiss" style="background:transparent;border:1px solid #FCD34D;color:#78350F;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit">✕ ${isEs?'Cerrar':'Dismiss'}</button>
+  `;
+  body.insertBefore(banner, body.firstChild);
+  const toggle = banner.querySelector('#dq-toggle');
+  if(toggle){
+    toggle.onclick = (e) => {
+      e.preventDefault();
+      const full = banner.querySelector('#dq-full');
+      const summary = banner.querySelector('#dq-summary');
+      const isOpen = full.style.display !== 'none';
+      full.style.display = isOpen ? 'none' : 'block';
+      summary.style.display = isOpen ? 'block' : 'none';
+      toggle.textContent = isOpen ? (isEs?'ver todas':'see all') : (isEs?'ocultar':'hide');
+    };
+  }
+  banner.querySelector('#dq-dismiss').onclick = () => {
+    sessionStorage.setItem('aspen_dq_dismissed', '1');
+    banner.remove();
+  };
+}
+
 async function clearAllData(){
   if(!await showConfirm(t('confirmClear'),{danger:true,okText:LANG==='es'?'Borrar TODO':'DELETE ALL'}))return;
   localStorage.removeItem(LS_KEY);
@@ -6980,7 +7606,15 @@ function _stateFromZip(zip){
   if(z>=66000&&z<68000)return 'KS';
   return null;
 }
-function _extractZip(addr){const m=String(addr||'').match(/\b(\d{5})(?:-\d{4})?\b/);return m?m[1]:null;}
+function _extractZip(addr){
+  // Pick the LAST 5-digit group in the address — that's the ZIP. Naive
+  // first-match grabs the street number for big-numbered houses
+  // (e.g. "10075 Litzsinger 63124" → was returning "10075" instead of "63124").
+  const all = String(addr||'').match(/\b\d{5}(?:-\d{4})?\b/g);
+  if(!all || !all.length) return null;
+  const last = all[all.length - 1];
+  return last.split('-')[0]; // strip ZIP+4 suffix if any
+}
 
 // Expand common US street abbreviations (Nominatim + Census prefer full words)
 function _cleanAddr(a){
@@ -11097,6 +11731,667 @@ function techUndoVisit(cid){
   renderTechView();
 }
 
+/* ══════════════════════════════════════════════
+   SPOTLIGHT — global search (⌘K)
+   ══════════════════════════════════════════════
+   Quick command-palette over the whole dataset. Searches clients (name,
+   address, phone, email, notes), invoices (number + amount), visit notes,
+   and exposes quick actions (jump to tab, open today's route map, etc.).
+   Keyboard-first: ↑↓ to move, Enter to activate, Esc to close. */
+let _spotSelected = 0;
+let _spotResults = [];
+
+function openSpotlight(){
+  const bg = document.getElementById('spotlight-bg');
+  if(!bg) return;
+  // Refresh placeholders / labels in current language
+  const input = document.getElementById('spot-input');
+  const isEs = LANG === 'es';
+  input.placeholder = isEs ? 'Buscar clientes, facturas, notas, fechas…' : 'Search clients, invoices, notes, dates…';
+  document.getElementById('spot-foot-nav').textContent  = isEs ? 'navegar' : 'navigate';
+  document.getElementById('spot-foot-open').textContent = isEs ? 'abrir'    : 'open';
+  document.getElementById('spot-foot-close').textContent= isEs ? 'cerrar'   : 'close';
+  bg.classList.add('open');
+  input.value = '';
+  _spotSelected = 0;
+  _spotRender('');
+  setTimeout(() => input.focus(), 60);
+}
+function closeSpotlight(){
+  const bg = document.getElementById('spotlight-bg');
+  if(bg) bg.classList.remove('open');
+}
+
+// Build a deduped list of (item, score, group) for the given query.
+function _spotSearch(q){
+  q = String(q || '').trim().toLowerCase();
+  const isEs = LANG === 'es';
+  const results = []; // {type, label, sub, meta, icon, onAct, score}
+
+  // Quick actions — always show first when query is empty or matches "action" terms
+  const ACTIONS = [
+    { id:'open-dash',     label: isEs?'Ir a Dashboard':'Go to Dashboard',        icon:'📊', tab:'dash'    , keys:['dashboard','inicio','home']},
+    { id:'open-clients',  label: isEs?'Ir a Clientes':'Go to Clients',           icon:'👥', tab:'clients' , keys:['clientes','clients']},
+    { id:'open-calendar', label: isEs?'Ir a Agenda A/B':'Go to Schedule A/B',    icon:'📅', tab:'calendar', keys:['agenda','calendar','schedule']},
+    { id:'open-billing',  label: isEs?'Ir a Facturación':'Go to Billing',        icon:'💵', tab:'billing' , keys:['facturacion','billing','invoices','factura']},
+    { id:'open-visits',   label: isEs?'Ir a Visitas':'Go to Visits',             icon:'✓',  tab:'visits'  , keys:['visitas','visits']},
+    { id:'open-summary',  label: isEs?'Ir a Summary':'Go to Summary',            icon:'📋', tab:'summary' , keys:['resumen','summary']},
+    { id:'open-wctab',    label: isEs?'Ir a Water Change':'Go to Water Change',  icon:'💧', tab:'wctab'   , keys:['water change','cambio','wc']},
+    { id:'add-client',    label: isEs?'+ Nuevo cliente':'+ New client',          icon:'➕', fn:()=>om('madd'),       keys:['nuevo','new','agregar','add','create']},
+    { id:'open-print',    label: isEs?'Imprimir ruta semanal':'Print weekly route', icon:'🖨', fn:()=>openPrintDialog(), keys:['imprimir','print','route','ruta']},
+    { id:'open-inv',      label: isEs?'Inventario de químicos':'Chemicals inventory', icon:'💊', fn:()=>{closeSpotlight();openChemInventory();}, keys:['inventario','inventory','chemicals','quimicos']},
+    { id:'open-ws',       label: isEs?'Resumen semanal':'Weekly summary',        icon:'📊', fn:()=>{closeSpotlight();openWeekSummary();}, keys:['semana','semanal','week','weekly','summary']},
+    { id:'open-techs',    label: isEs?'Administrar técnicos':'Manage technicians', icon:'👷', fn:()=>om('mtechs'), keys:['tecnicos','techs','technicians']},
+    { id:'backup',        label: isEs?'Descargar respaldo':'Download backup',    icon:'💾', fn:()=>downloadBackup(), keys:['backup','respaldo','export']},
+    { id:'toggle-lang',   label: LANG==='es'?'Cambiar a inglés':'Switch to Spanish', icon:'🌐', fn:()=>toggleLang(), keys:['lang','idioma','language']},
+  ];
+
+  ACTIONS.forEach(a => {
+    let score = 0;
+    if(!q) score = 0.1; // tiny baseline so all actions show
+    else {
+      if(a.label.toLowerCase().includes(q)) score += 3;
+      if(a.keys.some(k => k.includes(q) || q.includes(k))) score += 4;
+    }
+    if(score > 0){
+      results.push({
+        type:'action', group: isEs ? 'Acciones rápidas' : 'Quick actions',
+        label:a.label, icon:a.icon, score,
+        onAct: () => {
+          closeSpotlight();
+          if(a.tab){
+            // Find the tab button by index and click it
+            const TAB_IDS = ['dash','clients','calendar','billing','visits','summary','wctab'];
+            const idx = TAB_IDS.indexOf(a.tab);
+            const btn = document.querySelectorAll('.tab')[idx];
+            if(btn) btn.click();
+          } else if(a.fn){ a.fn(); }
+        }
+      });
+    }
+  });
+
+  // Clients — search across name, address, phone, email, notes
+  if(q){
+    C.forEach(c => {
+      let score = 0, matches = [];
+      const n = c.name.toLowerCase();
+      const addr = String(c.addr||'').toLowerCase();
+      const phone = String(c.phone||'').toLowerCase();
+      const email = String(c.email||'').toLowerCase();
+      const notes = String(c.notes||'').toLowerCase();
+      const san = String(c.san||'').toLowerCase();
+      if(n.startsWith(q)) score += 10;
+      else if(n.includes(q)) score += 7;
+      if(addr.includes(q)) { score += 5; matches.push('addr'); }
+      if(phone.includes(q)) { score += 6; matches.push('phone'); }
+      if(email.includes(q)) { score += 5; matches.push('email'); }
+      if(notes.includes(q)) { score += 3; matches.push('notes'); }
+      if(san.includes(q)) { score += 2; matches.push('san'); }
+      if(score > 0){
+        const sub = matches.includes('phone') ? c.phone
+                  : matches.includes('addr') ? c.addr
+                  : matches.includes('email') ? c.email
+                  : matches.includes('notes') ? (c.notes||'').slice(0,60)
+                  : c.addr;
+        // Paused/cancelled clients get a small score penalty + visual cue
+        if(c.status === 'paused') score -= 1;
+        if(c.status === 'cancelled') score -= 2;
+        const statusBadge = c.status === 'active' ? '' : (c.status === 'paused' ? '⏸ ' : '✕ ');
+        results.push({
+          type:'client', group: isEs ? 'Clientes' : 'Clients',
+          label: statusBadge + c.name, icon:'👤', sub,
+          meta: `${dln(c.day)}·${c.week}`, score,
+          onAct: () => { closeSpotlight(); vc(c.id); }
+        });
+      }
+    });
+  }
+
+  // Invoices — search by invoice number or amount
+  if(q){
+    Object.entries(BL).forEach(([cid, perQ]) => {
+      if(!perQ || typeof perQ !== 'object') return;
+      const c = C.find(x => x.id === parseInt(cid));
+      if(!c) return;
+      Object.entries(perQ).forEach(([q2, inv]) => {
+        if(!inv) return;
+        const invNum = String(inv.i||'').toLowerCase();
+        const amt = String(inv.a||'').toLowerCase();
+        let score = 0;
+        if(invNum && invNum.includes(q)) score += 8;
+        if(amt && amt.includes(q)) score += 4;
+        if(score > 0){
+          results.push({
+            type:'invoice', group: isEs ? 'Facturas' : 'Invoices',
+            label: `${c.name} — ${inv.i || '(sin #)'}`, icon:'📋',
+            sub: `${q2} · $${inv.a||0} · ${inv.s==='paid'?(isEs?'Pagado':'Paid'):(isEs?'Pendiente':'Pending')}`,
+            meta: q2, score,
+            onAct: () => { closeSpotlight(); showQPanel(q2, c.id); }
+          });
+        }
+      });
+    });
+  }
+
+  // Visit notes — search through visit log
+  if(q && q.length >= 2){
+    let visitMatches = 0;
+    Object.entries(VL).forEach(([cid, perDay]) => {
+      if(visitMatches > 8) return; // cap to keep it fast
+      const c = C.find(x => x.id === parseInt(cid));
+      if(!c) return;
+      Object.entries(perDay).forEach(([dk, v]) => {
+        if(visitMatches > 8) return;
+        if(!v || v._deleted) return;
+        const notes = String(v.notes||'').toLowerCase();
+        if(notes.includes(q)){
+          visitMatches++;
+          // Truncate around the match for context
+          const idx = notes.indexOf(q);
+          const start = Math.max(0, idx - 24);
+          const snippet = String(v.notes).slice(start, start + 80);
+          results.push({
+            type:'visit', group: isEs ? 'Notas de visitas' : 'Visit notes',
+            label: c.name, icon:'📝',
+            sub: '…' + snippet + '…', meta: dk, score: 6,
+            onAct: () => { closeSpotlight(); if(typeof openVisitReport==='function') openVisitReport(c.id, dk); else vc(c.id); }
+          });
+        }
+      });
+    });
+  }
+
+  // Dates — if query looks like YYYY-MM-DD or M/D, offer to jump to that date's view
+  if(q && /^\d{4}-\d{1,2}-\d{1,2}$|^\d{1,2}\/\d{1,2}/.test(q)){
+    results.push({
+      type:'date', group: isEs ? 'Fechas' : 'Dates',
+      label: `${isEs?'Ver día':'View day'}: ${q}`, icon:'📆', score:5,
+      onAct: () => {
+        closeSpotlight();
+        // Jump to Daily log sub-tab of Visits with the date prefilled
+        const tabs = document.querySelectorAll('.tab');
+        if(tabs[4]) tabs[4].click(); // Visits tab
+        setVisitsSubTab('daily');
+        const from = document.getElementById('ck-date-from');
+        const to = document.getElementById('ck-date-to');
+        if(from) from.value = q; if(to) to.value = q;
+        if(typeof rcheckins === 'function') rcheckins();
+      }
+    });
+  }
+
+  // Sort by score, cap to 30
+  results.sort((a,b) => b.score - a.score);
+  return results.slice(0, 30);
+}
+
+function _spotRender(q){
+  _spotResults = _spotSearch(q);
+  _spotSelected = 0;
+  const out = document.getElementById('spot-results');
+  if(!out) return;
+  const isEs = LANG === 'es';
+  if(_spotResults.length === 0){
+    out.innerHTML = `<div class="spot-empty">${isEs?'Sin resultados':'No results'}<div class="spot-empty-hint">${isEs?'Escribe el nombre de un cliente, número de factura, fecha (AAAA-MM-DD), o palabra clave de una nota.':'Type a client name, invoice number, date (YYYY-MM-DD), or a keyword from a note.'}</div></div>`;
+    return;
+  }
+  // Group by .group preserving sort order
+  const groupMap = {};
+  const groupOrder = [];
+  _spotResults.forEach((r,i) => {
+    if(!groupMap[r.group]){ groupMap[r.group] = []; groupOrder.push(r.group); }
+    groupMap[r.group].push({...r, _idx:i});
+  });
+  out.innerHTML = groupOrder.map(g => `
+    <div class="spot-group">
+      <div class="spot-group-title">${esc(g)} · ${groupMap[g].length}</div>
+      ${groupMap[g].map(r => `
+        <div class="spot-item${r._idx===_spotSelected?' spot-sel':''}" data-idx="${r._idx}">
+          <span class="spot-icon">${r.icon}</span>
+          <span class="spot-item-text">${esc(r.label)}${r.sub?'<span class="spot-item-sub"> · '+esc(r.sub)+'</span>':''}</span>
+          ${r.meta?'<span class="spot-item-meta">'+esc(r.meta)+'</span>':''}
+        </div>`).join('')}
+    </div>`).join('');
+  // Wire click handlers (event delegation would also work)
+  out.querySelectorAll('.spot-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.getAttribute('data-idx'));
+      const r = _spotResults[i];
+      if(r && r.onAct) r.onAct();
+    });
+    el.addEventListener('mouseenter', () => {
+      const i = parseInt(el.getAttribute('data-idx'));
+      _spotSetSelected(i);
+    });
+  });
+}
+
+function _spotSetSelected(i){
+  if(i < 0) i = _spotResults.length - 1;
+  if(i >= _spotResults.length) i = 0;
+  _spotSelected = i;
+  // Toggle .spot-sel class
+  document.querySelectorAll('#spot-results .spot-item').forEach(el => {
+    const ix = parseInt(el.getAttribute('data-idx'));
+    el.classList.toggle('spot-sel', ix === _spotSelected);
+  });
+  // Scroll into view
+  const sel = document.querySelector('#spot-results .spot-item.spot-sel');
+  if(sel && sel.scrollIntoView) sel.scrollIntoView({block:'nearest'});
+}
+
+// Wire input + key handlers once at boot
+(function _wireSpotlight(){
+  // We can't use document.getElementById here yet because this runs during JS
+  // load, before DOM is ready in some scenarios. Defer to DOMContentLoaded.
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('spot-input');
+    if(!input) return;
+    input.addEventListener('input', (e) => _spotRender(e.target.value));
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowDown'){ e.preventDefault(); _spotSetSelected(_spotSelected + 1); }
+      else if(e.key === 'ArrowUp'){ e.preventDefault(); _spotSetSelected(_spotSelected - 1); }
+      else if(e.key === 'Enter'){
+        e.preventDefault();
+        const r = _spotResults[_spotSelected];
+        if(r && r.onAct) r.onAct();
+      } else if(e.key === 'Escape'){
+        e.preventDefault(); closeSpotlight();
+      }
+    });
+  });
+})();
+
+/* ══════════════════════════════════════════════
+   CHEMICALS INVENTORY — totals by chemical
+   ══════════════════════════════════════════════
+   Time-range selector → aggregates VL[*] visit records → bar chart per
+   chemical (sorted by quantity descending) → also shows per-client top
+   consumers for the selected chemical. Export to CSV included. */
+let _invRange = { mode:'30', from:null, to:null };
+
+function openChemInventory(){
+  const isEs = LANG === 'es';
+  document.getElementById('minv-chem-title').textContent = isEs ? '💊 Inventario de químicos consumidos' : '💊 Chemicals consumed';
+  document.getElementById('inv-print-lbl').textContent = isEs ? 'Imprimir' : 'Print';
+  document.getElementById('inv-range-q-btn').textContent = isEs ? 'Trimestre' : 'Quarter';
+  document.getElementById('inv-range-y-btn').textContent = isEs ? 'Año' : 'Year';
+  document.querySelectorAll('.invd-lbl').forEach(el => el.textContent = isEs ? 'días' : 'days');
+  // Default to 30 days
+  _invRange = { mode:'30', from:null, to:null };
+  document.querySelectorAll('.inv-range-btn').forEach(b => b.classList.remove('active'));
+  const def = document.querySelector('.inv-range-btn[data-range="30"]');
+  if(def) def.classList.add('active');
+  _renderChemInventory();
+  om('minv-chem');
+}
+
+function setInvRange(range, btn){
+  if(range === 'custom'){
+    const from = document.getElementById('inv-from').value;
+    const to = document.getElementById('inv-to').value;
+    if(!from || !to) return;
+    _invRange = { mode:'custom', from, to };
+    document.querySelectorAll('.inv-range-btn').forEach(b => b.classList.remove('active'));
+  } else {
+    _invRange = { mode:String(range), from:null, to:null };
+    document.querySelectorAll('.inv-range-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    document.getElementById('inv-from').value = '';
+    document.getElementById('inv-to').value = '';
+  }
+  _renderChemInventory();
+}
+
+function _resolveInvDateRange(){
+  const now = todayLocal();
+  let from, to;
+  if(_invRange.mode === 'custom' && _invRange.from && _invRange.to){
+    return { from:_invRange.from, to:_invRange.to };
+  }
+  if(_invRange.mode === 'q'){
+    // Current quarter
+    const m = now.getMonth();
+    const qStart = new Date(now.getFullYear(), Math.floor(m/3)*3, 1);
+    const qEnd = new Date(now.getFullYear(), Math.floor(m/3)*3 + 3, 0);
+    return { from:_localDateKey(qStart), to:_localDateKey(qEnd) };
+  }
+  if(_invRange.mode === 'y'){
+    return { from: now.getFullYear()+'-01-01', to: now.getFullYear()+'-12-31' };
+  }
+  // Numeric N-days
+  const days = parseInt(_invRange.mode) || 30;
+  const fromD = new Date(now);
+  fromD.setDate(fromD.getDate() - days + 1);
+  return { from:_localDateKey(fromD), to:_localDateKey(now) };
+}
+
+function _renderChemInventory(){
+  const isEs = LANG === 'es';
+  const out = document.getElementById('inv-body');
+  if(!out) return;
+  const { from, to } = _resolveInvDateRange();
+  const rows = _collectVisitsInRange(from, to);
+  const stats = _aggregateStats(rows);
+  // Header summary cards
+  let summaryHtml = `
+    <div class="inv-grid">
+      <div class="inv-summary-card">
+        <div class="inv-summary-label">${isEs?'Rango':'Range'}</div>
+        <div class="inv-summary-val" style="font-size:15px;line-height:1.3">${from} → ${to}</div>
+        <div class="inv-summary-sub">${rows.length} ${isEs?'visitas':'visits'} · ${stats.visited} ${isEs?'completadas':'done'}</div>
+      </div>
+      <div class="inv-summary-card">
+        <div class="inv-summary-label">${isEs?'Total de químicos':'Total chemicals'}</div>
+        <div class="inv-summary-val">${Object.keys(stats.chems).length}</div>
+        <div class="inv-summary-sub">${isEs?'tipos distintos':'distinct types'}</div>
+      </div>
+    </div>`;
+  // Bar chart
+  const items = Object.entries(stats.chems).map(([id,total]) => {
+    const meta = CHK_CHEMICALS[id] || {label:id, unit:''};
+    return { id, label:meta.label, unit:meta.unit, total };
+  }).sort((a,b) => b.total - a.total);
+  if(items.length === 0){
+    out.innerHTML = summaryHtml + `<div class="inv-empty">${isEs?'Sin químicos registrados en este rango':'No chemicals recorded in this range'}<div style="font-size:12.5px;color:var(--dim);margin-top:8px">${isEs?'Las cantidades se capturan en los reportes de visita.':'Quantities are captured in visit reports.'}</div></div>`;
+    return;
+  }
+  const maxTotal = items[0].total;
+  // Compute top consumer per chemical
+  const topConsumers = {}; // chemId → [{cname, amount}]
+  rows.forEach(r => {
+    const ck = r.v.checklist || {};
+    Object.entries(ck.chemicals||{}).forEach(([id,val]) => {
+      const num = parseFloat(val);
+      if(!isNaN(num)){
+        if(!topConsumers[id]) topConsumers[id] = {};
+        topConsumers[id][r.c.name] = (topConsumers[id][r.c.name]||0) + num;
+      }
+    });
+  });
+  const chemList = items.map(it => {
+    const pct = (it.total / maxTotal) * 100;
+    const top = topConsumers[it.id] || {};
+    const topName = Object.entries(top).sort((a,b)=>b[1]-a[1])[0];
+    const topStr = topName ? ` · ${isEs?'Top:':'Top:'} ${esc(topName[0])} (${_formatChemAmount(topName[1])} ${it.unit})` : '';
+    const visitedCount = stats.visited || 1;
+    const avg = it.total / visitedCount;
+    return `<div class="inv-chem-bar">
+      <div class="inv-chem-name" title="${esc(topStr)}">${esc(it.label)}<div style="font-size:11px;color:var(--muted);font-weight:500;margin-top:2px">${isEs?'Prom./visita':'Avg/visit'}: ${_formatChemAmount(avg)} ${it.unit}${topStr}</div></div>
+      <div class="inv-chem-track"><div class="inv-chem-fill" style="width:${Math.max(2,pct)}%"></div></div>
+      <div class="inv-chem-amount">${_formatChemAmount(it.total)} <span class="inv-chem-unit">${esc(it.unit)}</span></div>
+    </div>`;
+  }).join('');
+  out.innerHTML = summaryHtml +
+    `<div class="inv-section-title">${isEs?'Totales por químico':'Totals per chemical'}</div>` +
+    chemList;
+}
+
+function exportInventoryCSV(){
+  const { from, to } = _resolveInvDateRange();
+  const rows = _collectVisitsInRange(from, to);
+  const stats = _aggregateStats(rows);
+  const items = Object.entries(stats.chems).map(([id,total]) => {
+    const meta = CHK_CHEMICALS[id] || {label:id, unit:''};
+    return { id, label:meta.label, unit:meta.unit, total };
+  }).sort((a,b) => b.total - a.total);
+  let csv = 'Chemical,Total,Unit,Avg per visit,Visits in range\n';
+  const visited = stats.visited || 1;
+  items.forEach(it => {
+    csv += `"${csvEscape(it.label)}",${it.total},${it.unit},${(it.total/visited).toFixed(2)},${stats.visited}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `aspen_chem_inventory_${from}_to_${to}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+function printChemInventory(){
+  // Open a print-only window so we don't affect the live app's print routing
+  const isEs = LANG === 'es';
+  const { from, to } = _resolveInvDateRange();
+  const rows = _collectVisitsInRange(from, to);
+  const stats = _aggregateStats(rows);
+  const items = Object.entries(stats.chems).map(([id,total]) => {
+    const meta = CHK_CHEMICALS[id] || {label:id, unit:''};
+    return { id, label:meta.label, unit:meta.unit, total };
+  }).sort((a,b) => b.total - a.total);
+  const visited = stats.visited || 1;
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if(!w) return;
+  w.document.write(`<html><head><title>Aspen Spas — ${isEs?'Inventario de químicos':'Chemical inventory'}</title>
+    <style>
+      body{font-family:-apple-system,Inter,sans-serif;padding:24px;color:#1F2937}
+      h1{color:#E8742C;margin-bottom:4px;font-size:24px}
+      .sub{color:#6B7280;font-size:13px;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th{text-align:left;background:#FFF7ED;color:#9A3412;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #FDBA74}
+      td{padding:8px 10px;border-bottom:1px solid #E5E7EB}
+      .num{text-align:right;font-weight:600}
+      .footer{margin-top:18px;font-size:11px;color:#9CA3AF}
+    </style>
+    </head><body>
+    <h1>💊 ${isEs?'Inventario de químicos consumidos':'Chemicals consumed'}</h1>
+    <div class="sub">${isEs?'Rango':'Range'}: ${from} → ${to} · ${stats.visited} ${isEs?'visitas completadas':'visits done'}</div>
+    <table>
+      <thead><tr>
+        <th>${isEs?'Químico':'Chemical'}</th>
+        <th class="num">${isEs?'Total':'Total'}</th>
+        <th>${isEs?'Unidad':'Unit'}</th>
+        <th class="num">${isEs?'Prom./visita':'Avg/visit'}</th>
+      </tr></thead>
+      <tbody>
+        ${items.map(it => `<tr>
+          <td>${it.label}</td>
+          <td class="num">${_formatChemAmount(it.total)}</td>
+          <td>${it.unit}</td>
+          <td class="num">${(it.total/visited).toFixed(2)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="footer">${isEs?'Generado':'Generated'} ${new Date().toLocaleString()}</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 200);
+}
+
+/* ══════════════════════════════════════════════
+   WEEKLY SUMMARY — Friday-friendly week recap
+   ══════════════════════════════════════════════
+   Aggregates the work week (Mon → Fri by default; can show "this week"
+   or "last week"). Shows KPIs, per-day bar chart, per-tech split, chem
+   consumption, and money invoiced. Shareable via WhatsApp/copy/print. */
+let _wsRange = 'this'; // 'this' | 'last'
+
+function openWeekSummary(){
+  const isEs = LANG === 'es';
+  document.getElementById('mweek-sum-title').textContent = isEs ? '📊 Resumen semanal' : '📊 Weekly summary';
+  document.getElementById('ws-range-this').textContent = isEs ? 'Esta semana' : 'This week';
+  document.getElementById('ws-range-last').textContent = isEs ? 'Semana pasada' : 'Last week';
+  document.getElementById('ws-print-lbl').textContent = isEs ? 'Imprimir' : 'Print';
+  document.getElementById('ws-copy-lbl').textContent = isEs ? 'Copiar' : 'Copy';
+  _wsRange = 'this';
+  document.getElementById('ws-range-this').classList.add('active');
+  document.getElementById('ws-range-last').classList.remove('active');
+  _renderWeekSummary();
+  om('mweek-sum');
+}
+
+function setWeekSummaryRange(r){
+  _wsRange = r;
+  document.getElementById('ws-range-this').classList.toggle('active', r==='this');
+  document.getElementById('ws-range-last').classList.toggle('active', r==='last');
+  _renderWeekSummary();
+}
+
+function _resolveWeekSummaryDateRange(){
+  const now = todayLocal();
+  // Anchor on Monday of current week
+  const day = now.getDay() || 7; // 0=Sun → 7
+  const monday = new Date(now); monday.setDate(monday.getDate() - (day - 1));
+  if(_wsRange === 'last') monday.setDate(monday.getDate() - 7);
+  const friday = new Date(monday); friday.setDate(friday.getDate() + 4);
+  return { from:_localDateKey(monday), to:_localDateKey(friday), mondayDate: monday };
+}
+
+function _renderWeekSummary(){
+  const isEs = LANG === 'es';
+  const out = document.getElementById('ws-body');
+  if(!out) return;
+  const { from, to, mondayDate } = _resolveWeekSummaryDateRange();
+  document.getElementById('ws-range-label').textContent = `${from} → ${to}`;
+  const rows = _collectVisitsInRange(from, to);
+  const stats = _aggregateStats(rows);
+  // Per-day breakdown
+  const dayMap = {Mon:0,Tue:0,Wed:0,Thu:0,Fri:0};
+  rows.forEach(r => {
+    if(r.v.status !== 'done') return;
+    const d = new Date(r.dateKey + 'T12:00:00');
+    const dn = d.toLocaleDateString('en-US',{weekday:'short'}).substring(0,3);
+    if(dayMap[dn] !== undefined) dayMap[dn]++;
+  });
+  const maxDay = Math.max(...Object.values(dayMap), 1);
+  // Per-tech breakdown
+  const techs = Object.entries(stats.techMap).sort((a,b) => (b[1].visits + b[1].noVisit) - (a[1].visits + a[1].noVisit));
+  // Money invoiced this week (look at BL entries with recordedAt in range)
+  let moneyInvoiced = 0, moneyPaid = 0, invoicedCount = 0, paidCount = 0;
+  const fromTs = parseLocalDate(from).getTime();
+  const toTs = parseLocalDate(to).getTime() + 86400000; // include Friday
+  Object.values(BL).forEach(perQ => {
+    if(!perQ || typeof perQ !== 'object') return;
+    Object.values(perQ).forEach(inv => {
+      if(!inv || !inv.recordedAt) return;
+      if(inv.recordedAt < fromTs || inv.recordedAt > toTs) return;
+      const amt = parseFloat(inv.a) || 0;
+      invoicedCount++;
+      moneyInvoiced += amt;
+      if(inv.s === 'paid'){ paidCount++; moneyPaid += amt; }
+    });
+  });
+  // Chemicals — top 5
+  const chems = Object.entries(stats.chems).map(([id,total]) => {
+    const meta = CHK_CHEMICALS[id] || {label:id, unit:''};
+    return { id, label:meta.label, unit:meta.unit, total };
+  }).sort((a,b) => b.total - a.total).slice(0,5);
+  // ── Render ───────────────────────────────────────────────────────────
+  out.innerHTML = `
+    <div class="ws-kpis">
+      <div class="ws-kpi green"><div class="ws-kpi-label">${isEs?'Visitas':'Visits'}</div><div class="ws-kpi-val">${stats.visited}</div><div class="ws-kpi-sub">${stats.total} ${isEs?'totales':'total'}</div></div>
+      <div class="ws-kpi rust"><div class="ws-kpi-label">${isEs?'No visitados':'No-shows'}</div><div class="ws-kpi-val">${stats.noVisit}</div><div class="ws-kpi-sub">${stats.total>0?Math.round((stats.visited/stats.total)*100):0}% ${isEs?'cobertura':'coverage'}</div></div>
+      <div class="ws-kpi brand"><div class="ws-kpi-label">${isEs?'Tiempo prom.':'Avg time'}</div><div class="ws-kpi-val">${stats.avgDur||0}<span style="font-size:13px;color:var(--muted)"> min</span></div><div class="ws-kpi-sub">${isEs?'por visita':'per visit'}</div></div>
+      <div class="ws-kpi gold"><div class="ws-kpi-label">${isEs?'Facturado':'Invoiced'}</div><div class="ws-kpi-val" style="font-size:18px">$${moneyInvoiced.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="ws-kpi-sub">${invoicedCount} ${isEs?'facturas':'invoices'} · $${moneyPaid.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} ${isEs?'cobrado':'paid'}</div></div>
+    </div>
+
+    <div class="inv-section-title">${isEs?'Por día':'By day'}</div>
+    <div style="padding:0 4px">
+      ${['Mon','Tue','Wed','Thu','Fri'].map((d,i) => {
+        const dl = getDN()[i].substring(0,3);
+        const cnt = dayMap[d] || 0;
+        const pct = (cnt / maxDay) * 100;
+        return `<div class="ws-day-bar">
+          <div class="ws-day-lbl">${dl}</div>
+          <div class="ws-day-track"><div class="ws-day-fill ${cnt===0?'empty':''}" style="width:${Math.max(2,pct)}%">${cnt>0?cnt:''}</div></div>
+          <div class="ws-day-cnt">${cnt} ${isEs?'visitas':'visits'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${techs.length > 0 ? `
+    <div class="inv-section-title">${isEs?'Por técnico':'By technician'}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:var(--warm2)"><th style="text-align:left;padding:6px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px">${isEs?'Técnico':'Tech'}</th><th style="text-align:right;padding:6px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px">${isEs?'Visitas':'Visits'}</th><th style="text-align:right;padding:6px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px">${isEs?'No':'No-show'}</th><th style="text-align:right;padding:6px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px">${isEs?'Tiempo prom.':'Avg time'}</th></tr></thead>
+      <tbody>
+      ${techs.map(([name,d]) => {
+        const avg = d.durations.length > 0 ? Math.round(d.durations.reduce((a,b)=>a+b,0)/d.durations.length) : null;
+        return `<tr style="border-bottom:.5px solid var(--border)"><td style="padding:6px 10px;font-weight:600">${esc(name)}</td><td style="padding:6px 10px;text-align:right;color:#16A34A;font-weight:600">${d.visits}</td><td style="padding:6px 10px;text-align:right;color:${d.noVisit>0?'#DC2626':'var(--muted)'};font-weight:${d.noVisit>0?'600':'400'}">${d.noVisit}</td><td style="padding:6px 10px;text-align:right">${avg?avg+' min':'—'}</td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>` : ''}
+
+    ${chems.length > 0 ? `
+    <div class="inv-section-title">${isEs?'Top químicos consumidos':'Top chemicals consumed'}</div>
+    ${chems.map(it => `<div class="inv-chem-bar">
+      <div class="inv-chem-name">${esc(it.label)}</div>
+      <div class="inv-chem-track"><div class="inv-chem-fill" style="width:${Math.max(2,(it.total/chems[0].total)*100)}%"></div></div>
+      <div class="inv-chem-amount">${_formatChemAmount(it.total)} <span class="inv-chem-unit">${esc(it.unit)}</span></div>
+    </div>`).join('')}` : ''}
+  `;
+}
+
+function _buildWeekSummaryText(){
+  const isEs = LANG === 'es';
+  const { from, to } = _resolveWeekSummaryDateRange();
+  const rows = _collectVisitsInRange(from, to);
+  const stats = _aggregateStats(rows);
+  let moneyInvoiced = 0, invoicedCount = 0, moneyPaid = 0;
+  const fromTs = parseLocalDate(from).getTime();
+  const toTs = parseLocalDate(to).getTime() + 86400000;
+  Object.values(BL).forEach(perQ => {
+    if(!perQ || typeof perQ !== 'object') return;
+    Object.values(perQ).forEach(inv => {
+      if(!inv || !inv.recordedAt) return;
+      if(inv.recordedAt < fromTs || inv.recordedAt > toTs) return;
+      const amt = parseFloat(inv.a) || 0;
+      invoicedCount++; moneyInvoiced += amt;
+      if(inv.s === 'paid') moneyPaid += amt;
+    });
+  });
+  let msg = isEs
+    ? `🧪 *Aspen Spas — Resumen semanal*\n${from} → ${to}\n\n`
+    : `🧪 *Aspen Spas — Weekly summary*\n${from} → ${to}\n\n`;
+  msg += isEs
+    ? `✅ Visitas: ${stats.visited}\n✗ No visitados: ${stats.noVisit}\n⏱ Tiempo promedio: ${stats.avgDur||0} min\n💵 Facturado: $${moneyInvoiced.toFixed(0)} (${invoicedCount} facturas)\n💰 Cobrado: $${moneyPaid.toFixed(0)}\n`
+    : `✅ Visits: ${stats.visited}\n✗ No-shows: ${stats.noVisit}\n⏱ Avg time: ${stats.avgDur||0} min\n💵 Invoiced: $${moneyInvoiced.toFixed(0)} (${invoicedCount} invoices)\n💰 Collected: $${moneyPaid.toFixed(0)}\n`;
+  // Per-tech
+  const techs = Object.entries(stats.techMap).sort((a,b) => b[1].visits - a[1].visits);
+  if(techs.length){
+    msg += `\n${isEs?'*Por técnico:*':'*By tech:*'}\n`;
+    techs.forEach(([name,d]) => {
+      msg += `• ${name}: ${d.visits} ${isEs?'visitas':'visits'}${d.noVisit?', '+d.noVisit+' '+(isEs?'no':'no-show'):''}\n`;
+    });
+  }
+  return msg;
+}
+
+function shareWeekSummary(target){
+  const msg = _buildWeekSummaryText();
+  if(target === 'whatsapp'){
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  } else {
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(() => {
+        showToast(LANG==='es' ? '✓ Resumen copiado' : '✓ Summary copied');
+      }).catch(() => {
+        showToast(LANG==='es' ? 'No se pudo copiar' : 'Could not copy', 'err');
+      });
+    }
+  }
+}
+
+function printWeekSummary(){
+  const isEs = LANG === 'es';
+  const { from, to } = _resolveWeekSummaryDateRange();
+  const body = document.getElementById('ws-body').innerHTML;
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if(!w) return;
+  w.document.write(`<html><head><title>Aspen Spas — ${isEs?'Resumen semanal':'Weekly summary'}</title>
+    <style>
+      body{font-family:-apple-system,Inter,sans-serif;padding:20px;color:#1F2937;background:#FFF}
+      h1{color:#E8742C;margin-bottom:4px;font-size:22px}
+      .sub{color:#6B7280;font-size:13px;margin-bottom:16px}
+      ${document.querySelector('style').textContent}
+    </style></head><body>
+    <h1>📊 ${isEs?'Resumen semanal':'Weekly summary'}</h1>
+    <div class="sub">Aspen Spas · ${from} → ${to}</div>
+    ${body}
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 300);
+}
+
 function loadFirebaseOnStartup(){
   // Auto-connect with hardcoded Aspen Spas config
   const hardcoded={
@@ -11144,10 +12439,16 @@ window.addEventListener('DOMContentLoaded',()=>{
 })();
 
 loadData();
+// Run data normalization (fix derived nwc, sanitizer drift, schedule name
+// mismatches, etc.) BEFORE the first render so the corrected data is used everywhere.
+const _DQ_WARNINGS = _normalizeData();
 refreshTechDataLists();
 renderTechsList();
 rebuildUI();
 rd();
+// Show non-blocking banner if normalization surfaced any human-attention items.
+// Deferred slightly so the .body div is fully laid out.
+setTimeout(()=>{ try{ _showDataIntegrityBanner(_DQ_WARNINGS); }catch(e){ dbgWarn('dq-banner',e); } }, 100);
 updateBackupIndicator();
 loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
@@ -11191,6 +12492,76 @@ async function _warmGeocodeCache(){
   }
 }
 setTimeout(_warmGeocodeCache, 4000);
+
+/* ══════════════════════════════════════════════
+   KEYBOARD SHORTCUTS — admin productivity
+   ══════════════════════════════════════════════
+   ⌘/Ctrl + K          → focus search on the current tab
+   ⌘/Ctrl + 1..7       → jump to tab by index (Dashboard..Water Change)
+   ⌘/Ctrl + Shift + N  → open "New Client" modal
+   Esc                 → close any open modal
+   ?                   → show shortcuts help (small toast)
+   Shortcuts ignore key events that originate from inputs/textareas to avoid
+   stealing typed keys. Tech view doesn't expose these (tabs are hidden). */
+(function _wireShortcuts(){
+  // Map of tab index → tab id (kept for the numeric shortcuts below)
+  const TAB_BY_INDEX = ['dash','clients','calendar','billing','visits','summary','wctab'];
+  function _closeAnyOpenModal(){
+    let closed = false;
+    // Spotlight closes via its own logic to manage focus correctly
+    const spot = document.getElementById('spotlight-bg');
+    if(spot && spot.classList.contains('open')){ closeSpotlight(); closed = true; }
+    document.querySelectorAll('.modal-bg.open, .mpop-bg.open').forEach(m => {
+      m.classList.remove('open'); closed = true;
+    });
+    // Also non-class modals like vrm-bg / crm-bg / fsms-bg
+    const vrm = document.getElementById('visit-report-modal');
+    if(vrm && vrm.classList.contains('active')) { try{ closeVisitReport(); closed = true; }catch(_){} }
+    const crm = document.getElementById('client-report-modal');
+    if(crm && crm.classList.contains('active')) { try{ closeClientReport(); closed = true; }catch(_){} }
+    return closed;
+  }
+  document.addEventListener('keydown', function(e){
+    // Ignore when typing into an input / textarea / contenteditable.
+    const tag = (e.target.tagName||'').toLowerCase();
+    const inField = (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable);
+    // Esc always works — even from a field — to close modals.
+    if(e.key === 'Escape'){
+      if(_closeAnyOpenModal()){ e.preventDefault(); }
+      return;
+    }
+    if(inField) return;
+    // Only listen to admin/organizer keys; technicians have a simplified view.
+    if(CURRENT_ROLE === 'tech') return;
+    const mod = e.metaKey || e.ctrlKey;
+    if(mod && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      openSpotlight();
+      return;
+    }
+    if(mod && e.shiftKey && e.key.toLowerCase() === 'n'){
+      e.preventDefault();
+      try{ om('madd'); document.getElementById('nn').focus(); }catch(_){}
+      return;
+    }
+    // ⌘+1..7 → jump tab
+    if(mod && /^[1-7]$/.test(e.key)){
+      e.preventDefault();
+      const idx = parseInt(e.key) - 1;
+      const tabBtns = document.querySelectorAll('.tab');
+      if(tabBtns[idx]) tabBtns[idx].click();
+      return;
+    }
+    // ? → help toast
+    if(e.key === '?' && !mod){
+      e.preventDefault();
+      const msg = LANG === 'es'
+        ? '⌘K Buscar · ⌘1-7 Pestañas · ⌘⇧N Nuevo cliente · Esc Cerrar'
+        : '⌘K Search · ⌘1-7 Tabs · ⌘⇧N New client · Esc Close';
+      try{ showToast(msg); }catch(_){}
+    }
+  });
+})();
 
 </script>
 </body>
