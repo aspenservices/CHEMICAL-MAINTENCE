@@ -1822,21 +1822,32 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 <div class="modal">
   <h3>+ Agregar nuevo cliente</h3><div class="divider"></div>
   <div class="fgrid">
-    <div class="frow"><label>Nombre *</label><input id="nn" placeholder="Apellido, Nombre"></div>
-    <div class="frow"><label>Teléfono</label><input id="np" placeholder="314-000-0000"></div>
+    <div class="frow"><label data-i18n="name">Nombre *</label><input id="nn" placeholder="Apellido, Nombre"></div>
+    <div class="frow"><label data-i18n="phoneLbl">Teléfono</label><input id="np" placeholder="314-000-0000"></div>
   </div>
-  <div class="frow"><label>Dirección</label><input id="na"></div>
-  <div class="frow"><label>Email</label><input id="ne" type="email"></div>
+  <div class="frow"><label data-i18n="addressLbl">Dirección</label><input id="na"></div>
+  <div class="frow"><label data-i18n="emailLbl">Email</label><input id="ne" type="email"></div>
   <div class="fgrid">
-    <div class="frow"><label>Frecuencia</label><select id="nf"><option value="biweekly">Bi-semanal</option><option value="weekly">Semanal</option></select></div>
-    <div class="frow"><label>Día</label><select id="nd"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select></div>
+    <div class="frow"><label data-i18n="freqLbl">Frecuencia</label><select id="nf" onchange="onNewFreqChange()"><option value="biweekly">Bi-semanal</option><option value="weekly">Semanal</option></select></div>
+    <div class="frow"><label data-i18n="weekLbl">Semana</label><select id="nw" onchange="toggleNewDayFields()"><option value="A">A</option><option value="B">B</option><option value="A&B">A&B (semanal)</option></select></div>
   </div>
-  <div class="fgrid">
-    <div class="frow"><label>Semana</label><select id="nw"><option value="A">A</option><option value="B">B</option><option value="A&B">A&B (semanal)</option></select></div>
-    <div class="frow"><label>Sanitizador</label><input id="ns"></div>
+  <div class="frow" id="new-day-single-row"><label data-i18n="dayLbl">Día</label><select id="nd"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select></div>
+  <div class="frow" id="new-day-dual-row" style="display:none">
+    <label style="margin-bottom:6px"><span data-i18n="daysABLbl">Días A &amp; B</span></label>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600;letter-spacing:.3px" data-i18n-up="weekA">SEMANA A</div>
+        <select id="nd-a" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;background:#FFF;color:var(--text);font-family:inherit"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600;letter-spacing:.3px" data-i18n-up="weekB">SEMANA B</div>
+        <select id="nd-b" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;background:#FFF;color:var(--text);font-family:inherit"><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
+      </div>
+    </div>
   </div>
-  <div class="frow"><label>Último cambio de agua</label><input id="nwc" type="date"></div>
-  <div class="frow"><label>Notas / Acceso</label><textarea id="nnt"></textarea></div>
+  <div class="frow"><label data-i18n="sanitizerLbl">Sanitizador</label><input id="ns"></div>
+  <div class="frow"><label data-i18n="lastWCLbl">Último cambio de agua</label><input id="nwc" type="date"></div>
+  <div class="frow"><label data-i18n="notesLbl">Notas / Acceso</label><textarea id="nnt"></textarea></div>
   <div class="mfoot"><button class="btn" onclick="cm('madd')">Cancelar</button><button class="btn btn-brand" onclick="ac()">Guardar</button></div>
 </div></div>
 
@@ -2350,6 +2361,7 @@ const T={
     prev:'← Ant',next:'Sig →',noResults:'Sin resultados',of:'de',
     addClient:'+ Agregar nuevo cliente',name:'Nombre',phoneLbl:'Teléfono',addressLbl:'Dirección',emailLbl:'Email',
     freqLbl:'Frecuencia',dayLbl:'Día',weekLbl:'Semana',sanitizerLbl:'Sanitizador',lastWCLbl:'Último cambio de agua',
+    daysABLbl:'Días A & B',weekA:'SEMANA A',weekB:'SEMANA B',
     notesLbl:'Notas / Acceso',cancel:'Cancelar',save:'Guardar',
     waterChange:'💧 Cambio de agua',date:'Fecha',confirm:'Confirmar',
     techVisit:'🔧 Visita técnica',problem:'Problema',scheduledDate:'Fecha programada',
@@ -2447,6 +2459,7 @@ const T={
     prev:'← Prev',next:'Next →',noResults:'No results',of:'of',
     addClient:'+ Add New Client',name:'Name',phoneLbl:'Phone',addressLbl:'Address',emailLbl:'Email',
     freqLbl:'Frequency',dayLbl:'Day',weekLbl:'Week',sanitizerLbl:'Sanitizer',lastWCLbl:'Last water change',
+    daysABLbl:'Days A & B',weekA:'WEEK A',weekB:'WEEK B',
     notesLbl:'Notes / Access',cancel:'Cancel',save:'Save',
     waterChange:'💧 Water Change',date:'Date',confirm:'Confirm',
     techVisit:'🔧 Tech Visit',problem:'Issue',scheduledDate:'Scheduled date',
@@ -2598,10 +2611,17 @@ function rebuildUI(){
   const techsBtnLbl=document.getElementById('techs-btn-label');
   if(techsBtnLbl)techsBtnLbl.textContent=LANG==='es'?'Técnicos':'Techs';
   renderTechsList();
-  // Modal labels - Add Client
-  document.querySelectorAll('#madd .frow label').forEach((l,i)=>{
-    const keys=['name','phoneLbl','addressLbl','emailLbl','freqLbl','dayLbl','weekLbl','sanitizerLbl','lastWCLbl','notesLbl'];
-    if(keys[i])l.textContent=t(keys[i])+(i===0?' *':'');
+  // Modal labels - Add Client (uses data-i18n attributes for robustness against reorder/insert)
+  document.querySelectorAll('#madd label[data-i18n]').forEach(l=>{
+    const key=l.getAttribute('data-i18n');
+    // Some labels (Días A & B) wrap their i18n text in a child span so we don't clobber siblings
+    const span=l.querySelector('span[data-i18n]');
+    if(span){ span.textContent=t(key); }
+    else { l.textContent=t(key)+(key==='name'?' *':''); }
+  });
+  // Sub-labels inside the dual day row (SEMANA A / SEMANA B uppercase headers)
+  document.querySelectorAll('#madd [data-i18n-up]').forEach(el=>{
+    el.textContent=t(el.getAttribute('data-i18n-up'));
   });
   // Modal day/freq selects
   document.querySelectorAll('select option').forEach(opt=>{
@@ -3559,6 +3579,42 @@ function toggleEditDayFields(){
   } else {
     single.style.display = 'flex';
     dual.style.display = 'none';
+  }
+}
+
+// Mirror of toggleEditDayFields for the "+ Nuevo cliente" modal. When the Semana
+// select is set to A&B, swap the single Día select for the two per-week selects
+// (Día Semana A / Día Semana B) so the admin can assign different days for the
+// weekly visit cadence (e.g., A=Mon, B=Tue). When switching INTO A&B, seed the
+// dual selects from the current single-day value so they aren't blank.
+function toggleNewDayFields(){
+  const w = document.getElementById('nw').value;
+  const single = document.getElementById('new-day-single-row');
+  const dual = document.getElementById('new-day-dual-row');
+  if(!single || !dual) return;
+  if(w === 'A&B'){
+    const dA = document.getElementById('nd-a');
+    const dB = document.getElementById('nd-b');
+    const single_val = document.getElementById('nd').value || 'Mon';
+    if(!dA.value) dA.value = single_val;
+    if(!dB.value) dB.value = single_val;
+    single.style.display = 'none';
+    dual.style.display = 'block';
+  } else {
+    single.style.display = 'block';
+    dual.style.display = 'none';
+  }
+}
+
+// When freq=weekly in the new-client modal, auto-promote Semana to A&B (the
+// weekly cadence by definition uses both weeks). Admin can still override the
+// Semana select afterwards if they really want a non-A&B weekly client.
+function onNewFreqChange(){
+  const f = document.getElementById('nf').value;
+  const w = document.getElementById('nw');
+  if(f === 'weekly' && w.value !== 'A&B'){
+    w.value = 'A&B';
+    toggleNewDayFields();
   }
 }
 
@@ -4881,12 +4937,40 @@ function ac(){
     if(d){ d.setMonth(d.getMonth()+6); nwc = _localDateKey(d); }
   }
   const addr = document.getElementById('na').value;
-  const newClient={id:nid,name,phone:document.getElementById('np').value,addr,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week:document.getElementById('nw').value,day:document.getElementById('nd').value,san:document.getElementById('ns').value,lwc,nwc,notes:document.getElementById('nnt').value,status:'active',lastModified:Date.now()};
+  const week=document.getElementById('nw').value;
+  // ─── Day handling — mirrors saveEdit's A&B vs pure-A/B logic ────────────────
+  // For A&B (weekly cadence), the admin can assign different days per week via
+  // the dual selects. If they pick the same day twice, collapse to single c.day
+  // so the data model stays tidy (same convention as saveEdit / changeClientDay).
+  let day, dayA, dayB;
+  if(week === 'A&B'){
+    const dA = document.getElementById('nd-a').value || 'Mon';
+    const dB = document.getElementById('nd-b').value || 'Mon';
+    if(dA === dB){
+      day = dA;
+    } else {
+      day = dA;        // fallback for any code path that still reads c.day
+      dayA = dA;
+      dayB = dB;
+    }
+  } else {
+    day = document.getElementById('nd').value || 'Mon';
+  }
+  const newClient={id:nid,name,phone:document.getElementById('np').value,addr,email:document.getElementById('ne').value,freq:document.getElementById('nf').value,week,day,san:document.getElementById('ns').value,lwc,nwc,notes:document.getElementById('nnt').value,status:'active',lastModified:Date.now()};
+  if(dayA) newClient.dayA = dayA;
+  if(dayB) newClient.dayB = dayB;
   C.push(newClient);
   // Soft warn for missing ZIP (geocoding falls back to city centroid only when ZIP present)
   if(addr && !_extractZip(addr)) showToast(LANG==='es'?'⚠ La dirección no tiene ZIP — el mapa de ruta no podrá ubicarla con precisión':'⚠ Address has no ZIP — route map cannot place it accurately','warn');
   ['nn','np','na','ne','ns','nnt'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nwc').value='';
+  // Reset the new-client day fields so the next "+ Nuevo cliente" opens clean
+  document.getElementById('nf').value='biweekly';
+  document.getElementById('nw').value='A';
+  document.getElementById('nd').value='Mon';
+  document.getElementById('nd-a').value='Mon';
+  document.getElementById('nd-b').value='Mon';
+  toggleNewDayFields();
   cm('madd');ra();
   // Geocode the new address in the background so day-time stats update once it resolves
   if(newClient.addr){
