@@ -48,6 +48,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -7304,25 +7305,34 @@ function doInit(config){
       projectId:config.projectId,
       databaseURL:config.databaseURL
     });
-    fbDB=firebase.database();
-    fbRef=fbDB.ref('aspen_spas/data');
-    // Listen for real-time changes
-    fbRef.on('value',snap=>{
-      if(fbSyncing)return; // skip if we just wrote
-      const d=snap.val();
-      if(d&&d.savedAt){
-        const localRaw=localStorage.getItem(LS_KEY);
-        const localData=localRaw?JSON.parse(localRaw):null;
-        // Only apply cloud data if it's newer than local
-        if(!localData||!localData.savedAt||new Date(d.savedAt)>new Date(localData.savedAt)){
-          applyCloudData(d);
-          console.log('☁️ Cloud data applied (newer than local)');
+    // ── Anonymous Auth gate ──
+    // Firebase security rules require auth != null. We MUST sign in before any
+    // read/write, then set up the database listener once authenticated.
+    firebase.auth().signInAnonymously().then(()=>{
+      console.log('🔐 Authenticated as:',firebase.auth().currentUser.uid);
+      fbDB=firebase.database();
+      fbRef=fbDB.ref('aspen_spas/data');
+      // Listen for real-time changes
+      fbRef.on('value',snap=>{
+        if(fbSyncing)return; // skip if we just wrote
+        const d=snap.val();
+        if(d&&d.savedAt){
+          const localRaw=localStorage.getItem(LS_KEY);
+          const localData=localRaw?JSON.parse(localRaw):null;
+          // Only apply cloud data if it's newer than local
+          if(!localData||!localData.savedAt||new Date(d.savedAt)>new Date(localData.savedAt)){
+            applyCloudData(d);
+            console.log('☁️ Cloud data applied (newer than local)');
+          }
         }
-      }
+      });
+      fbConnected=true;
+      updateCloudIndicator(true);
+      console.log('☁️ Firebase connected');
+    }).catch(e=>{
+      console.warn('Auth error:',e);
+      updateCloudIndicator(false,'Auth: '+e.message);
     });
-    fbConnected=true;
-    updateCloudIndicator(true);
-    console.log('☁️ Firebase connected');
   }catch(e){
     console.warn('Firebase init error:',e);
     updateCloudIndicator(false,e.message);
