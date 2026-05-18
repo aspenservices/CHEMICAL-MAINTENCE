@@ -468,6 +468,21 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .tech-name{font-size:24px;font-weight:700;margin-bottom:8px}
 .tech-day-info{font-size:15px;opacity:.95}
 .tech-week-badge{display:inline-block;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:6px;font-weight:700;margin-left:6px}
+/* ── Tech day-navigation (← prev day, today, → next day) ─────────────────────
+   Lets the tech go back to a previous workday to finish tickets they didn't
+   close out on the actual day. Lives inline under the date string. Forward is
+   only enabled while we're viewing a past day (you can never see the future).
+*/
+.tech-day-nav{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tech-day-nav button{background:rgba(255,255,255,.14);color:#FFF;border:1px solid rgba(255,255,255,.25);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s ease}
+.tech-day-nav button:hover:not(:disabled){background:rgba(255,255,255,.24)}
+.tech-day-nav button:disabled{opacity:.35;cursor:not-allowed}
+.tech-day-nav button.today-btn{background:#F59E0B;border-color:#F59E0B;color:#1A1A1A}
+.tech-day-nav button.today-btn:hover{background:#FBBF24}
+/* Yellow ribbon under the header that shouts "you're viewing a PAST day" so
+   the tech doesn't confuse it with today's route. */
+.tech-past-banner{background:#FEF3C7;border-bottom:1.5px solid #F59E0B;color:#78350F;font-size:13.5px;font-weight:600;padding:9px 14px;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}
+.tech-past-banner .icn{font-size:16px}
 .tech-content{padding:14px;max-width:600px;margin:0 auto}
 .tech-card{background:#FFF;border:2px solid #E2E8F0;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.06);transition:all .25s ease}
 .tech-card.visited{background:#F0FDF4;border-color:#16A34A;box-shadow:0 2px 8px rgba(22,163,74,.15)}
@@ -1414,7 +1429,13 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <div class="tech-greet">👋 Hola,</div>
     <div class="tech-name" id="tech-view-name">—</div>
     <div class="tech-day-info" id="tech-view-day-info">—</div>
+    <div class="tech-day-nav" id="tech-day-nav">
+      <button id="tech-prev-day" onclick="techNavigateDay(-1)" title="Ver día anterior">◀ Día anterior</button>
+      <button id="tech-next-day" onclick="techNavigateDay(1)" title="Ver día siguiente" disabled>Día siguiente ▶</button>
+      <button id="tech-today-btn" class="today-btn" onclick="techGoToToday()" style="display:none">↺ Volver a hoy</button>
+    </div>
   </div>
+  <div id="tech-past-banner-wrap"></div>
   <div class="tech-content" id="tech-view-content">
     <!-- Filled by renderTechView() -->
   </div>
@@ -9620,7 +9641,7 @@ function _resizePhotoToB64(file, maxDim){
 function _captureChkFromDOM(cid){
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return null;
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const stored = _loadChkState(cid, dateKey) || {};
   const system = root.dataset.system;
   // Check items
@@ -9695,7 +9716,7 @@ function _captureChkFromDOM(cid){
 
 // Open / collapse the whole checklist
 function toggleChkOpen(cid){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   root.classList.toggle('open');
@@ -9707,7 +9728,7 @@ function toggleChkOpen(cid){
 // Manual toggle item (cleaning steps, mineral purifier inspection, etc.)
 function toggleChkItem(cid, iid, ev){
   if(ev) ev.stopPropagation();
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const el = document.querySelector(`.tcc-chk[data-cid="${cid}"] [data-chk-item="${iid}"]`);
   if(!el) return;
   el.classList.toggle('checked');
@@ -9720,7 +9741,7 @@ function toggleChkItem(cid, iid, ev){
 
 // Inline chem input (oz / lbs / tabs) — autosave to localStorage as tech types
 function setChkInlineChem(cid, chemId, value){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const saved = _loadChkState(cid, dateKey) || {};
   saved.chemicals = saved.chemicals || {};
   const v = String(value||'').trim();
@@ -9732,7 +9753,7 @@ function setChkInlineChem(cid, chemId, value){
 // Test-strip pill selection (reading: chlorine/bromine/alk/ph/ca/phosphate)
 function setChkReading(cid, iid, key, val, ev){
   if(ev) ev.stopPropagation();
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   // Update DOM: deselect siblings in this row, select this one
@@ -9763,7 +9784,7 @@ function setChkReading(cid, iid, key, val, ev){
 
 // TruBlu salt and other numeric-only readings
 function setChkReadingNumeric(cid, iid, key, value){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const saved = _loadChkState(cid, dateKey) || {};
   saved.readings = saved.readings || {};
   saved.readings[iid] = saved.readings[iid] || {};
@@ -9787,7 +9808,7 @@ function setChkReadingNumeric(cid, iid, key, value){
 
 // Water level (segmented control: low / normal / full)
 function setChkWaterLevel(cid, level){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   // Update DOM
@@ -9807,7 +9828,7 @@ function setChkWaterLevel(cid, level){
 
 // Check-In: capture GPS + time, mark item checked. UI updates inline.
 async function doChkCheckin(cid){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   const btn = root.querySelector('[data-chk-action="checkin"] .tcc-chk-action-btn');
@@ -9833,7 +9854,7 @@ async function doChkCheckin(cid){
 
 // Check-Out: same as check-in but at end of service
 async function doChkCheckout(cid){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const root = document.querySelector(`.tcc-chk[data-cid="${cid}"]`);
   if(!root) return;
   const btn = root.querySelector('[data-chk-action="checkout"] .tcc-chk-action-btn');
@@ -9861,7 +9882,7 @@ async function doChkCheckout(cid){
 async function handleChkPhoto(cid, iid, evt){
   const file = evt && evt.target && evt.target.files && evt.target.files[0];
   if(!file) return;
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   showToast(LANG==='es'?'📷 Procesando foto...':'📷 Processing photo...','info');
   try{
     const b64 = await _resizePhotoToB64(file, 640);
@@ -9932,7 +9953,7 @@ function _rerenderCardChecklist(cid){
   // Find the client object
   const c = C.find(x => x.id === cid);
   if(!c) return;
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const wasOpen = root.classList.contains('open');
   // Save the open state so it persists
   const saved = _loadChkState(cid, dateKey) || {};
@@ -9949,7 +9970,7 @@ function _rerenderCardChecklist(cid){
 
 // Final attestation toggle (✓ Trabajo realizado satisfactoriamente)
 function toggleChkFinal(cid){
-  const today=new Date(); const dateKey=_localDateKey(today);
+  const today=_techViewedDate(); const dateKey=_localDateKey(today);
   const el = document.querySelector(`.tcc-chk[data-cid="${cid}"] .tcc-chk-final`);
   if(!el) return;
   el.classList.toggle('checked');
@@ -11426,12 +11447,69 @@ function techShowDailyReport(){
 }
 
 // ─── Tech view rendering ────────────────────────────────────────────────────
+// ─── Tech day-navigation state ───────────────────────────────────────────────
+// Null = viewing today (default). A Date object = viewing that specific past day.
+// Only Mon–Fri are reachable (weekends are skipped). Backwards is capped at 14
+// workdays so the tech doesn't accidentally end up in March looking for a
+// ticket they "didn't close". Forward stops at today.
+let TECH_VIEW_DATE = null;
+const TECH_MAX_DAYS_BACK = 14; // cap how far back the tech can navigate
+
+function _techViewedDate(){
+  // Returns the Date the tech is currently looking at (defaults to today).
+  return TECH_VIEW_DATE ? new Date(TECH_VIEW_DATE) : new Date();
+}
+function _techIsViewingToday(){
+  if(!TECH_VIEW_DATE) return true;
+  const t = new Date();
+  return _localDateKey(TECH_VIEW_DATE) === _localDateKey(t);
+}
+function _techDaysBackFromToday(){
+  if(!TECH_VIEW_DATE) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const viewed = new Date(TECH_VIEW_DATE); viewed.setHours(0,0,0,0);
+  return Math.round((today - viewed) / 86400000);
+}
+
+// Jump backward/forward by one WEEKDAY (skips Sat/Sun). dir = -1 (prev) or +1 (next).
+// Forward past "today" is blocked. Backward beyond TECH_MAX_DAYS_BACK is blocked.
+function techNavigateDay(dir){
+  const d = _techViewedDate();
+  // Step at least once, then keep stepping while we're on a weekend
+  for(let i=0;i<7;i++){
+    d.setDate(d.getDate() + dir);
+    const dow = d.getDay();
+    if(dow >= 1 && dow <= 5) break; // landed on a weekday
+  }
+  // Forward guard: never go past today
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(d); target.setHours(0,0,0,0);
+  if(target > today){ showToast(LANG==='es'?'No se puede ver el futuro':"Can't see the future",'warn'); return; }
+  // Backward guard: cap at TECH_MAX_DAYS_BACK weekdays
+  const diffDays = Math.round((today - target) / 86400000);
+  if(diffDays > TECH_MAX_DAYS_BACK){
+    showToast(LANG==='es'?`Máximo ${TECH_MAX_DAYS_BACK} días atrás`:`Max ${TECH_MAX_DAYS_BACK} days back`,'warn');
+    return;
+  }
+  TECH_VIEW_DATE = (diffDays === 0) ? null : d;
+  // Switching days invalidates any A/B week override the tech had toggled —
+  // each day has its own correct week based on its ISO week number.
+  sessionStorage.removeItem('tech_chosen_week');
+  renderTechView();
+}
+
+function techGoToToday(){
+  TECH_VIEW_DATE = null;
+  sessionStorage.removeItem('tech_chosen_week');
+  renderTechView();
+}
+
 function renderTechView(){
   if(CURRENT_ROLE!=='tech' || !CURRENT_TECH) return;
   // Header
   document.getElementById('tech-view-name').textContent = CURRENT_TECH;
-  // Determine today's day key + auto-detect this week's A/B from ISO week
-  const today=new Date();
+  // Use the viewed date (today by default, or whatever the tech navigated to)
+  const today = _techViewedDate();
   const dayOfWeek=today.getDay(); // 0=Sun, 1=Mon...
   const dayMap={1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri'};
   const dayKey=dayMap[dayOfWeek];
@@ -11442,13 +11520,17 @@ function renderTechView(){
   const dayIdx=DAYS.indexOf(dayKey);
   const dayLabel = dayIdx>=0 ? dn[dayIdx] : null;
   const dateLabel = today.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{day:'numeric',month:'long',year:'numeric'});
+  // Update nav buttons (prev/next/today)
+  _renderTechDayNav();
+  // Show the "viewing past day" banner if we're not on today
+  _renderTechPastBanner();
   // Weekend? No clients
   if(!dayLabel){
     document.getElementById('tech-view-day-info').innerHTML = `${dateLabel}`;
     document.getElementById('tech-view-content').innerHTML = `
       <div class="tech-empty">
         <div style="font-size:48px;margin-bottom:14px">🌴</div>
-        <h2>${LANG==='es'?'Hoy es fin de semana':"Today's the weekend"}</h2>
+        <h2>${LANG==='es'?'Fin de semana':"Weekend"}</h2>
         <p>${LANG==='es'?'No hay clientes programados.':'No clients scheduled.'}</p>
       </div>`;
     return;
@@ -11460,6 +11542,33 @@ function renderTechView(){
     `${dayLabel} <span class="tech-week-badge">Semana ${chosenWeek}</span> · ${dateLabel}`;
   // Render today's clients for the auto-detected (or overridden) week
   renderTechDayClients(dayKey, chosenWeek, detectedWeek);
+}
+
+// Refresh the prev/next/today buttons based on TECH_VIEW_DATE
+function _renderTechDayNav(){
+  const prev = document.getElementById('tech-prev-day');
+  const next = document.getElementById('tech-next-day');
+  const todayBtn = document.getElementById('tech-today-btn');
+  if(!prev||!next||!todayBtn) return;
+  const daysBack = _techDaysBackFromToday();
+  // Prev: blocked once we hit the cap
+  prev.disabled = (daysBack >= TECH_MAX_DAYS_BACK);
+  // Next: blocked when we're already on today (can't go to the future)
+  next.disabled = _techIsViewingToday();
+  // Today button: hidden when we ARE on today (nothing to return to)
+  todayBtn.style.display = _techIsViewingToday() ? 'none' : '';
+}
+
+// Yellow banner under the header. Only shows when looking at a past day.
+function _renderTechPastBanner(){
+  const wrap = document.getElementById('tech-past-banner-wrap');
+  if(!wrap) return;
+  if(_techIsViewingToday()){ wrap.innerHTML = ''; return; }
+  const daysBack = _techDaysBackFromToday();
+  const txt = LANG==='es'
+    ? `Estás viendo un día pasado (hace ${daysBack} ${daysBack===1?'día':'días'}). Puedes terminar tickets pendientes de ese día.`
+    : `You're viewing a past day (${daysBack} ${daysBack===1?'day':'days'} ago). You can still close out pending tickets from that day.`;
+  wrap.innerHTML = `<div class="tech-past-banner"><span class="icn">⚠️</span><span>${txt}</span></div>`;
 }
 
 // Manual override — toggles the week (A↔B) for the rest of today's session
@@ -11475,8 +11584,12 @@ function techToggleWeek(){
 }
 
 function renderTechDayClients(dayKey, wt, detectedWeek){
-  const today=new Date();
+  // Use the date the tech is viewing (defaults to today). This is what makes
+  // "regresar un día antes" work — VL lookups, checklists, and saved visits
+  // all key off the dateKey of the viewed day, not today's actual date.
+  const today = _techViewedDate();
   const dateKey = _localDateKey(today); // YYYY-MM-DD
+  const viewingPast = !_techIsViewingToday();
   // Get clients scheduled for this day + week (active only)
   const dayClients = C.filter(c =>
     c.status==='active' && _dayForWeek(c,wt)===dayKey && (c.week===wt || c.week==='A&B')
@@ -11667,7 +11780,8 @@ async function techMarkNoVisit(cid){
 
 // Edit (or add) a note AFTER the visit was already saved — does not reset GPS/timestamp.
 async function techEditNote(cid){
-  const today = new Date();
+  // Use the day the tech is viewing — lets them edit notes on past-day visits too.
+  const today = _techViewedDate();
   const dateKey = _localDateKey(today);
   const v = getVisit(cid, dateKey); // returns null for tombstones
   const cur = (v && v.notes) || '';
@@ -11684,7 +11798,13 @@ async function techEditNote(cid){
 }
 
 async function _techRecordVisit(cid, status, notes){
-  const today=new Date();
+  // CRITICAL: use the day the tech is VIEWING, not today's actual date.
+  // This is what lets the tech go back to Friday and close out tickets they
+  // never marked — the visit gets recorded under Friday's dateKey, not today.
+  // The _timestamp on the record still uses Date.now() (when they tapped Save),
+  // so the admin's audit trail still shows when the work was actually filed,
+  // separately from when the visit was scheduled.
+  const today = _techViewedDate();
   const dateKey = _localDateKey(today);
   // Snapshot the checklist BEFORE we tear down/re-render — DOM has the
   // freshest state including any uncommitted typing in chemical inputs.
@@ -11849,7 +11969,9 @@ function showSmsPromptToast(cid, dateKey, status){
 // _timestamp so it wins over any older "visited" entry during cross-device merges.
 // Read-side code (renderTechDayClients, audit, etc.) treats tombstones as "no visit recorded".
 function techUndoVisit(cid){
-  const today=new Date();
+  // Undo applies to whichever day the tech is currently viewing — they can
+  // undo a mistaken "visited" mark on a past day just like on today.
+  const today = _techViewedDate();
   const dateKey = _localDateKey(today);
   fbSyncing = true; // block listener for the whole undo flow
   _bumpFbSyncingWatchdog();
