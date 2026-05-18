@@ -4459,7 +4459,7 @@ const SL_ZIP_ZONES={"63101":"City","63102":"City","63103":"City","63104":"City",
 
 const SL_ZIP_CITIES={"63114":"Overland","63031":"Florissant","63135":"Ferguson","63123":"Affton","63129":"Oakville","63010":"Arnold","63005":"Chesterfield","63011":"Ballwin","63301":"St. Charles","63376":"St. Peters","63366":"O'Fallon","63385":"Wentzville","63122":"Kirkwood","63119":"Webster Groves","63126":"Crestwood","63128":"Concord","63125":"Mehlville","62221":"Belleville","62220":"Belleville","62223":"Belleville","62226":"Belleville","62208":"Fairview Heights","63108":"St. Louis","63130":"University City","63131":"Town and Country","63132":"Olivette","63141":"Creve Coeur","63146":"Maryland Heights","63303":"St. Charles","63304":"St. Charles","63368":"O'Fallon","63367":"Lake St. Louis"};
 
-let slApp=null, slDB=null;
+let slApp=null, slDB=null, slAuthReady=null;
 
 function loadSLConfig(){
   try{
@@ -4491,6 +4491,24 @@ function initServiceLogConnection(){
       },'serviceLog');
     }
     slDB=slApp.firestore();
+    // ── CRITICAL: Authenticate on the NAMED 'serviceLog' app ──
+    // The TECH-TICKETS Firestore security rules require `request.auth != null`.
+    // The default Firebase app (chemical-maintence project) signs in elsewhere,
+    // but each named Firebase app has its OWN auth instance — so we MUST sign
+    // into 'serviceLog' separately or every write to the `tickets` collection
+    // is rejected with permission-denied. (This was the silent-fail bug where
+    // tech visits saved locally but never appeared in the Service Log dashboard.)
+    if(!slApp.auth().currentUser){
+      slAuthReady=slApp.auth().signInAnonymously().then(()=>{
+        console.log('🔐 Service Log auth ready as:',slApp.auth().currentUser.uid);
+      }).catch(err=>{
+        console.error('❌ Service Log auth FAILED:',err);
+        updateSLIndicator(false,'Auth failed: '+(err.code||err.message||err));
+        throw err;
+      });
+    }else{
+      slAuthReady=Promise.resolve();
+    }
     console.log('🎫 Service Log connected to project:',cfg.projectId);
     updateSLIndicator(true);
     return true;
@@ -4524,7 +4542,7 @@ function connectServiceLog(){
   localStorage.setItem(SL_CONFIG_KEY,JSON.stringify(config));
   // Re-init
   const existing=firebase.apps.find(a=>a.name==='serviceLog');
-  if(existing){existing.delete().then(()=>{slApp=null;slDB=null;initServiceLogConnection();});}
+  if(existing){existing.delete().then(()=>{slApp=null;slDB=null;slAuthReady=null;initServiceLogConnection();});}
   else{initServiceLogConnection();}
 }
 
@@ -4533,7 +4551,7 @@ async function disconnectServiceLog(){
   localStorage.removeItem(SL_CONFIG_KEY);
   const existing=firebase.apps.find(a=>a.name==='serviceLog');
   if(existing)existing.delete().catch(()=>{});
-  slApp=null;slDB=null;
+  slApp=null;slDB=null;slAuthReady=null;
   updateSLIndicator(false);
   cm('mslfirebase');
 }
@@ -4603,6 +4621,19 @@ async function saveTechApptAndSendToSL(){
       }
     }
     ra();saveData();return;
+  }
+
+  // ── Wait for auth to complete before writing — Firestore rules require it ──
+  // initServiceLogConnection kicks off an async signInAnonymously; if the user
+  // clicks the button fast enough we'd otherwise race the auth and get
+  // permission-denied even though everything is configured correctly.
+  if(slAuthReady){
+    try{await slAuthReady;}
+    catch(e){
+      console.error('🎫 Service Log auth never completed:',e);
+      showToast('❌ Service Log auth failed — ticket NOT sent.\n\nError: '+(e.code||e.message||e)+'\n\nThe tech visit WAS saved locally.\n\nFix: In Firebase Console (tech-tickets-a9485) → Authentication → Sign-in method → enable Anonymous.');
+      saveData();ra();return;
+    }
   }
 
   // ── Parse the client's address using the chemical dashboard data ──
@@ -4734,10 +4765,18 @@ async function testServiceLogConnection(){
     const ok=initServiceLogConnection();
     if(!ok){showToast('❌ Service Log is not configured.');return;}
   }
+  // Also await auth on the named app before writing the test doc
+  if(slAuthReady){
+    try{await slAuthReady;}
+    catch(e){
+      showToast('❌ Service Log auth failed:\n'+(e.code||e.message||e));
+      return;
+    }
+  }
   console.log('🔍 Testing Service Log connection...');
   const testDoc={
     customer:'🔍 CONNECTION TEST — delete me',
-    date:new _localDateKey(Date()),
+    date:_localDateKey(new Date()),
     techs:[],workTypes:['Service Call'],
     warranty:{has:null,model:'',year:0,type:'rda',label:'N/W'},
     visitNum:1,noLabor:false,arrival:'',departure:'',
@@ -4798,7 +4837,7 @@ function openSLConfig(){
 setTimeout(()=>{
   try{
     const existing=firebase.apps.find(a=>a.name==='serviceLog');
-    if(existing)existing.delete().then(()=>{slApp=null;slDB=null;initServiceLogConnection();}).catch(()=>initServiceLogConnection());
+    if(existing)existing.delete().then(()=>{slApp=null;slDB=null;slAuthReady=null;initServiceLogConnection();}).catch(()=>initServiceLogConnection());
     else initServiceLogConnection();
   }catch(e){console.warn('SL auto-connect error:',e);}
 },500);
@@ -5280,7 +5319,7 @@ function exportCheckinsCSV(){
   const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url; a.download='aspen-daily-report-'+new _localDateKey(Date())+'.csv';
+  a.href=url; a.download='aspen-daily-report-'+td()+'.csv';
   document.body.appendChild(a); a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
   showToast(LANG==='es'?`✓ ${rows.length} registros exportados`:`✓ ${rows.length} records exported`,'ok');
