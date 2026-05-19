@@ -1779,7 +1779,10 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
           <button class="sum-mode-btn"        id="sum-mode-month"   onclick="setSummaryMode('month')">🗓 <span data-i18n-key="sumModeMonth">Mensual</span></button>
           <button class="sum-mode-btn"        id="sum-mode-quarter" onclick="setSummaryMode('quarter')">📈 <span data-i18n-key="sumModeQuarter">Trimestral</span></button>
         </div>
-        <input type="date" id="sum-date" onchange="rsummary()" title="Fecha del resumen">
+        <button class="btn" id="sum-day-prev" onclick="shiftSummaryDay(-1)" title="Día anterior">◀</button>
+        <input type="date" id="sum-date" onchange="_refreshSummaryTodayBtn();rsummary()" title="Fecha del resumen">
+        <button class="btn" id="sum-day-next" onclick="shiftSummaryDay(1)" title="Día siguiente">▶</button>
+        <button class="btn" id="sum-day-today" onclick="goToTodaySummary()" title="Ir a hoy" style="display:none">↺ Hoy</button>
         <span id="sum-week-label" style="display:none;font-size:13px;color:var(--muted);font-weight:600;padding:0 4px"></span>
         <button class="btn" id="sum-week-prev" onclick="shiftSummaryWeek(-1)" style="display:none">◀</button>
         <button class="btn" id="sum-week-next" onclick="shiftSummaryWeek(1)" style="display:none">▶</button>
@@ -5372,11 +5375,57 @@ function setSummaryMode(mode){
   const wkLabel = document.getElementById('sum-week-label');
   const wkPrev = document.getElementById('sum-week-prev');
   const wkNext = document.getElementById('sum-week-next');
+  // Per-day nav arrows (only visible in Diario mode — admin can also paginate
+  // day-by-day instead of having to use the date picker for every change).
+  const dayPrev = document.getElementById('sum-day-prev');
+  const dayNext = document.getElementById('sum-day-next');
+  const dayToday = document.getElementById('sum-day-today');
   const isRangeMode = (mode !== 'day');
   if(dateInput) dateInput.style.display = isRangeMode ? 'none' : '';
   if(wkLabel) wkLabel.style.display = isRangeMode ? 'inline' : 'none';
   if(wkPrev) wkPrev.style.display = isRangeMode ? 'inline-block' : 'none';
   if(wkNext) wkNext.style.display = isRangeMode ? 'inline-block' : 'none';
+  if(dayPrev) dayPrev.style.display = isRangeMode ? 'none' : 'inline-block';
+  if(dayNext) dayNext.style.display = isRangeMode ? 'none' : 'inline-block';
+  // "Hoy" button only shown in day mode AND only when not already on today
+  _refreshSummaryTodayBtn();
+  rsummary();
+}
+
+// Show/hide the "↺ Hoy" button. Hidden when we're already on today (avoids a
+// no-op button) or when we're in a range mode (week/month/quarter has its own
+// pagination semantics).
+function _refreshSummaryTodayBtn(){
+  const dayToday = document.getElementById('sum-day-today');
+  const dateInput = document.getElementById('sum-date');
+  if(!dayToday || !dateInput) return;
+  const mode = _getSummaryMode();
+  if(mode !== 'day'){ dayToday.style.display = 'none'; return; }
+  const todayKey = _localDateKey(todayLocal());
+  const cur = dateInput.value || todayKey;
+  dayToday.style.display = (cur === todayKey) ? 'none' : 'inline-block';
+}
+
+// ◀ ▶ in day mode — step the date input by exactly one calendar day. Unlike
+// the tech view, we DON'T skip weekends: admin may legitimately want to look
+// at a Saturday/Sunday (rare visits, audits, etc.). No upper bound: admin can
+// peek at future dates if they want to.
+function shiftSummaryDay(direction){
+  const dateInput = document.getElementById('sum-date');
+  if(!dateInput) return;
+  const cur = dateInput.value || _localDateKey(todayLocal());
+  const d = new Date(cur + 'T12:00:00');
+  d.setDate(d.getDate() + direction);
+  dateInput.value = _localDateKey(d);
+  _refreshSummaryTodayBtn();
+  rsummary();
+}
+
+function goToTodaySummary(){
+  const dateInput = document.getElementById('sum-date');
+  if(!dateInput) return;
+  dateInput.value = _localDateKey(todayLocal());
+  _refreshSummaryTodayBtn();
   rsummary();
 }
 
@@ -5988,6 +6037,7 @@ function _renderVisitDetailsTable(rows, dateKey){
 function resetSummaryFilters(){
   const dEl = document.getElementById('sum-date'); if(dEl) dEl.value = _localDateKey(todayLocal());
   const tEl = document.getElementById('sum-tech-filter'); if(tEl) tEl.value = '';
+  _refreshSummaryTodayBtn();
   rsummary();
 }
 
