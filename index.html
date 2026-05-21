@@ -1287,6 +1287,12 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   body.printing-client-report .cr-visit{break-inside:avoid;page-break-inside:avoid}
   body.printing-client-report .vrm-section{break-inside:avoid;page-break-inside:avoid}
 }
+/* Period photo gallery in the per-client report */
+.cr-photo-grid{display:flex;flex-wrap:wrap;gap:6px}
+.cr-photo{display:inline-block;border:1px solid #CBD5E1;border-radius:8px;overflow:hidden;text-decoration:none;line-height:0;background:#fff}
+.cr-photo img{width:96px;height:96px;object-fit:cover;display:block}
+.cr-photo-cap{display:block;font-size:10px;color:#64748B;text-align:center;padding:2px 4px;line-height:1.2;background:#F1F5F9}
+@media print{ .cr-photo img{width:120px;height:120px} }
 
 .vrm-photos{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .vrm-photo{flex:1;min-width:140px;max-width:240px}
@@ -7027,28 +7033,99 @@ function flashSave(){
   if(el){el.style.opacity='1';setTimeout(()=>el.style.opacity='0',1800);}
 }
 
+// ── localStorage quota helpers ──────────────────────────────────────────────
+// ROOT CAUSE this guards against: every committed visit carries its test-strip
+// photos as base64 inside VL[cid][dateKey].checklist.photos. VL is serialized
+// into LS_KEY on every save, so after enough visits the ~5MB localStorage cap is
+// blown — which (a) blocked NEW photo writes and (b) made saveData() throw
+// before it ever reached Firebase, so tickets (incl. past-day ones) silently
+// failed to save anywhere. Firebase always keeps the FULL copy (photos and all),
+// so locally we can safely drop old photos when space runs out.
+
+function _trySetLS(key, str){
+  try{ localStorage.setItem(key, str); return true; }
+  catch(e){ return false; }
+}
+// Parse a 'YYYY-MM-DD' dateKey to a local timestamp (noon, to dodge TZ edges).
+function _dateKeyToTs(dk){
+  if(!dk || typeof dk!=='string') return 0;
+  const m = dk.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return 0;
+  return new Date(+m[1], +m[2]-1, +m[3], 12, 0, 0).getTime();
+}
+// Build a copy of VL with heavy base64 photos pruned. keepDays>0 keeps photos on
+// visits from the last N days; keepDays===0 strips ALL photos. Never mutates the
+// live VL (Firebase still receives the full version). A `_photosStripped` count
+// marker is left behind so the UI can show "photos in cloud".
+function _vlWithoutHeavyPhotos(VLsrc, keepDays){
+  const cutoff = (keepDays>0) ? (Date.now() - keepDays*86400000) : Infinity;
+  const out = {};
+  for(const cid in VLsrc){
+    const dates = VLsrc[cid]; if(!dates) continue;
+    out[cid] = {};
+    for(const dk in dates){
+      const v = dates[dk];
+      const photos = v && v.checklist && v.checklist.photos;
+      const nPhotos = photos ? Object.keys(photos).length : 0;
+      if(nPhotos > 0){
+        const ts = (v && v._timestamp) || _dateKeyToTs(dk) || 0;
+        const keep = (keepDays>0) && (ts >= cutoff);
+        if(keep){
+          out[cid][dk] = v; // recent — keep photos locally too
+        } else {
+          const chk = Object.assign({}, v.checklist);
+          delete chk.photos;
+          chk._photosStripped = nPhotos; // marker: real photos live in Firebase
+          out[cid][dk] = Object.assign({}, v, {checklist: chk});
+        }
+      } else {
+        out[cid][dk] = v;
+      }
+    }
+  }
+  return out;
+}
+// Serialize the LS payload. keepDays===null → full (photos included);
+// otherwise photos are pruned per _vlWithoutHeavyPhotos.
+function _lsPayloadStr(keepDays){
+  const p = getBackupPayload();
+  p.savedAt = new Date().toISOString();
+  if(keepDays !== null) p.VL = _vlWithoutHeavyPhotos(VL, keepDays);
+  return JSON.stringify(p);
+}
+// Persist to localStorage with progressive photo-pruning fallback on quota.
+// Returns {ok, trimmed}. Cloud (Firebase) is unaffected and always has full data.
+function persistLocal(){
+  if(_trySetLS(LS_KEY, _lsPayloadStr(null)))  return {ok:true,  trimmed:false}; // full
+  if(_trySetLS(LS_KEY, _lsPayloadStr(3)))     return {ok:true,  trimmed:true};  // keep last 3 days of photos
+  if(_trySetLS(LS_KEY, _lsPayloadStr(0)))     return {ok:true,  trimmed:true};  // strip all photos locally
+  return {ok:false, trimmed:false};
+}
+
 function saveData(){
-  try{
-    const payload={
-      BL,VL,TAPPTS,CAL_ORDER,TECHS,ORGANIZERS,DNOTES,
-      clients:C.map(cl=>({
-        id:cl.id,name:cl.name,phone:cl.phone,email:cl.email,
-        addr:cl.addr,freq:cl.freq,week:cl.week,day:cl.day,dayA:cl.dayA||'',dayB:cl.dayB||'',san:cl.san,
-        lwc:cl.lwc||'',nwc:cl.nwc||'',notes:cl.notes||'',status:cl.status,
-        wcN:cl.wcN||false,wcD:cl.wcD||false,
-        techP:cl.techP||false,techI:cl.techI||'',
-        techD:cl.techD||'',techS:cl.techS||'',
-        lastModified:cl.lastModified||0
-      })),
-      savedAt:new Date().toISOString()
-    };
-    localStorage.setItem(LS_KEY,JSON.stringify(payload));
+  // 1) Cloud FIRST — Firebase is the source of truth across devices and holds
+  //    the full record (photos included). Doing this before the localStorage
+  //    write means a full localStorage can never block a ticket from saving.
+  try{ saveToFirebase(); }catch(e){ dbgErr('Firebase save error:',e); }
+  // 2) Local persistence with quota-safe photo pruning.
+  let res;
+  try{ res = persistLocal(); }catch(e){ dbgErr('Save error:',e); res = {ok:false,trimmed:false}; }
+  if(res.ok){
     flashSave();
     markClean();
     maybeAutoBackup();
-    // Also save to Firebase if connected
-    saveToFirebase();
-  }catch(e){dbgErr('Save error:',e);markDirty();}
+    if(res.trimmed){
+      try{ if(typeof showToast==='function') showToast(LANG==='es'
+        ? '✓ Guardado · fotos antiguas solo en la nube (memoria del navegador llena)'
+        : '✓ Saved · older photos kept in cloud (browser storage full)', 'info'); }catch(_){}
+    }
+  } else {
+    markDirty();
+    dbgErr('Save error: localStorage full even after stripping photos');
+    try{ if(typeof showToast==='function') showToast(LANG==='es'
+      ? '⚠ Memoria del navegador llena — guardado en la nube'
+      : '⚠ Browser storage full — saved to cloud', 'warn'); }catch(_){}
+  }
 }
 
 function loadData(){
@@ -7610,12 +7687,10 @@ function applyCloudData(d){
       arr.forEach(cl=>C.push(cl));
     }
   }
-  // Save merged result back to localStorage so the next reload starts from the correct state
-  try{
-    const mergedPayload = getBackupPayload();
-    mergedPayload.savedAt = d.savedAt || new Date().toISOString();
-    localStorage.setItem(LS_KEY, JSON.stringify(mergedPayload));
-  }catch(e){dbgWarn("caught:",e);}
+  // Save merged result back to localStorage so the next reload starts from the correct state.
+  // Uses the same quota-safe photo pruning as saveData() — the full copy (with
+  // photos) already lives in Firebase, so dropping old photos locally is safe.
+  try{ persistLocal(); }catch(e){ dbgWarn("caught:",e); }
   refreshTechDataLists();
   ra();
   // If the tech is currently looking at their day-view, re-render so the merged state is visible
@@ -9949,23 +10024,27 @@ async function handleChkPhoto(cid, iid, evt){
     }catch(e){
       console.warn('[chk] photo backup save failed:', e);
     }
-    // First try at saving failed (quota or private mode). Free up space by
-    // wiping any photo backups from OTHER days — they belong to visits that
-    // already committed and don't need their backup any more — then retry.
+    // First try at saving failed (quota or private mode). Free up space, then retry.
+    // Two sources eat localStorage: (a) photo backups from OTHER days, and
+    // (b) the much bigger one — base64 photos baked into committed visits inside
+    // LS_KEY (VL). Both are already safe in Firebase, so we can reclaim them.
     if(!saved_ok){
       try{
+        // (a) drop per-photo backups from other days
         const stale = [];
         for(let i = 0; i < localStorage.length; i++){
           const k = localStorage.key(i);
           if(k && k.indexOf('aspen_chk_photo_') === 0 && k.indexOf(`_${dateKey}_`) === -1) stale.push(k);
         }
         stale.forEach(k => { try{ localStorage.removeItem(k); }catch(_){} });
-        if(stale.length > 0){
-          localStorage.setItem(backupKey, b64);
-          saved_ok = (localStorage.getItem(backupKey) === b64);
-          if(saved_ok){
-            console.warn(`[chk] freed ${stale.length} stale photo backup(s) to make room`);
-          }
+        // (b) compact the main payload — strip base64 photos from committed
+        //     visits in localStorage (Firebase keeps the full copy).
+        try{ if(typeof _trySetLS==='function') _trySetLS(LS_KEY, _lsPayloadStr(0)); }catch(_){}
+        // retry the photo write now that there should be room
+        localStorage.setItem(backupKey, b64);
+        saved_ok = (localStorage.getItem(backupKey) === b64);
+        if(saved_ok && stale.length > 0){
+          console.warn(`[chk] freed ${stale.length} stale photo backup(s) + compacted main payload to make room`);
         }
       }catch(e){}
     }
@@ -10049,7 +10128,7 @@ function _refreshChkProgress(cid){
     const final = root.querySelector('.tcc-chk-final');
     if(final && !final.classList.contains('checked')){
       final.classList.add('checked');
-      const today = new Date();
+      const today = _techViewedDate();
       const dateKey = _localDateKey(today);
       const saved = _loadChkState(cid, dateKey) || {};
       saved.satisfactory = true;
@@ -10323,7 +10402,11 @@ function _renderChkReadonly(chk){
   const photosArr = Object.entries(chk.photos||{}).filter(([,v])=>!!v);
   const photosHtml = photosArr.length
     ? `<div class="tcc-chk-ro-photos">${photosArr.map(([iid,b64])=>`<a href="${b64}" target="_blank" rel="noopener" title="${esc(iid)}"><img src="${b64}" alt="${esc(iid)}"/></a>`).join('')}</div>`
-    : '';
+    : (chk._photosStripped > 0
+        ? `<div class="tcc-chk-ro-item"><span class="ic">📷</span><span style="color:#64748B;font-style:italic">${chk._photosStripped} ${chk._photosArchived
+            ? (LANG==='es'?'foto(s) archivada(s) y liberada(s) de la base':'photo(s) archived & freed from the database')
+            : (LANG==='es'?'foto(s) guardada(s) en la nube':'photo(s) saved in cloud')}</span></div>`
+        : '');
   // Water level
   const wlMap = {low:'🥶 Bajo',normal:'👌 Normal',full:'💧 Lleno'};
   const waterLevel = chk.water_level ? wlMap[chk.water_level] || chk.water_level : '';
@@ -11152,6 +11235,25 @@ function _renderClientReport(){
         </table>
       </div>`;
 
+  // Photos captured during this period (base64, grouped by date)
+  const periodPhotos = _collectClientPeriodPhotos(cid, period.fromKey, period.toKey);
+  const photosByDate = {};
+  periodPhotos.forEach(p => { (photosByDate[p.dateKey] = photosByDate[p.dateKey] || []).push(p); });
+  const photoGalleryHtml = periodPhotos.length === 0 ? '' : `
+    <div class="vrm-section">
+      <h3 class="vrm-section-title">📷 ${esc(LANG==='es'?'Fotos del periodo':'Period photos')} <span style="font-weight:500;color:var(--muted);font-size:13px">(${periodPhotos.length})</span></h3>
+      ${Object.keys(photosByDate).sort().map(dk => {
+        const dt = new Date(dk + 'T12:00:00');
+        const dStr = dt.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
+        return `<div style="margin-top:8px">
+          <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px">${esc(dStr)}</div>
+          <div class="cr-photo-grid">
+            ${photosByDate[dk].map(p => `<a href="${p.b64}" target="_blank" rel="noopener" class="cr-photo" title="${esc(_photoLabel(p.iid))} · ${esc(dStr)}"><img src="${p.b64}" alt="${esc(_photoLabel(p.iid))}"/><span class="cr-photo-cap">${esc(_photoLabel(p.iid))}</span></a>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
   const html = `
     <div class="vrm-actions">
       <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:#FFF;margin-right:6px">
@@ -11163,6 +11265,8 @@ function _renderClientReport(){
       <button class="btn" onclick="shiftClientReportPeriod(1)">▶</button>
       <span style="flex:1"></span>
       <button class="btn btn-brand" onclick="printClientReport()" title="${esc(LANG==='es'?'Imprimir o guardar PDF':'Print or save as PDF')}">🖨 ${esc(LANG==='es'?'PDF':'PDF')}</button>
+      ${periodPhotos.length ? `<button class="btn" onclick="downloadClientReportPhotos()" title="${esc(LANG==='es'?'Descargar todas las fotos del periodo en ZIP':'Download all period photos as a ZIP')}">📥 ${esc(LANG==='es'?'Fotos':'Photos')} (${periodPhotos.length})</button>` : ''}
+      ${periodPhotos.length ? `<button class="btn" style="border-color:#FCA5A5;color:#B91C1C" onclick="purgeClientReportPhotos()" title="${esc(LANG==='es'?'Borrar las fotos del periodo de la base de datos para liberar espacio':'Delete period photos from the database to free space')}">🧹 ${esc(LANG==='es'?'Liberar':'Free up')}</button>` : ''}
       ${c.phone?`<button class="btn btn-brand" onclick="smsClientReport()" title="SMS">📱 SMS</button>`:''}
       <button class="btn" onclick="closeClientReport()">✕</button>
     </div>
@@ -11199,12 +11303,159 @@ function _renderClientReport(){
         <h3 class="vrm-section-title">🗓 ${esc(LANG==='es'?'Línea de tiempo de visitas':'Visit timeline')}</h3>
         <div class="cr-timeline">${visitTimelineHtml}</div>
       </div>
+      ${photoGalleryHtml}
       <div style="text-align:center;font-size:11.5px;color:var(--muted);padding:10px;font-style:italic">
         ${esc(LANG==='es'?'Aspen Spas — Mantenimiento profesional para tu spa.':'Aspen Spas — Professional spa maintenance.')}
       </div>
     </div>
   `;
   document.getElementById('crm-content-inner').innerHTML = html;
+}
+
+// ─── Per-client period PHOTO ARCHIVE ────────────────────────────────────────
+// Photos are stored as base64 inside each visit (VL[cid][dk].checklist.photos).
+// They live comfortably in the Realtime Database, but to keep the database (and
+// per-quarter footprint) lean, the admin can download every photo in a period
+// as a ZIP and then purge those photos from the DB to free space. Visit records,
+// readings, GPS and notes are always kept — only the heavy image blobs are removed.
+
+// Map a photo item-id to a short human label.
+function _photoLabel(iid){
+  const map = {
+    photo_before: LANG==='es' ? 'antes'    : 'before',
+    photo_after:  LANG==='es' ? 'despues'  : 'after'
+  };
+  return map[iid] || String(iid).replace(/^photo_/, '');
+}
+
+// Collect every base64 photo for a client within [fromKey, toKey] (inclusive),
+// in chronological order. Returns [{dateKey, iid, b64}].
+function _collectClientPeriodPhotos(cid, fromKey, toKey){
+  const out = [];
+  const visits = VL[cid] || {};
+  Object.keys(visits)
+    .filter(dk => dk >= fromKey && dk <= toKey)
+    .sort()
+    .forEach(dk => {
+      const v = visits[dk];
+      if(!v || v._deleted || v.status !== 'done') return;
+      const photos = v.checklist && v.checklist.photos;
+      if(!photos) return;
+      Object.keys(photos).forEach(iid => {
+        const b64 = photos[iid];
+        if(typeof b64 === 'string' && b64.indexOf('data:') === 0){
+          out.push({ dateKey: dk, iid, b64 });
+        }
+      });
+    });
+  return out;
+}
+
+// Lazy-load JSZip from CDN only when the admin actually downloads photos —
+// keeps initial page load fast and avoids a hard dependency.
+function _ensureJSZip(){
+  return new Promise((resolve, reject)=>{
+    if(window.JSZip) return resolve(window.JSZip);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = ()=> window.JSZip ? resolve(window.JSZip) : reject(new Error('JSZip unavailable'));
+    s.onerror = ()=> reject(new Error('JSZip load failed'));
+    document.head.appendChild(s);
+  });
+}
+function _dataUrlToUint8(dataUrl){
+  const bin = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+  const bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function _dataUrlExt(dataUrl){
+  const m = dataUrl.match(/^data:image\/(\w+)/);
+  return m ? (m[1] === 'jpeg' ? 'jpg' : m[1]) : 'jpg';
+}
+function _safeFile(s){ return String(s || '').replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, ''); }
+
+// Download all photos in the currently-viewed report period as a single ZIP.
+async function downloadClientReportPhotos(){
+  if(!_clientReportState) return;
+  const { cid, mode, anchorDate } = _clientReportState;
+  const c = C.find(x => x.id === cid);
+  if(!c) return;
+  const period = _clientPeriod(mode, anchorDate);
+  const photos = _collectClientPeriodPhotos(cid, period.fromKey, period.toKey);
+  if(photos.length === 0){
+    showToast(LANG==='es' ? 'No hay fotos en este periodo' : 'No photos in this period', 'warn');
+    return;
+  }
+  showToast(LANG==='es' ? `Empaquetando ${photos.length} foto(s)…` : `Zipping ${photos.length} photo(s)…`, 'info');
+  let JSZip;
+  try{ JSZip = await _ensureJSZip(); }
+  catch(e){ showToast(LANG==='es' ? '⚠ No se pudo cargar el compresor (¿sin internet?)' : '⚠ Could not load the zipper (offline?)', 'warn'); return; }
+  try{
+    const zip = new JSZip();
+    const periodTag = _safeFile(period.label);
+    const folder = zip.folder(`${_safeFile(c.name)}_${periodTag}`);
+    const counts = {};
+    photos.forEach(p => {
+      const ext = _dataUrlExt(p.b64);
+      const base = `${p.dateKey}_${_photoLabel(p.iid)}`;
+      counts[base] = (counts[base] || 0) + 1;
+      const fname = counts[base] > 1 ? `${base}_${counts[base]}.${ext}` : `${base}.${ext}`;
+      folder.file(fname, _dataUrlToUint8(p.b64));
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Aspen_${_safeFile(c.name)}_${periodTag}_fotos.zip`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    showToast(LANG==='es' ? `✓ ${photos.length} foto(s) descargada(s)` : `✓ ${photos.length} photo(s) downloaded`, 'ok');
+  }catch(e){
+    console.error('[client-report] zip error', e);
+    showToast(LANG==='es' ? '⚠ Error al crear el ZIP' : '⚠ Error building ZIP', 'warn');
+  }
+}
+
+// Purge (delete) all photos in the viewed period from the database to free space.
+// Keeps the visit, readings, GPS and notes — strips only the image blobs and
+// bumps _timestamp so the deletion propagates to every device.
+async function purgeClientReportPhotos(){
+  if(!_clientReportState) return;
+  const { cid, mode, anchorDate } = _clientReportState;
+  const c = C.find(x => x.id === cid);
+  if(!c) return;
+  const period = _clientPeriod(mode, anchorDate);
+  const visits = VL[cid] || {};
+  const targets = Object.keys(visits)
+    .filter(dk => dk >= period.fromKey && dk <= period.toKey)
+    .filter(dk => { const v = visits[dk]; return v && v.checklist && v.checklist.photos && Object.keys(v.checklist.photos).length; });
+  if(targets.length === 0){
+    showToast(LANG==='es' ? 'No hay fotos para liberar en este periodo' : 'No photos to free in this period', 'warn');
+    return;
+  }
+  let photoCount = 0;
+  targets.forEach(dk => { photoCount += Object.keys(visits[dk].checklist.photos).length; });
+  const ok = await showConfirm(
+    LANG==='es'
+      ? `¿Borrar ${photoCount} foto(s) de ${targets.length} visita(s) de ${c.name} en ${period.label}?\n\n⚠ Se eliminan de la base de datos en TODOS los dispositivos para liberar espacio. Las visitas, lecturas, GPS y notas se conservan.\n\nAsegúrate de haber descargado el ZIP primero.`
+      : `Delete ${photoCount} photo(s) from ${targets.length} visit(s) of ${c.name} in ${period.label}?\n\n⚠ They are removed from the database on ALL devices to free space. Visits, readings, GPS and notes are kept.\n\nMake sure you downloaded the ZIP first.`,
+    { danger: true, okText: LANG==='es' ? 'Sí, liberar espacio' : 'Yes, free space', cancelText: LANG==='es' ? 'Cancelar' : 'Cancel' }
+  );
+  if(!ok) return;
+  targets.forEach(dk => {
+    const v = visits[dk];
+    const n = Object.keys(v.checklist.photos).length;
+    const chk = Object.assign({}, v.checklist);
+    delete chk.photos;
+    chk._photosStripped = (chk._photosStripped || 0) + n; // read-only view shows "archived"
+    chk._photosArchived = true;
+    // Bump _timestamp so this photo-less version wins cross-device merges and the deletion propagates.
+    VL[cid][dk] = Object.assign({}, v, { checklist: chk, _timestamp: Date.now() });
+  });
+  saveData();
+  showToast(LANG==='es' ? `✓ Espacio liberado · ${photoCount} foto(s) eliminada(s)` : `✓ Space freed · ${photoCount} photo(s) removed`, 'ok');
+  _renderClientReport();
 }
 
 // Print or save as PDF — uses the same body class pattern as visit report.
