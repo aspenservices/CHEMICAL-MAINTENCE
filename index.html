@@ -4701,6 +4701,10 @@ async function saveTechApptAndSendToSL(){
 
   // ── Build work type from the appointment type ──
   const workType=_mapTypeToWorkType(type);
+  // Every client in THIS dashboard is a Chemical Maintenance customer. A Water
+  // Change for them is covered by the plan — no charge — so we tag the ticket
+  // accordingly. TECH-TICKETS reads wcType==='chem' to show the "no charge" badge.
+  const isWaterChange=(workType==='Water Change');
 
   // ── Build notes body: PRIOR ticket notes first (on top), NEW chem dashboard notes at the bottom ──
   // New description is prefixed with today's date, M/D/YYYY format, to match the Service Log's convention.
@@ -4730,7 +4734,8 @@ async function saveTechApptAndSendToSL(){
     workTypes:[workType],
     warranty:{has:null,model:'',year:0,type:'rda',label:'N/W'},
     visitNum:1,
-    noLabor:false,
+    noLabor:isWaterChange,           // chem-plan Water Change = no labor charge
+    wcType:isWaterChange?'chem':'',  // 'chem' → TECH-TICKETS shows "🧪 WC · Chem plan (no charge)"
     arrival:time||'',
     departure:'',
     parts:[],
@@ -4759,6 +4764,7 @@ async function saveTechApptAndSendToSL(){
     submitted:new Date().toLocaleString(),
     // Tag back to the client in the chem dashboard
     chemClientId:id,
+    chemMaintenance:true,            // customer is on the Chemical Maintenance plan
     chemApptCreatedAt:appt.created,
     chemSuggestedTech:tech||''       // guarda el tech sugerido para referencia
   };
