@@ -811,6 +811,11 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 /* #9 retention badge */
 .cc-retention-flag{font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:2px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;cursor:help}
 /* #10 offline sync banner */
+/* #15 Satisfaction survey modal */
+.survey-modal-star{font-size:32px;cursor:pointer;transition:transform .1s,filter .1s;filter:grayscale(1);line-height:1}
+.survey-modal-star:hover,.survey-modal-star.sel{filter:grayscale(0);transform:scale(1.15)}
+.survey-submitted{text-align:center;padding:20px;font-size:16px;color:#16A34A;font-weight:600}
+
 .offline-sync-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1E293B;color:#F8FAFC;font-size:13px;font-weight:600;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,.25)}
 .offline-sync-banner.hidden{display:none!important}
 .offline-sync-dot{width:8px;height:8px;border-radius:50%;background:#EF4444;flex-shrink:0;animation:pulse-red 1.5s ease-in-out infinite}
@@ -836,8 +841,18 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .vd-techappt{background:#DDA675;border-color:#D48F53}
 .tech-appt-row{background:#FAF3ED;border:1px solid #E7C09E;border-radius:5px;padding:4px 6px;margin:3px 5px;display:flex;align-items:center;gap:5px;cursor:pointer}
 .tech-appt-row:hover{background:#F0D7C2}
+.tech-appt-row.ta-sent{background:#F0FDF4;border-color:#86EFAC}
+.tech-appt-row.ta-inprogress{background:#DBEAFE;border-color:#93C5FD}
+.tech-appt-row.ta-done{background:#F0FDF4;border-color:#4ADE80;opacity:.75}
+.tech-appt-row.ta-pending{background:#FEF2F2;border-color:#FCA5A5}
 /* "Sent to TECH-TICKETS" confirmation badge on tech-appt-row */
-.ta-sent-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:#DCFCE7;border:1px solid #86EFAC;color:#166534;border-radius:8px;padding:1px 6px;flex-shrink:0;white-space:nowrap}
+.ta-sent-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:#DCFCE7;border:1px solid #86EFAC;color:#166534;border-radius:8px;padding:1px 6px;flex-shrink:0;white-space:nowrap;cursor:pointer}
+.ta-sent-badge.st-scheduled{background:#DCFCE7;border-color:#86EFAC;color:#166534}
+.ta-sent-badge.st-inprogress{background:#DBEAFE;border-color:#93C5FD;color:#1D4ED8}
+.ta-sent-badge.st-done{background:#F0FDF4;border-color:#4ADE80;color:#14532D}
+.ta-sent-badge.st-pending{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+/* ticket detail line below appt row */
+.ta-ticket-detail{font-size:10.5px;color:#605950;padding:2px 8px 4px 24px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Per-client summary row in the Summary tab */
 .sum-client-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:background .12s}
 .sum-client-row:hover{background:var(--warm2);border-color:var(--border)}
@@ -1591,6 +1606,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <button class="hbtn hbtn-sm" id="btn-cloud" onclick="om('mfirebase')" style="background:#CD7C35;border-color:#CD7C35;font-weight:600" title="Cloud Sync">☁️</button>
     <button class="hbtn hbtn-sm" id="btn-servicelog" onclick="openSLConfig()" style="background:#D48F53;border-color:#D48F53;font-weight:600" title="Service Log Ticket Routing">🎫</button>
     <button class="hbtn hbtn-sm" onclick="openWeeklyChecklist()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Weekly Close Checklist">📋</button>
+    <button class="hbtn hbtn-sm" onclick="syncCompletedFromTechTickets()" style="background:#0EA5E9;border-color:#0EA5E9;font-weight:600" title="Sync completed tickets from TECH-TICKETS">🔄</button>
     <div id="offline-sync-banner" class="offline-sync-banner hidden">
   <span class="offline-sync-dot"></span>
   <span id="offline-status-text" style="flex:1">Offline</span>
@@ -2046,6 +2062,29 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     </select>
   </div>
   <div class="mfoot"><button class="btn" onclick="cm('mtech-appt')">Cancelar</button><button class="btn btn-brand" onclick="saveTechApptAndSendToSL()">🎫 Enviar a Service Log / Send Ticket</button></div>
+</div></div>
+
+<!-- SATISFACTION SURVEY MODAL (#15) -->
+<div class="modal-bg" id="msurvey">
+<div class="modal" style="max-width:400px;text-align:center">
+  <div style="font-size:15px;font-weight:700;color:var(--brand);margin-bottom:4px">⭐ How was your last service?</div>
+  <div id="msurvey-client" style="font-size:13px;color:var(--muted);margin-bottom:16px"></div>
+  <div id="msurvey-stars" style="display:flex;justify-content:center;gap:12px;margin-bottom:16px">
+    <span class="survey-modal-star" onclick="selectSurveyStar(1)" data-v="1">⭐</span>
+    <span class="survey-modal-star" onclick="selectSurveyStar(2)" data-v="2">⭐</span>
+    <span class="survey-modal-star" onclick="selectSurveyStar(3)" data-v="3">⭐</span>
+    <span class="survey-modal-star" onclick="selectSurveyStar(4)" data-v="4">⭐</span>
+    <span class="survey-modal-star" onclick="selectSurveyStar(5)" data-v="5">⭐</span>
+  </div>
+  <div id="msurvey-comment-wrap" style="display:none;margin-bottom:12px">
+    <textarea id="msurvey-comment" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:13.5px;resize:none;min-height:60px" placeholder="Any comments? (optional)"></textarea>
+  </div>
+  <div id="msurvey-result"></div>
+  <div class="mfoot">
+    <button class="btn" onclick="cm('msurvey')">Cancel</button>
+    <button class="btn btn-brand" id="msurvey-send-btn" onclick="submitSurveyLink()" style="display:none">📱 Send survey link</button>
+    <button class="btn btn-brand" id="msurvey-save-btn" onclick="saveSurveyRating()" style="display:none">⭐ Save rating</button>
+  </div>
 </div></div>
 
 <!-- WEEKLY CLOSE CHECKLIST (#5) -->
@@ -6189,6 +6228,7 @@ function _renderVisitDetailsTable(rows, dateKey){
     }
     const reportBtn = `<button class="sum-action-btn" onclick="openVisitReport(${c.id},'${r.dateKey}')" title="${LANG==='es'?'Ver reporte':'View report'}">📄</button>`;
     const smsBtn = c.phone ? `<button class="sum-action-btn" onclick="techSendVisitSummarySMS(${c.id},'${r.dateKey}')" title="SMS">📱</button>` : '';
+    const surveyBtn = isVisited ? `<button class="sum-action-btn" onclick="openSurveyModal(${c.id},'${r.dateKey}')" title="Satisfaction survey">⭐</button>` : '';
     return `<tr>
       ${dateCell}
       <td>${esc(stamp)}</td>
@@ -6199,7 +6239,7 @@ function _renderVisitDetailsTable(rows, dateKey){
       ${readingsCell}
       <td style="font-size:11.5px">${chemStr}</td>
       <td class="num">${dur}</td>
-      <td>${reportBtn}${smsBtn}</td>
+      <td>${reportBtn}${smsBtn}${surveyBtn}</td>
     </tr>`;
   }).join('');
   return `<div class="sum-section" style="margin-top:14px">
@@ -6667,18 +6707,25 @@ function buildWeekSection(wt,clients,q){
         return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${techNoteBadge}${noteBtn}</div>${noteRow}${techNoteRow}`;
       }).join('');
 
-      const techApptHtml=ta.map(a=>`
-        <div class="tech-appt-row" title="${a.desc||''}">
+      const techApptHtml=ta.map(a=>{
+        const rowClass = a.slTicketId ? 'ta-sent' : 'ta-pending';
+        const cachedSt = a.slTicketId && _slTicketStatusCache[a.slTicketId];
+        const stClass = cachedSt ? ({in_progress:'st-inprogress',completed:'st-done',done:'st-done'}[cachedSt.status]||'st-scheduled') : 'st-scheduled';
+        const rowColorClass = cachedSt ? ({in_progress:'ta-inprogress',completed:'ta-done',done:'ta-done'}[cachedSt.status]||'ta-sent') : rowClass;
+        const stLabel = cachedSt ? ({pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'}[cachedSt.status]||'✓ Sent') : '✓ Sent';
+        const shortId = a.slTicketId ? '#'+a.slTicketId.substring(0,5) : '';
+        const descSnip = a.desc ? a.desc.substring(0,45)+(a.desc.length>45?'…':'') : '';
+        return `<div class="tech-appt-row ${rowColorClass}" title="${esc(a.desc||'')}">
           <span style="font-size:10.9px">&#865021;</span>
           <span style="font-size:11.5px;font-weight:600;color:#AC672B">${a.date}${a.time?' '+a.time:''}</span>
-          <span style="font-size:11.5px;color:#D48F53;flex:1">${a.type}</span>
-          ${a.tech?`<span style="font-size:10.9px;color:var(--muted)">${a.tech}</span>`:''}
+          <span style="font-size:11.5px;color:#2A1C0F;font-weight:600;flex:1">${esc(a.type)}${descSnip?`<span style="font-weight:400;color:var(--muted);font-size:10.5px"> · ${esc(descSnip)}</span>`:''}${a.tech?`<span style="font-size:10.5px;color:var(--muted)"> · ${esc(a.tech)}</span>`:''}</span>
           ${a.slTicketId
-            ? `<span class="ta-sent-badge" data-slid="${esc(a.slTicketId)}" onclick="event.stopPropagation();(async()=>{const el=this||event.target.closest('.ta-sent-badge');const info=await pollSLTicketStatus('${esc(a.slTicketId)}');if(info){const labels={pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'};el.textContent=labels[info.status]||'✓ Sent';}})();" title="Ticket: ${esc(a.slTicketId)} · Click to refresh status">✓ Sent</span>`
-            : `<span style="font-size:10px;color:#EF4444;font-weight:600;flex-shrink:0" title="${LANG==='es'?'No enviado a TECH-TICKETS':'Not sent to TECH-TICKETS'}">⚠ Pending</span>`}
+            ? `<span class="ta-sent-badge ${stClass}" data-slid="${esc(a.slTicketId)}" onclick="event.stopPropagation();(async(el)=>{const info=await pollSLTicketStatus('${esc(a.slTicketId)}');if(info){const labels={pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'};const cls={pending:'st-scheduled',scheduled:'st-scheduled',in_progress:'st-inprogress',completed:'st-done',done:'st-done'};el.textContent=labels[info.status]||'✓ Sent';el.className='ta-sent-badge '+(cls[info.status]||'st-scheduled');}el.title='${esc(shortId)} · Click=refresh';})(event.currentTarget);" title="${esc(shortId)} · Click to refresh">${stLabel} ${shortId}</span>`
+            : `<span style="font-size:10px;color:#EF4444;font-weight:700;flex-shrink:0;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:1px 5px" title="${LANG==='es'?'No enviado a TECH-TICKETS':'Not sent to TECH-TICKETS'}">⚠ Not sent</span>`}
           <button class="btn btn-green" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();completeTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Completar':'Complete'}">✓</button>
           <button class="btn btn-red" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();deleteTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Eliminar':'Delete'}">✕</button>
-        </div>`).join('');
+        </div>`;
+      }).join('');
 
       const card=document.createElement('div');card.className='cal-cc';
       card.dataset.cid=c.id;
@@ -6699,9 +6746,9 @@ function buildWeekSection(wt,clients,q){
       if(c.nwc){
         const daysLeft = Math.ceil((new Date(c.nwc+'T12:00:00') - new Date(todayKeyWC+'T12:00:00')) / 86400000);
         if(daysLeft < 0){
-          wcBadge = `<span class="cc-wc-flag overdue" title="${esc(LANG==='es'?'Cambio de agua vencido hace '+Math.abs(daysLeft)+' días':'Water change overdue by '+Math.abs(daysLeft)+' days')}">💧 OD</span>`;
+          wcBadge = `<span class="cc-wc-flag overdue" onclick="event.stopPropagation();sendWCReminderSMS(${c.id})" title="${esc(LANG==='es'?'Cambio de agua vencido hace '+Math.abs(daysLeft)+' días — Click para enviar SMS':'Water change overdue by '+Math.abs(daysLeft)+' days — Click to SMS client')}">💧 OD</span>`;
         } else if(daysLeft <= 30){
-          wcBadge = `<span class="cc-wc-flag soon" title="${esc(LANG==='es'?'Cambio de agua en '+daysLeft+' días':'Water change in '+daysLeft+' days')}">💧 ${daysLeft}d</span>`;
+          wcBadge = `<span class="cc-wc-flag soon" onclick="event.stopPropagation();sendWCReminderSMS(${c.id})" title="${esc(LANG==='es'?'Cambio de agua en '+daysLeft+' días — Click para SMS':'Water change in '+daysLeft+' days — Click to SMS')}">💧 ${daysLeft}d</span>`;
         }
       }
       // #9 Retention flag — client hasn't had a visit in > expected interval
@@ -6725,7 +6772,7 @@ function buildWeekSection(wt,clients,q){
           ${hasTechAppt?'<span style="font-size:10.3px;color:#D48F53" title="Visita técnica agendada">&#865021;</span>':''}
           ${noteCount > 0 ? `<span class="cc-day-note-flag" title="${noteCount} ${LANG==='es'?'nota(s) del día':'day note(s)'}">📝${noteCount>1?'<sup style="font-size:8px">'+noteCount+'</sup>':''}</span>` : ''}
           ${techNoteCount > 0 ? `<span class="cc-tech-note-flag" title="${techNoteCount} ${LANG==='es'?'nota(s) del técnico':'tech note(s)'}">✎${techNoteCount>1?'<sup style="font-size:8px">'+techNoteCount+'</sup>':''}</span>` : ''}
-          ${wcBadge}${retentionFlag}
+          ${wcBadge}${retentionFlag}${_chemAlertBadgeHtml(c.id)}
           <span class="cc-prog" style="color:${progC}">${done}/${total}</span>
         </div>
         <div class="cc-body">
@@ -7363,6 +7410,188 @@ function persistLocal(){
 
 
 /* ══════════════════════════════════════════════════════════════════
+   FEATURE #15 — Satisfaction survey (Firebase RTDB)
+   Opens a modal to either: send the client a survey link via SMS,
+   or manually record a rating directly in the dashboard.
+   Ratings stored under FB path: satisfaction/{cid}/{dateKey}
+   ══════════════════════════════════════════════════════════════════ */
+let _surveyState = null; // {cid, dateKey, rating}
+
+function openSurveyModal(cid, dateKey){
+  const c = C.find(x => x.id === cid);
+  if(!c) return;
+  _surveyState = {cid, dateKey, rating: 0};
+  document.getElementById('msurvey-client').textContent = c.name + (dateKey ? ' · ' + new Date(dateKey+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '');
+  document.getElementById('msurvey-result').innerHTML = '';
+  document.getElementById('msurvey-comment-wrap').style.display = 'none';
+  document.getElementById('msurvey-comment').value = '';
+  document.getElementById('msurvey-send-btn').style.display = c.phone ? '' : 'none';
+  document.getElementById('msurvey-save-btn').style.display = 'none';
+  // Reset stars
+  document.querySelectorAll('.survey-modal-star').forEach(s => s.classList.remove('sel'));
+  om('msurvey');
+}
+
+function selectSurveyStar(val){
+  if(!_surveyState) return;
+  _surveyState.rating = val;
+  document.querySelectorAll('.survey-modal-star').forEach((s,i) => s.classList.toggle('sel', i < val));
+  document.getElementById('msurvey-comment-wrap').style.display = '';
+  document.getElementById('msurvey-save-btn').style.display = '';
+  const c = C.find(x=>x.id===_surveyState.cid);
+  document.getElementById('msurvey-send-btn').style.display = (c&&c.phone) ? '' : 'none';
+}
+
+async function saveSurveyRating(){
+  if(!_surveyState || !_surveyState.rating) return;
+  const {cid, dateKey, rating} = _surveyState;
+  const comment = document.getElementById('msurvey-comment').value.trim();
+  const entry = {rating, comment, savedAt: new Date().toISOString(), dateKey};
+  // Save to Firebase RTDB under satisfaction/{cid}/{dateKey}
+  if(fbDB && fbConnected){
+    try{
+      await fbDB.ref(`satisfaction/${cid}/${dateKey||'manual_'+Date.now()}`).set(entry);
+    }catch(e){ console.warn('Survey save error:',e); }
+  }
+  // Also store locally in VL as a satisfaction field
+  if(VL[cid] && VL[cid][dateKey]){ VL[cid][dateKey]._satisfaction = rating; saveData(); }
+  const stars = '⭐'.repeat(rating);
+  document.getElementById('msurvey-result').innerHTML = `<div class="survey-submitted">${stars}<br>Rating saved!</div>`;
+  document.getElementById('msurvey-save-btn').style.display = 'none';
+  document.getElementById('msurvey-send-btn').style.display = 'none';
+  document.getElementById('msurvey-comment-wrap').style.display = 'none';
+  setTimeout(()=>cm('msurvey'), 1500);
+}
+
+function submitSurveyLink(){
+  if(!_surveyState) return;
+  const {cid, dateKey} = _surveyState;
+  const c = C.find(x => x.id === cid);
+  if(!c || !c.phone) return;
+  // Build survey URL pointing back to this app with ?survey=cid,dateKey params
+  const surveyUrl = `${window.location.href.split('?')[0]}?survey=${cid},${dateKey||''}`;
+  const firstName = String(c.name||'').split(',').pop().trim().split(' ')[0] || 'there';
+  const msg = `Hi ${firstName}, Aspen Spas would love your feedback! Rate your last spa service (takes 10 sec): ${surveyUrl}`;
+  const cleanPhone = String(c.phone).replace(/[^\d+]/g,'');
+  const ua = navigator.userAgent||'';
+  const sep = /iPad|iPhone|iPod/.test(ua)?'&':'?';
+  const url = `sms:${cleanPhone}${sep}body=${encodeURIComponent(msg)}`;
+  try{ window.location.href = url; }catch(e){ const a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a); }
+  cm('msurvey');
+}
+
+// Handle ?survey=cid,dateKey in URL — auto-open survey modal on page load
+function _checkSurveyParam(){
+  try{
+    const params = new URLSearchParams(window.location.search);
+    const sv = params.get('survey');
+    if(!sv) return;
+    const [cidStr, dk] = sv.split(',');
+    const cid = parseInt(cidStr);
+    if(!cid) return;
+    // Wait for data to load then open
+    setTimeout(()=>{
+      openSurveyModal(cid, dk||null);
+      // Clean URL
+      try{ window.history.replaceState({}, '', window.location.pathname); }catch(_){}
+    }, 1200);
+  }catch(e){}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #18 — Sync completed tickets from TECH-TICKETS back
+   Queries Firestore for tickets with chemClientId set, status done,
+   and marks the corresponding TAPPTS entry as complete locally.
+   ══════════════════════════════════════════════════════════════════ */
+async function syncCompletedFromTechTickets(){
+  if(!slDB){
+    showToast('Connect to TECH-TICKETS first (🎫 button)','warn'); return;
+  }
+  showToast('🔄 Syncing from TECH-TICKETS…','info');
+  try{
+    const snap = await slDB.collection('tickets')
+      .where('createdFrom','==','chem-dashboard')
+      .where('status','in',['completed','done'])
+      .get();
+    if(snap.empty){ showToast('No completed tickets found','info'); return; }
+    let updated = 0;
+    snap.forEach(doc => {
+      const d = doc.data();
+      const cid = d.chemClientId;
+      if(!cid || !TAPPTS[cid]) return;
+      // Find the matching appt by slTicketId
+      TAPPTS[cid].forEach(a => {
+        if(a.slTicketId === doc.id && a.status !== 'done'){
+          a.status = 'done';
+          a.completedAt = d.updatedAt || new Date().toISOString();
+          // Cache status
+          _slTicketStatusCache[doc.id] = {status:'done', tech:(d.techs&&d.techs[0])||''};
+          updated++;
+        }
+      });
+    });
+    saveData(); rcal();
+    showToast(`✓ ${updated} ticket(s) synced as completed`);
+  }catch(e){
+    showToast('Sync error: '+e.message,'err');
+    console.error('syncCompletedFromTechTickets:', e);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #19 — Chemistry out-of-range detection
+   Checks all visits in VL for readings outside ideal ranges.
+   Returns array of {c, dateKey, params:[{key,label,value,ideal}]}
+   Used by card header badge AND weekly checklist.
+   ══════════════════════════════════════════════════════════════════ */
+const CHEM_IDEAL = {
+  cl:  {label:'Cl',  min:1,   max:3,   unit:'ppm'},
+  br:  {label:'Br',  min:2,   max:6,   unit:'ppm'},
+  ph:  {label:'pH',  min:7.2, max:7.8, unit:''},
+  alk: {label:'Alk', min:80,  max:120, unit:'ppm'},
+  ca:  {label:'Ca',  min:200, max:300, unit:'ppm'},
+};
+
+function _getChemAlerts(cid, sinceKey){
+  // sinceKey: only check visits on or after this date (e.g. last 60 days)
+  const cv = VL[cid] || {};
+  const alerts = [];
+  Object.entries(cv).forEach(([dk, v]) => {
+    if(!v || v._deleted || v.status !== 'done') return;
+    if(sinceKey && dk < sinceKey) return;
+    const ck = v.checklist || {};
+    const sysIsBlu = ck.system === 'blufusion';
+    const ra = (ck.readings && ck.readings.reading_after) || {};
+    const rb = (ck.readings && ck.readings.reading_before) || {};
+    const readings = Object.keys(ra).length ? ra : rb;
+    if(!Object.keys(readings).length) return;
+    const badParams = [];
+    Object.entries(CHEM_IDEAL).forEach(([key, ideal]) => {
+      if(key === 'br' && !sysIsBlu) return;
+      if(key === 'cl' && sysIsBlu) return;
+      const val = readings[key];
+      if(val === undefined || val === '') return;
+      const n = parseFloat(val);
+      if(isNaN(n)) return;
+      if(n < ideal.min || n > ideal.max){
+        badParams.push({key, label:ideal.label, value:n, min:ideal.min, max:ideal.max, unit:ideal.unit});
+      }
+    });
+    if(badParams.length) alerts.push({dateKey:dk, params:badParams, tech:v.tech||''});
+  });
+  return alerts.sort((a,b)=>b.dateKey.localeCompare(a.dateKey));
+}
+
+function _chemAlertBadgeHtml(cid){
+  const since = (() => { const d=new Date(); d.setDate(d.getDate()-45); return d.toISOString().substring(0,10); })();
+  const alerts = _getChemAlerts(cid, since);
+  if(!alerts.length) return '';
+  const latest = alerts[0];
+  const labels = latest.params.map(p=>`${p.label}=${p.value}${p.unit?p.unit:''}`).join(', ');
+  return `<span style="font-size:10px;font-weight:700;background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;cursor:help" title="${esc('⚠ Chemistry out of range: '+labels+' on '+latest.dateKey)}">🧪 ⚠</span>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
    FEATURE 2 — Chemical trend summary per client (last 4 quarters)
    Called from _renderClientReport; shows a compact bar chart of
    the top chemical over 4 quarters so admin sees chronic issues.
@@ -7462,7 +7691,29 @@ function openWeeklyChecklist(){
   }
   html += '</div>';
 
-  // Section 3 — collapsed by default
+  // Section 3 — Chemistry alerts (last 45 days)
+  const since45 = (() => { const d=new Date(); d.setDate(d.getDate()-45); return d.toISOString().substring(0,10); })();
+  const chemAlertClients = C.filter(c=>c.status==='active').map(c=>({c, alerts:_getChemAlerts(c.id,since45)})).filter(x=>x.alerts.length>0);
+  html += `<div style="margin-bottom:16px">
+    <div style="font-weight:700;font-size:14px;color:#991B1B;margin-bottom:6px">🧪 Chemistry out of range — last 45 days (${chemAlertClients.length})</div>`;
+  if(!chemAlertClients.length){
+    html += `<div style="font-size:12.5px;color:#16A34A;font-style:italic">✓ All readings in range</div>`;
+  } else {
+    html += chemAlertClients.map(({c,alerts})=>{
+      const a = alerts[0]; // most recent
+      const paramStr = a.params.map(p=>`<b style="color:#991B1B">${p.label}=${p.value}${p.unit}</b> (ideal ${p.min}–${p.max})`).join(', ');
+      return `<div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:6px 10px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <span><b>${esc(c.name)}</b> <span style="font-size:11.5px;color:var(--muted)">${fmtDate(a.dateKey)}${a.tech?' · '+esc(a.tech):''}</span></span>
+          <button class="btn" style="font-size:10.5px;padding:2px 7px;flex-shrink:0" onclick="openClientReport(${c.id},'quarter')">📊</button>
+        </div>
+        <div style="font-size:12px;margin-top:3px">${paramStr}</div>
+      </div>`;
+    }).join('');
+  }
+  html += '</div>';
+
+  // Section 4 — No visit this week (collapsed)
   html += `<details style="margin-bottom:8px">
     <summary style="font-weight:700;font-size:13.5px;color:#605950;cursor:pointer">📭 No visit this week (${noVisitThisWeek.length} clients)</summary>
     <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
@@ -7539,6 +7790,7 @@ function _updateOfflineBanner(){
 }
 
 window.addEventListener('online',  () => { setTimeout(_updateOfflineBanner, 800); });
+document.addEventListener('DOMContentLoaded', () => setTimeout(_checkSurveyParam, 500));
 window.addEventListener('offline', () => { _updateOfflineBanner(); });
 
 function saveData(){
@@ -11162,6 +11414,31 @@ function _buildVisitSummarySMS(c, v){
 
 // Open the phone's SMS app with the auto-built summary pre-filled.
 // Same URL pattern as the existing techSendOnTheWaySMS helper.
+// Feature #14 — Water change reminder SMS to client
+function sendWCReminderSMS(cid){
+  const c = C.find(x => x.id === cid);
+  if(!c){ showToast('Client not found','warn'); return; }
+  if(!c.phone){ showToast('No phone on file for '+c.name,'warn'); return; }
+  if(!c.nwc){ showToast('No water change date on file','warn'); return; }
+  const firstName = String(c.name||'').split(',').pop().trim().split(' ')[0] || 'there';
+  // Format the nwc date nicely
+  const nwcDt = new Date(c.nwc+'T12:00:00');
+  const nwcStr = nwcDt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const daysLeft = Math.ceil((nwcDt - todayLocal()) / 86400000);
+  const urgency = daysLeft < 0
+    ? 'Your spa water change is past due'
+    : daysLeft === 0
+    ? 'Your spa water change is due today'
+    : `Your spa is due for a water change around ${nwcStr}`;
+  const msg = `Hi ${firstName}, this is Aspen Spas! ${urgency}. We'll get it scheduled on your next service visit. Questions? Call us at (314) 776-5050. Thank you!`;
+  const cleanPhone = String(c.phone).replace(/[^\d+]/g,'');
+  const ua = navigator.userAgent || '';
+  const sep = /iPad|iPhone|iPod/.test(ua) ? '&' : '?';
+  const url = `sms:${cleanPhone}${sep}body=${encodeURIComponent(msg)}`;
+  try { window.location.href = url; }
+  catch(e){ const a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();document.body.removeChild(a); }
+}
+
 function techSendVisitSummarySMS(cid, dateKey){
   const c = C.find(x => x.id === cid);
   if(!c){ showToast(LANG==='es'?'Cliente no encontrado':'Client not found','warn'); return; }
@@ -11611,6 +11888,7 @@ function _renderClientReport(){
       <div class="cr-visit-body">
         <div style="font-weight:700;color:${isVisited?'#15803D':'#B91C1C'}">${isVisited?'✓ '+(LANG==='es'?'Servicio realizado':'Service completed'):'✗ '+(LANG==='es'?'No se pudo visitar':'Could not visit')}</div>
         ${v.tech?`<div style="font-size:12px;color:#81786E;margin-top:2px">👤 ${esc(v.tech)}</div>`:''}
+        ${v._satisfaction?`<div style="font-size:12px;color:#F59E0B;margin-top:2px">${'⭐'.repeat(v._satisfaction)} <span style="color:var(--muted)">(client rating)</span></div>`:''}
         ${delta?`<div style="font-size:12.5px;color:#834F21;margin-top:3px">🧪 ${esc(delta)}</div>`:''}
         ${chemList?`<div style="font-size:12px;color:#7B7670;margin-top:3px">💊 ${esc(chemList)}</div>`:''}
         ${v.notes?`<div style="font-size:12px;color:#5D5751;margin-top:3px;font-style:italic">📋 ${esc(v.notes)}</div>`:''}
