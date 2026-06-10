@@ -790,6 +790,31 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .vtnr-text{flex:1;min-width:0;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Header flag for tech notes count */
 .cc-tech-note-flag{font-size:11px;margin-left:1px;display:inline-flex;align-items:center;gap:1px;background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;border-radius:8px;padding:0 4px;line-height:1.5;cursor:default}
+/* #1 Water Change due badge */
+.cc-wc-flag{font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:2px;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;cursor:help}
+.cc-wc-flag.overdue{background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B}
+.cc-wc-flag.soon{background:#FEF3C7;border:1px solid #FCD34D;color:#92400E}
+/* #3 Route button in summary day header */
+.sum-route-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#1D4ED8;border:none;border-radius:7px;color:#FFFFFF;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s}
+.sum-route-btn:hover{background:#1E40AF}
+/* #4 SMS quick-reply badge on tech note row */
+.vtnr-sms{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#0EA5E9;border-radius:50%;color:#FFFFFF;font-size:10px;flex-shrink:0;cursor:pointer;transition:background .15s}
+.vtnr-sms:hover{background:#0284C7}
+/* #8 client tags */
+.client-tag{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;border-radius:6px;padding:1px 6px;border:1px solid;cursor:default}
+.client-tag-vip{background:#FEF9C3;border-color:#FDE68A;color:#713F12}
+.client-tag-dog{background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D}
+.client-tag-access{background:#EFF6FF;border-color:#93C5FD;color:#1D4ED8}
+.client-tag-key{background:#F0FDF4;border-color:#86EFAC;color:#14532D}
+.client-tag-other{background:#F5F3FF;border-color:#C4B5FD;color:#4C1D95}
+.cc-tags-row{display:flex;flex-wrap:wrap;gap:3px;padding:2px 7px 4px;min-height:0}
+/* #9 retention badge */
+.cc-retention-flag{font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:2px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;cursor:help}
+/* #10 offline sync banner */
+.offline-sync-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1E293B;color:#F8FAFC;font-size:13px;font-weight:600;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,.25)}
+.offline-sync-banner.hidden{display:none!important}
+.offline-sync-dot{width:8px;height:8px;border-radius:50%;background:#EF4444;flex-shrink:0;animation:pulse-red 1.5s ease-in-out infinite}
+@keyframes pulse-red{0%,100%{opacity:1}50%{opacity:.4}}
 /* Schedule follow-up button inside visit modal */
 .vis-followup-btn{display:flex;align-items:center;gap:6px;width:100%;padding:8px 12px;margin-top:8px;background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;color:#92400E;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s}
 .vis-followup-btn:hover{background:#FEF3C7;border-color:#F59E0B}
@@ -1565,7 +1590,13 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <label class="hbtn hbtn-sm" style="cursor:pointer;margin:0" title="Restore backup">📂<input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none"></label>
     <button class="hbtn hbtn-sm" id="btn-cloud" onclick="om('mfirebase')" style="background:#CD7C35;border-color:#CD7C35;font-weight:600" title="Cloud Sync">☁️</button>
     <button class="hbtn hbtn-sm" id="btn-servicelog" onclick="openSLConfig()" style="background:#D48F53;border-color:#D48F53;font-weight:600" title="Service Log Ticket Routing">🎫</button>
-    <span id="save-ind" style="font-size:11px;color:#E9C6A7;opacity:0;transition:opacity .6s;align-self:center;white-space:nowrap;margin-left:4px">&#10003;</span>
+    <button class="hbtn hbtn-sm" onclick="openWeeklyChecklist()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Weekly Close Checklist">📋</button>
+    <div id="offline-sync-banner" class="offline-sync-banner hidden">
+  <span class="offline-sync-dot"></span>
+  <span id="offline-status-text" style="flex:1">Offline</span>
+  <button onclick="document.getElementById('offline-sync-banner').classList.add('hidden')" style="background:none;border:none;color:#94A3B8;font-size:16px;cursor:pointer;padding:0 4px">✕</button>
+</div>
+<span id="save-ind"  style="font-size:11px;color:#E9C6A7;opacity:0;transition:opacity .6s;align-self:center;white-space:nowrap;margin-left:4px">&#10003;</span>
     <span id="last-backup" style="font-size:10px;color:#E9C6A7;opacity:.7;align-self:center;white-space:nowrap" title="Last backup"></span>
     <span id="cloud-ind" style="font-size:10px;color:#E9C6A7;opacity:.7;align-self:center;white-space:nowrap"></span>
   </div>
@@ -2017,6 +2048,14 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <div class="mfoot"><button class="btn" onclick="cm('mtech-appt')">Cancelar</button><button class="btn btn-brand" onclick="saveTechApptAndSendToSL()">🎫 Enviar a Service Log / Send Ticket</button></div>
 </div></div>
 
+<!-- WEEKLY CLOSE CHECKLIST (#5) -->
+<div class="modal-bg" id="mweekclose">
+<div class="modal" style="max-width:540px">
+  <h3>📋 Weekly Close Checklist</h3><div class="divider"></div>
+  <div id="weekclose-body" style="max-height:60vh;overflow-y:auto"></div>
+  <div class="mfoot"><button class="btn btn-brand" onclick="cm('mweekclose')">Close</button></div>
+</div></div>
+
 <!-- HISTORIAL VISITAS -->
 <div class="modal-bg" id="mhist">
 <div class="modal" style="max-width:520px">
@@ -2235,6 +2274,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <select id="edit-status"><option value="active">Activo</option><option value="paused">Pausado</option><option value="cancelled">Cancelado</option></select>
   </div>
   <div class="edit-field"><label>Notas</label><textarea id="edit-notes"></textarea></div>
+  <div class="edit-field"><label>Tags <span style="font-weight:400;font-size:12px;color:var(--muted)">(vip, dog, access, key, ...)</span></label><input id="edit-tags" placeholder="vip, perro, llave en caja"></div>
   <div class="mfoot">
     <button class="btn" onclick="cm('medit')">Cancelar</button>
     <button class="btn btn-brand" onclick="saveEdit()">Guardar cambios</button>
@@ -3583,6 +3623,7 @@ function showMetricPopup(type){
 function openEdit(id){
   const c=C.find(x=>x.id===id);if(!c)return;
   ["edit-id","edit-name","edit-phone","edit-email","edit-addr","edit-lwc","edit-nwc","edit-notes"].forEach((fid,i)=>{document.getElementById(fid).value=[id,c.name,c.phone,c.email||"",c.addr,c.lwc||"",c.nwc||"",c.notes||""][i];});
+  const editTagsEl=document.getElementById("edit-tags");if(editTagsEl)editTagsEl.value=c.tags||"";
   document.getElementById("edit-freq").value=c.freq;
   document.getElementById("edit-day").value=c.day||"Mon";
   document.getElementById("edit-week").value=c.week||"A";
@@ -3751,6 +3792,7 @@ function saveEdit(){
   c.nwc=resolvedNwc;
   c.status=document.getElementById("edit-status").value;
   c.notes=document.getElementById("edit-notes").value;
+  const _tagsEl=document.getElementById("edit-tags");if(_tagsEl)c.tags=_tagsEl.value.trim();
   c.lastModified=Date.now();
   // ─── CAL_ORDER bookkeeping — move the client between day-columns so the
   //     calendar picks up the change immediately, without waiting for a
@@ -5655,7 +5697,16 @@ function _renderSummaryDay(out, dateKey, techFilt){
   const stats = _aggregateStats(rows);
   const dt = new Date(dateKey + 'T12:00:00');
   const dateLong = dt.toLocaleDateString(LANG==='es'?'es-MX':'en-US', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  const headerHtml = `<div style="margin-bottom:14px;font-size:13.5px;color:#605950"><b style="color:#2A1C0F;font-size:14.5px;text-transform:capitalize">${esc(dateLong)}</b>${techFilt?` · <span class="sum-tech-pill">👷 ${esc(techFilt)}</span>`:''}</div>`;
+  // Build Google Maps route URL from today's visit addresses in order
+  const routeAddrs = rows.map(r=>r.c.addr).filter(Boolean);
+  const routeBtn = routeAddrs.length > 0 ? (()=>{
+    const origin = '4609+McRee+Ave+St+Louis+MO+63110'; // Aspen Spas
+    const dest = encodeURIComponent(routeAddrs[routeAddrs.length-1]);
+    const waypoints = routeAddrs.slice(0,-1).map(a=>encodeURIComponent(a)).join('|');
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints?'&waypoints='+waypoints:''}&travelmode=driving`;
+    return `<a href="${url}" target="_blank" rel="noopener" class="sum-route-btn">🗺 ${esc(LANG==='es'?'Ruta del día':'Day route')} (${routeAddrs.length})</a>`;
+  })() : '';
+  const headerHtml = `<div style="margin-bottom:14px;font-size:13.5px;color:#605950;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span><b style="color:#2A1C0F;font-size:14.5px;text-transform:capitalize">${esc(dateLong)}</b>${techFilt?` · <span class="sum-tech-pill">👷 ${esc(techFilt)}</span>`:''}</span>${routeBtn}</div>`;
 
   if(rows.length === 0){
     out.innerHTML = `<div class="sum-body">${headerHtml}<div class="sum-empty">
@@ -6605,7 +6656,13 @@ function buildWeekSection(wt,clients,q){
           ? `<span class="v-tech-note-badge" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" title="${esc(LANG==='es'?'Nota del técnico: ':'Tech note: ')+esc(techNoteText)}">✎</span>`
           : '';
         const techNoteRow = techNoteText
-          ? `<div class="visit-tech-note-row" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" title="${esc(LANG==='es'?'Click para ver/editar nota del técnico':'Click to view/edit tech note')}"><span class="vtnr-icon">📋</span><span class="vtnr-text">${esc(techNoteText)}</span></div>`
+          ? (()=>{
+              const vl2 = vl; // capture for SMS
+              const smsMsg = encodeURIComponent(`${LANG==='es'?'Vi tu nota de':'Saw your note on'} ${c.name}: "${techNoteText.substring(0,80)}${techNoteText.length>80?'…':''}". ${LANG==='es'?'¿Necesitas partes o seguimiento?':'Do you need parts or follow-up?'}`);
+              const techPhone = TECHS.find(tk=>tk.name===(vl2&&vl2.tech||''));
+              const smsHref = techPhone && techPhone.phone ? `sms:${techPhone.phone}?body=${smsMsg}` : `sms:?body=${smsMsg}`;
+              return `<div class="visit-tech-note-row" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')"><span class="vtnr-icon">📋</span><span class="vtnr-text" style="cursor:pointer">${esc(techNoteText)}</span><a class="vtnr-sms" href="${smsHref}" onclick="event.stopPropagation()" title="${esc(LANG==='es'?'Enviar SMS al técnico':'SMS the tech')}">💬</a></div>`;
+            })()
           : '';
         return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${techNoteBadge}${noteBtn}</div>${noteRow}${techNoteRow}`;
       }).join('');
@@ -6617,7 +6674,7 @@ function buildWeekSection(wt,clients,q){
           <span style="font-size:11.5px;color:#D48F53;flex:1">${a.type}</span>
           ${a.tech?`<span style="font-size:10.9px;color:var(--muted)">${a.tech}</span>`:''}
           ${a.slTicketId
-            ? `<span class="ta-sent-badge" title="Ticket ID: ${esc(a.slTicketId)}">✓ Sent</span>`
+            ? `<span class="ta-sent-badge" data-slid="${esc(a.slTicketId)}" onclick="event.stopPropagation();(async()=>{const el=this||event.target.closest('.ta-sent-badge');const info=await pollSLTicketStatus('${esc(a.slTicketId)}');if(info){const labels={pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'};el.textContent=labels[info.status]||'✓ Sent';}})();" title="Ticket: ${esc(a.slTicketId)} · Click to refresh status">✓ Sent</span>`
             : `<span style="font-size:10px;color:#EF4444;font-weight:600;flex-shrink:0" title="${LANG==='es'?'No enviado a TECH-TICKETS':'Not sent to TECH-TICKETS'}">⚠ Pending</span>`}
           <button class="btn btn-green" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();completeTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Completar':'Complete'}">✓</button>
           <button class="btn btn-red" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();deleteTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Eliminar':'Delete'}">✕</button>
@@ -6636,6 +6693,28 @@ function buildWeekSection(wt,clients,q){
         const v = VL[c.id] && VL[c.id][dk];
         return n + (v && !v._deleted && v.notes && v.notes.trim() ? 1 : 0);
       }, 0);
+      // #1 Water change due badge
+      const todayKeyWC = _localDateKey(todayLocal());
+      let wcBadge = '';
+      if(c.nwc){
+        const daysLeft = Math.ceil((new Date(c.nwc+'T12:00:00') - new Date(todayKeyWC+'T12:00:00')) / 86400000);
+        if(daysLeft < 0){
+          wcBadge = `<span class="cc-wc-flag overdue" title="${esc(LANG==='es'?'Cambio de agua vencido hace '+Math.abs(daysLeft)+' días':'Water change overdue by '+Math.abs(daysLeft)+' days')}">💧 OD</span>`;
+        } else if(daysLeft <= 30){
+          wcBadge = `<span class="cc-wc-flag soon" title="${esc(LANG==='es'?'Cambio de agua en '+daysLeft+' días':'Water change in '+daysLeft+' days')}">💧 ${daysLeft}d</span>`;
+        }
+      }
+      // #9 Retention flag — client hasn't had a visit in > expected interval
+      let retentionFlag = '';
+      const allClientVisits = VL[c.id] ? Object.entries(VL[c.id]).filter(([,v])=>v&&!v._deleted&&v.status==='done') : [];
+      if(allClientVisits.length > 0){
+        const lastVisitKey = allClientVisits.map(([dk])=>dk).sort().pop();
+        const daysSinceVisit = Math.floor((new Date(todayKeyWC+'T12:00:00') - new Date(lastVisitKey+'T12:00:00')) / 86400000);
+        const expectedDays = (c.freq==='weekly') ? 10 : 20;
+        if(daysSinceVisit > expectedDays){
+          retentionFlag = `<span class="cc-retention-flag" title="${esc(LANG==='es'?'Sin visita hace '+daysSinceVisit+' días':'No visit in '+daysSinceVisit+' days')}">⚠ ${daysSinceVisit}d</span>`;
+        }
+      }
       card.innerHTML=`
         <div class="cal-cc-hd ${hdClass}" onclick="toggleCard(this)">
           <span class="drag-handle" onclick="event.stopPropagation()" title="${t('dragReorder')}">&#8942;</span>
@@ -6646,10 +6725,17 @@ function buildWeekSection(wt,clients,q){
           ${hasTechAppt?'<span style="font-size:10.3px;color:#D48F53" title="Visita técnica agendada">&#865021;</span>':''}
           ${noteCount > 0 ? `<span class="cc-day-note-flag" title="${noteCount} ${LANG==='es'?'nota(s) del día':'day note(s)'}">📝${noteCount>1?'<sup style="font-size:8px">'+noteCount+'</sup>':''}</span>` : ''}
           ${techNoteCount > 0 ? `<span class="cc-tech-note-flag" title="${techNoteCount} ${LANG==='es'?'nota(s) del técnico':'tech note(s)'}">✎${techNoteCount>1?'<sup style="font-size:8px">'+techNoteCount+'</sup>':''}</span>` : ''}
+          ${wcBadge}${retentionFlag}
           <span class="cc-prog" style="color:${progC}">${done}/${total}</span>
         </div>
         <div class="cc-body">
           ${c.san?`<div class="cc-san">${esc(c.san)}</div>`:''}
+          ${(()=>{
+            const tags = c.tags ? String(c.tags).split(',').map(s=>s.trim()).filter(Boolean) : [];
+            if(!tags.length) return '';
+            const tagMap = {vip:'client-tag-vip',dog:'client-tag-dog',perro:'client-tag-dog',access:'client-tag-access','acceso':'client-tag-access',key:'client-tag-key','llave':'client-tag-key'};
+            return '<div class="cc-tags-row">'+tags.map(tag=>{const cls=tagMap[tag.toLowerCase()]||'client-tag-other';return `<span class="client-tag ${cls}">${esc(tag)}</span>`;}).join('')+'</div>';
+          })()}
           <div class="freq-btns" onclick="event.stopPropagation()">
             <span style="font-size:10.9px;color:var(--muted);margin-right:2px;align-self:center">${t('weekLabel')}</span>
             <button class="fq-btn ${c.week==='A'?'fq-active-a':''}" onclick="changeClientWeek(${c.id},'A')">A</button>
@@ -7274,6 +7360,186 @@ function persistLocal(){
   if(_trySetLS(LS_KEY, _lsPayloadStr(0)))     return {ok:true,  trimmed:true};  // strip all photos locally
   return {ok:false, trimmed:false};
 }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE 2 — Chemical trend summary per client (last 4 quarters)
+   Called from _renderClientReport; shows a compact bar chart of
+   the top chemical over 4 quarters so admin sees chronic issues.
+   ══════════════════════════════════════════════════════════════════ */
+function getChemTrendLast4Q(cid){
+  const today = todayLocal();
+  const quarters = [];
+  for(let i=3;i>=0;i--){
+    const d = new Date(today);
+    d.setMonth(d.getMonth() - i*3);
+    const from = _firstOfQuarter(_localDateKey(d));
+    const to   = _lastOfQuarter(_localDateKey(d));
+    const dt   = new Date(from+'T12:00:00');
+    const label = `Q${Math.floor(dt.getMonth()/3)+1} ${dt.getFullYear()}`;
+    const visits = VL[cid] ? Object.values(VL[cid]).filter(v=>v&&!v._deleted&&v.status==='done'&&_localDateKey(new Date(v.saved||Date.now()))>=from) : [];
+    const chems = {};
+    visits.forEach(v=>{
+      Object.entries((v.checklist&&v.checklist.chemicals)||{}).forEach(([id,val])=>{
+        const n=parseFloat(val);if(!isNaN(n))chems[id]=(chems[id]||0)+n;
+      });
+    });
+    quarters.push({label, chems, total: Object.values(chems).reduce((s,n)=>s+n,0)});
+  }
+  return quarters;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE 5 — Weekly Close Checklist
+   Shows: pending visits, unactioned tech notes, unsent SL tickets
+   ══════════════════════════════════════════════════════════════════ */
+function openWeeklyChecklist(){
+  const todayKey = _localDateKey(todayLocal());
+  const monday = _mondayOf(todayKey);
+  const days = _weekDays(monday);
+  const fromKey = days[0], toKey = days[days.length-1];
+
+  // 1) Clients with tech notes this week that have NO SL ticket
+  const notesNeedingAction = [];
+  C.filter(c=>c.status==='active').forEach(c=>{
+    const cv = VL[c.id]||{};
+    Object.entries(cv).forEach(([dk,v])=>{
+      if(dk<fromKey||dk>toKey) return;
+      if(!v||v._deleted||!v.notes||!v.notes.trim()) return;
+      const hasTicket = (TAPPTS[c.id]||[]).some(a=>a.slTicketId&&a.date>=fromKey&&a.date<=toKey);
+      if(!hasTicket) notesNeedingAction.push({c, dk, note:v.notes.trim()});
+    });
+  });
+
+  // 2) Tech appts with no slTicketId this week
+  const pendingSend = [];
+  Object.entries(TAPPTS).forEach(([cidStr,tappts])=>{
+    const c = C.find(x=>x.id===parseInt(cidStr));
+    if(!c) return;
+    (tappts||[]).forEach((a,idx)=>{
+      if(a.date<fromKey||a.date>toKey) return;
+      if(!a.slTicketId) pendingSend.push({c,a,idx});
+    });
+  });
+
+  // 3) Active clients with NO visit recorded this week at all
+  const noVisitThisWeek = C.filter(c=>{
+    if(c.status!=='active') return false;
+    const cv = VL[c.id]||{};
+    return !Object.keys(cv).some(dk=>dk>=fromKey&&dk<=toKey&&cv[dk]&&!cv[dk]._deleted&&cv[dk].status==='done');
+  });
+
+  const fmtDate = dk => new Date(dk+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
+
+  let html = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Week of ${fmtDate(fromKey)} – ${fmtDate(toKey)}</div>`;
+
+  // Section 1
+  html += `<div style="margin-bottom:16px">
+    <div style="font-weight:700;font-size:14px;color:#92400E;margin-bottom:6px">📋 Tech notes without TECH-TICKETS (${notesNeedingAction.length})</div>`;
+  if(!notesNeedingAction.length){
+    html += `<div style="font-size:12.5px;color:#16A34A;font-style:italic">✓ All notes actioned</div>`;
+  } else {
+    html += notesNeedingAction.map(({c,dk,note})=>`
+      <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:6px 10px;margin-bottom:4px;display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1"><b>${esc(c.name)}</b> <span style="font-size:11.5px;color:var(--muted)">${fmtDate(dk)}</span>
+          <div style="font-size:12.5px;font-style:italic;color:#78350F;margin-top:2px">${esc(note.substring(0,80))}${note.length>80?'…':''}</div>
+        </div>
+        <button class="btn btn-brand" style="font-size:11px;padding:3px 8px;flex-shrink:0" onclick="cm('mweekclose');oTechAppt(${c.id})">+ Ticket</button>
+      </div>`).join('');
+  }
+  html += '</div>';
+
+  // Section 2
+  html += `<div style="margin-bottom:16px">
+    <div style="font-weight:700;font-size:14px;color:#991B1B;margin-bottom:6px">⚠ Tech appts not sent to TECH-TICKETS (${pendingSend.length})</div>`;
+  if(!pendingSend.length){
+    html += `<div style="font-size:12.5px;color:#16A34A;font-style:italic">✓ All sent</div>`;
+  } else {
+    html += pendingSend.map(({c,a})=>`
+      <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:6px 10px;margin-bottom:4px">
+        <b>${esc(c.name)}</b> · <span style="font-size:12px;color:var(--muted)">${esc(a.date)} ${esc(a.type)}</span>
+      </div>`).join('');
+  }
+  html += '</div>';
+
+  // Section 3 — collapsed by default
+  html += `<details style="margin-bottom:8px">
+    <summary style="font-weight:700;font-size:13.5px;color:#605950;cursor:pointer">📭 No visit this week (${noVisitThisWeek.length} clients)</summary>
+    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+      ${noVisitThisWeek.map(c=>`<span style="background:#F0F0F0;border-radius:5px;padding:2px 7px;font-size:12px">${esc(c.name)}</span>`).join('')}
+    </div>
+  </details>`;
+
+  document.getElementById('weekclose-body').innerHTML = html;
+  om('mweekclose');
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE 6 — Poll TECH-TICKETS Firestore for ticket status
+   Called lazily when a tech-appt with slTicketId is visible.
+   Caches results in memory; does NOT re-poll if already fetched.
+   ══════════════════════════════════════════════════════════════════ */
+const _slTicketStatusCache = {}; // ticketId → {status, updatedAt}
+
+async function pollSLTicketStatus(ticketId){
+  if(_slTicketStatusCache[ticketId]) return _slTicketStatusCache[ticketId];
+  if(!slDB) return null;
+  try{
+    const snap = await slDB.collection('tickets').doc(ticketId).get();
+    if(snap.exists){
+      const d = snap.data();
+      const result = {status: d.status||'pending', tech: (d.techs&&d.techs[0])||'', updatedAt: d.updatedAt||''};
+      _slTicketStatusCache[ticketId] = result;
+      return result;
+    }
+  }catch(e){ console.warn('pollSLTicketStatus:',e.message); }
+  return null;
+}
+
+// Refreshes the sent-badge on a rendered tech-appt-row with live status
+async function refreshSLBadge(rowEl, ticketId){
+  const info = await pollSLTicketStatus(ticketId);
+  if(!info) return;
+  const badge = rowEl.querySelector('.ta-sent-badge');
+  if(!badge) return;
+  const colors = {pending:'#DCFCE7|#86EFAC|#166534', scheduled:'#DCFCE7|#86EFAC|#166534', in_progress:'#DBEAFE|#93C5FD|#1D4ED8', completed:'#F0FDF4|#4ADE80|#14532D', done:'#F0FDF4|#4ADE80|#14532D'};
+  const [bg,border,color] = (colors[info.status]||colors.pending).split('|');
+  const labels = {pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'};
+  badge.style.cssText = `background:${bg};border-color:${border};color:${color}`;
+  badge.textContent = labels[info.status]||'✓ Sent';
+  if(info.tech) badge.title = `Tech: ${info.tech}`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE 10 — Offline sync banner
+   Detects online/offline + firebase connectivity and shows a
+   bottom banner when there are unsaved changes or no connection.
+   ══════════════════════════════════════════════════════════════════ */
+let _offlinePendingCount = 0;
+
+function _updateOfflineBanner(){
+  const banner = document.getElementById('offline-sync-banner');
+  if(!banner) return;
+  const isOnline = navigator.onLine;
+  const fbOk = fbConnected && fbDB;
+  if(isOnline && fbOk && _offlinePendingCount === 0){
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.classList.remove('hidden');
+  const countSpan = document.getElementById('offline-pending-count');
+  const statusSpan = document.getElementById('offline-status-text');
+  if(!isOnline){
+    if(statusSpan) statusSpan.textContent = '📵 No internet — changes saved locally';
+  } else if(!fbOk){
+    if(statusSpan) statusSpan.textContent = '☁️ Cloud sync disconnected — changes saved locally';
+  } else if(_offlinePendingCount > 0){
+    if(statusSpan) statusSpan.textContent = `⏫ ${_offlinePendingCount} change(s) pending sync…`;
+  }
+}
+
+window.addEventListener('online',  () => { setTimeout(_updateOfflineBanner, 800); });
+window.addEventListener('offline', () => { _updateOfflineBanner(); });
 
 function saveData(){
   // 1) Cloud FIRST — Firebase is the source of truth across devices and holds
@@ -11562,6 +11828,34 @@ function _renderClientReport(){
         <h3 class="vrm-section-title">📈 ${esc(LANG==='es'?'Tendencias químicas':'Chemistry trends')}</h3>
         <div class="vrm-chart-grid">${trendsHtml}</div>
       </div>` : ''}
+      ${(()=>{
+        // Feature #2: 4-quarter chemical trend mini-table
+        const trend4 = getChemTrendLast4Q(cid);
+        if(!trend4.some(q=>q.total>0)) return '';
+        const topChemId = (() => {
+          const totals = {};
+          trend4.forEach(q=>Object.entries(q.chems).forEach(([id,v])=>{totals[id]=(totals[id]||0)+v;}));
+          return Object.entries(totals).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+        })();
+        const topMeta = (typeof CHK_CHEMICALS!=='undefined'&&CHK_CHEMICALS[topChemId])||{label:topChemId,unit:''};
+        const maxOz = Math.max(...trend4.map(q=>q.total),1);
+        return `<div class="vrm-section">
+          <h3 class="vrm-section-title">📊 ${esc(LANG==='es'?'Consumo químico — últimos 4 trimestres':'Chemical use — last 4 quarters')}</h3>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px">
+            ${trend4.map(q=>{
+              const pct = Math.round((q.total/maxOz)*100);
+              return `<div style="text-align:center">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${esc(q.label)}</div>
+                <div style="height:50px;background:#F0E9E2;border-radius:4px;position:relative;overflow:hidden">
+                  <div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:#B5733A;border-radius:4px 4px 0 0;transition:height .3s"></div>
+                </div>
+                <div style="font-size:11.5px;font-weight:700;color:#92400E;margin-top:3px">${q.total>0?_formatChemAmount(q.total)+' oz':'—'}</div>
+              </div>`;
+            }).join('')}
+          </div>
+          ${topChemId?`<div style="font-size:12px;color:var(--muted);margin-top:6px;text-align:center">Top product: <b>${esc(topMeta.label)}</b></div>`:''}
+        </div>`;
+      })()}
       <!-- Sub-period breakdown: quarter=month×3, month=week×N, week=visits -->
       ${_subPeriodsHtml()}
       ${photoGalleryHtml}
