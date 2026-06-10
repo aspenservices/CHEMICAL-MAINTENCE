@@ -7069,41 +7069,19 @@ function toggleVisitQuick(cid,dk){
 }
 
 function showHist(cid){
-  const c=C.find(x=>x.id===cid);if(!c)return;
-  const q=document.getElementById('qsel').value;
-  const dA=(c.week==='A'||c.week==='A&B')?getVisitDatesForWeek(c,q,'A'):[];
-  const dB=(c.week==='B'||c.week==='A&B')?getVisitDatesForWeek(c,q,'B'):[];
-  const all=[...new Set([...dA,...dB])].sort();
-  const vls=VL[cid]||{};
-  // Filter out tombstones from history counts
-  const done=all.filter(d=>vls[d]&&!vls[d]._deleted&&vls[d].status==='done').length;
-  const skip=all.filter(d=>vls[d]&&!vls[d]._deleted&&vls[d].status==='skip').length;
-  document.getElementById('vhist-name').textContent=c.name+' — '+q;
-  document.getElementById('vhist-body').innerHTML=`
-    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:13.8px"><strong style="color:#16A34A">${done}</strong> ${t('done')}</span>
-      <span style="font-size:13.8px"><strong style="color:#EF4444">${skip}</strong> ${t('notVisitedCount')}</span>
-      <span style="font-size:13.8px"><strong style="color:#F59E0B">${all.length-done-skip}</strong> ${t('pendingCount')}</span>
-      <span style="font-size:13.8px;color:var(--muted)">Total: ${all.length}</span>
-    </div>
-    ${all.map(d=>{
-      const vl=vls[d];
-      const isTombstone = vl && vl._deleted;
-      const s = (vl && !isTombstone) ? vl.status : 'pending';
-      const isA=dA.includes(d);
-      const dl2=new Date(d+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
-      const dc=s==='done'?'#16A34A':s==='skip'?'#EF4444':'#F59E0B';
-      const sl=s==='done'?t('visitedCal'):s==='skip'?t('notVisitedCal'):t('statusPending');
-      const showNotes = vl && !isTombstone;
-      return`<div class="vm-row">
-        <span style="width:9px;height:9px;border-radius:50%;background:${dc};display:inline-block;flex-shrink:0"></span>
-        <span style="font-size:13.8px;min-width:80px;font-weight:500">${dl2} ${isA?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>'}</span>
-        <span style="font-size:13.2px;color:${dc};min-width:60px">${sl}</span>
-        <span style="font-size:12.6px;color:var(--muted);flex:1">${showNotes&&vl.notes?vl.notes:''} ${showNotes&&vl.tech?'· '+vl.tech:''}</span>
-        <button class="btn" style="font-size:11.5px" onclick="cm('mhist');openVisitModal(${cid},'${d}')">${t('editBtn')}</button>
-      </div>`;
-    }).join('')}`;
-  om('mhist');
+  // Opens the full client report in quarter mode, anchored to the current
+  // quarter selected in qsel — so the visible data matches the schedule view.
+  const qsel = document.getElementById('qsel');
+  const q = qsel ? qsel.value : null; // e.g. "Q2 2026"
+  let anchor = null;
+  if(q){
+    try{
+      const months = getQMonths(q);
+      const yr = getQYear(q);
+      anchor = `${yr}-${String(months[0]).padStart(2,'0')}-15`;
+    }catch(e){}
+  }
+  openClientReport(cid, 'quarter', anchor);
 }
 
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
@@ -11211,117 +11189,199 @@ function _renderClientReport(){
   const c = C.find(x => x.id === cid);
   if(!c) return;
   const period = _clientPeriod(mode, anchorDate);
-
-  // Filter this client's visits to the period
   const visits = VL[cid] || {};
-  const rows = Object.keys(visits)
-    .filter(dk => dk >= period.fromKey && dk <= period.toKey)
-    .map(dk => ({dateKey: dk, v: visits[dk]}))
-    .filter(r => r.v && !r.v._deleted && (r.v.status==='done' || r.v.status==='not_done'))
-    .sort((a,b) => a.dateKey.localeCompare(b.dateKey)); // chronological for trend reading
 
-  const visited = rows.filter(r => r.v.status === 'done').length;
-  const noVisit = rows.filter(r => r.v.status === 'not_done').length;
-  // Total chemicals across visits in this period
-  const chems = {};
-  rows.forEach(r => {
-    if(r.v.status !== 'done') return;
-    const ck = r.v.checklist || {};
-    Object.entries(ck.chemicals || {}).forEach(([id,val]) => {
-      const num = parseFloat(val);
-      if(!isNaN(num)) chems[id] = (chems[id] || 0) + num;
+  // ── helpers ──────────────────────────────────────────────────────────────
+  function _visitsInRange(fromKey, toKey){
+    return Object.keys(visits)
+      .filter(dk => dk >= fromKey && dk <= toKey)
+      .map(dk => ({dateKey: dk, v: visits[dk]}))
+      .filter(r => r.v && !r.v._deleted && (r.v.status==='done' || r.v.status==='not_done'))
+      .sort((a,b) => a.dateKey.localeCompare(b.dateKey));
+  }
+
+  function _chemTotals(rows){
+    const chems = {};
+    rows.forEach(r => {
+      if(r.v.status !== 'done') return;
+      const ck = r.v.checklist || {};
+      Object.entries(ck.chemicals || {}).forEach(([id,val]) => {
+        const num = parseFloat(val);
+        if(!isNaN(num)) chems[id] = (chems[id] || 0) + num;
+      });
     });
-  });
+    return chems;
+  }
 
-  // Aggregate chemistry — average before/after for each parameter across visits
+  function _chemTotalOz(chems){
+    return Object.values(chems).reduce((s,n)=>s+n,0);
+  }
+
+  function _visitRowHtml(r){
+    const v = r.v;
+    const isVisited = v.status === 'done';
+    const dt2 = new Date(r.dateKey + 'T12:00:00');
+    const dStr = dt2.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
+    const ck = v.checklist || {};
+    const delta = isVisited ? _readingsDeltaString(ck) : '';
+    const chemList = isVisited
+      ? Object.entries(ck.chemicals || {}).filter(([,val])=>val && String(val).trim())
+          .map(([id,val])=>{
+            const meta = (typeof CHK_CHEMICALS!=='undefined' && CHK_CHEMICALS[id]) || {label:id, unit:''};
+            return `${meta.label} ${val}${meta.unit?' '+meta.unit:''}`;
+          }).join(', ')
+      : '';
+    return `<div class="cr-visit ${isVisited?'ok':'no'}">
+      <div class="cr-visit-date">${esc(dStr)}</div>
+      <div class="cr-visit-body">
+        <div style="font-weight:700;color:${isVisited?'#15803D':'#B91C1C'}">${isVisited?'✓ '+(LANG==='es'?'Servicio realizado':'Service completed'):'✗ '+(LANG==='es'?'No se pudo visitar':'Could not visit')}</div>
+        ${v.tech?`<div style="font-size:12px;color:#81786E;margin-top:2px">👤 ${esc(v.tech)}</div>`:''}
+        ${delta?`<div style="font-size:12.5px;color:#834F21;margin-top:3px">🧪 ${esc(delta)}</div>`:''}
+        ${chemList?`<div style="font-size:12px;color:#7B7670;margin-top:3px">💊 ${esc(chemList)}</div>`:''}
+        ${v.notes?`<div style="font-size:12px;color:#5D5751;margin-top:3px;font-style:italic">📋 ${esc(v.notes)}</div>`:''}
+      </div>
+    </div>`;
+  }
+
+  function _chemTableHtml(chems){
+    const entries = Object.entries(chems).sort((a,b)=>b[1]-a[1]);
+    if(!entries.length) return '';
+    return `<table class="vrm-table" style="margin-top:6px">
+      <thead><tr><th>${esc(LANG==='es'?'Producto':'Chemical')}</th><th class="num">${esc(LANG==='es'?'Total':'Total')}</th><th>${esc(LANG==='es'?'Unidad':'Unit')}</th></tr></thead>
+      <tbody>${entries.map(([id,total])=>{
+        const meta = (typeof CHK_CHEMICALS!=='undefined' && CHK_CHEMICALS[id]) || {label:id, unit:''};
+        return `<tr><td>${esc(meta.label)}</td><td class="num"><b>${_formatChemAmount(total)}</b></td><td>${esc(meta.unit||'')}</td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  function _miniStatBar(rows){
+    const done = rows.filter(r=>r.v.status==='done').length;
+    const noV  = rows.filter(r=>r.v.status==='not_done').length;
+    const chems = _chemTotals(rows);
+    const oz = _chemTotalOz(chems);
+    return `<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px">
+      <span style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:2px 8px;color:#15803D;font-weight:700">✓ ${done} ${esc(LANG==='es'?'visitas':'visits')}</span>
+      ${noV?`<span style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:2px 8px;color:#B91C1C;font-weight:700">✗ ${noV}</span>`:''}
+      ${oz>0?`<span style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:2px 8px;color:#92400E;font-weight:700">💊 ${_formatChemAmount(oz)} oz</span>`:''}
+    </div>`;
+  }
+
+  // ── sub-period breakdown builder ─────────────────────────────────────────
+  function _subPeriodsHtml(){
+    // Quarter → 3 months
+    if(mode === 'quarter'){
+      const qFrom = new Date(period.fromKey + 'T12:00:00');
+      const months = [0,1,2].map(i => {
+        const d = new Date(qFrom.getFullYear(), qFrom.getMonth()+i, 1);
+        const fromKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+        const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0);
+        const toKey = `${lastDay.getFullYear()}-${String(lastDay.getMonth()+1).padStart(2,'0')}-${String(lastDay.getDate()).padStart(2,'0')}`;
+        const label = d.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'long',year:'numeric'});
+        return {fromKey, toKey, label};
+      });
+      return months.map(m => {
+        const rows = _visitsInRange(m.fromKey, m.toKey);
+        if(!rows.length) return `<div class="vrm-section" style="opacity:.55">
+          <h3 class="vrm-section-title" style="text-transform:capitalize">📅 ${esc(m.label)}</h3>
+          <div style="font-size:12.5px;color:var(--muted);font-style:italic;padding:6px 0">${esc(LANG==='es'?'Sin visitas registradas':'No visits recorded')}</div>
+        </div>`;
+        const chems = _chemTotals(rows);
+        return `<div class="vrm-section">
+          <h3 class="vrm-section-title" style="text-transform:capitalize">📅 ${esc(m.label)}</h3>
+          ${_miniStatBar(rows)}
+          <div class="cr-timeline">${rows.map(_visitRowHtml).join('')}</div>
+          ${_chemTableHtml(chems)}
+        </div>`;
+      }).join('');
+    }
+
+    // Month → week by week
+    if(mode === 'month'){
+      const mFrom = new Date(period.fromKey + 'T12:00:00');
+      const mTo   = new Date(period.toKey   + 'T12:00:00');
+      // Build Monday-anchored weeks that overlap this month
+      const weeks = [];
+      let cursor = new Date(mFrom);
+      // Step back to the Monday of the first week
+      const dow = cursor.getDay();
+      cursor.setDate(cursor.getDate() - (dow === 0 ? 6 : dow - 1));
+      let weekNum = 1;
+      while(cursor <= mTo){
+        const wFrom = new Date(cursor);
+        const wTo   = new Date(cursor); wTo.setDate(cursor.getDate()+6);
+        const fromKey = _localDateKey(wFrom);
+        const toKey   = _localDateKey(wTo);
+        // Only include weeks that overlap with the month
+        const clampFrom = fromKey < period.fromKey ? period.fromKey : fromKey;
+        const clampTo   = toKey   > period.toKey   ? period.toKey   : toKey;
+        const wLabel = wFrom.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'})
+          + ' – ' + wTo.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{month:'short',day:'numeric'});
+        weeks.push({fromKey: clampFrom, toKey: clampTo, label: wLabel, num: weekNum});
+        cursor.setDate(cursor.getDate()+7);
+        weekNum++;
+      }
+      return weeks.map(w => {
+        const rows = _visitsInRange(w.fromKey, w.toKey);
+        if(!rows.length) return `<div class="vrm-section" style="opacity:.55">
+          <h3 class="vrm-section-title">📆 ${esc(LANG==='es'?'Semana':'Week')} ${w.num} <span style="font-weight:400;font-size:12px;color:var(--muted)">${esc(w.label)}</span></h3>
+          <div style="font-size:12.5px;color:var(--muted);font-style:italic;padding:6px 0">${esc(LANG==='es'?'Sin visitas':'No visits')}</div>
+        </div>`;
+        const chems = _chemTotals(rows);
+        return `<div class="vrm-section">
+          <h3 class="vrm-section-title">📆 ${esc(LANG==='es'?'Semana':'Week')} ${w.num} <span style="font-weight:400;font-size:12px;color:var(--muted)">${esc(w.label)}</span></h3>
+          ${_miniStatBar(rows)}
+          <div class="cr-timeline">${rows.map(_visitRowHtml).join('')}</div>
+          ${_chemTableHtml(chems)}
+        </div>`;
+      }).join('');
+    }
+
+    // Week → one section, all visits (existing behavior, just re-rendered)
+    const rows = _visitsInRange(period.fromKey, period.toKey);
+    if(!rows.length) return `<div class="vrm-section">
+      <div style="font-size:13px;color:var(--muted);font-style:italic;padding:12px;text-align:center">${esc(LANG==='es'?'Sin visitas en esta semana':'No visits this week')}</div>
+    </div>`;
+    return `<div class="vrm-section">
+      ${_miniStatBar(rows)}
+      <div class="cr-timeline">${rows.map(_visitRowHtml).join('')}</div>
+      ${_chemTableHtml(_chemTotals(rows))}
+    </div>`;
+  }
+
+  // ── period-level totals (for the summary header cards) ──────────────────
+  const allRows = _visitsInRange(period.fromKey, period.toKey);
+  const visited   = allRows.filter(r => r.v.status === 'done').length;
+  const noVisit   = allRows.filter(r => r.v.status === 'not_done').length;
+  const chems     = _chemTotals(allRows);
+  const totalOz   = _chemTotalOz(chems);
+
+  // ── chemistry trends (per-parameter mini-chart) ─────────────────────────
   const paramKeys = ['cl','br','ph','alk','ca'];
-  const paramLabels = {
-    cl: LANG==='es'?'Cloro':'Chlorine',
-    br: LANG==='es'?'Bromo':'Bromine',
-    ph: 'pH',
-    alk: LANG==='es'?'Alcalinidad':'Alkalinity',
-    ca:  LANG==='es'?'Calcio':'Calcium'
-  };
-  const paramUnits = { cl:'ppm', br:'ppm', ph:'', alk:'ppm', ca:'ppm' };
+  const paramLabels = { cl:LANG==='es'?'Cloro':'Chlorine', br:LANG==='es'?'Bromo':'Bromine', ph:'pH', alk:LANG==='es'?'Alcalinidad':'Alkalinity', ca:LANG==='es'?'Calcio':'Calcium' };
+  const paramUnits  = { cl:'ppm', br:'ppm', ph:'', alk:'ppm', ca:'ppm' };
   const idealRangesLocal = (typeof idealRanges !== 'undefined') ? idealRanges : {cl:[1,3], br:[2,6], ph:[7.2,7.8], alk:[80,120], ca:[200,300]};
-
-  // Overall system: take from most recent visit
-  const latestVisit = rows.length > 0 ? rows[rows.length-1].v : null;
-  const sysKey = latestVisit && latestVisit.checklist ? latestVisit.checklist.system : null;
+  const latestVisit = allRows.length > 0 ? allRows[allRows.length-1].v : null;
+  const sysKey  = latestVisit && latestVisit.checklist ? latestVisit.checklist.system : null;
   const sysIsBlu = sysKey === 'blufusion';
-  const sanKey = sysIsBlu ? 'br' : 'cl';
-
-  const dt = new Date(period.fromKey + 'T12:00:00');
-  const periodTitle = mode === 'week'
-    ? (LANG==='es'?'Semana':'Week') + ': ' + period.label
-    : mode === 'month'
-    ? (LANG==='es'?'Mes':'Month') + ': ' + period.label.charAt(0).toUpperCase()+period.label.slice(1)
-    : period.label;
-
-  // Mini-chart per chemistry parameter that has data IN THIS PERIOD
   const trendsHtml = paramKeys.map(k => {
-    const trend = rows.map(r => {
+    const trend = allRows.map(r => {
       const ck = r.v.checklist || {};
       const rb = (ck.readings && ck.readings.reading_before) || {};
-      const ra = (ck.readings && ck.readings.reading_after) || {};
-      return {
-        dateKey: r.dateKey,
-        before: rb[k] !== undefined && rb[k] !== '' ? Number(rb[k]) : null,
-        after:  ra[k] !== undefined && ra[k] !== '' ? Number(ra[k]) : null
-      };
+      const ra2 = (ck.readings && ck.readings.reading_after) || {};
+      return { dateKey: r.dateKey, before: rb[k] !== undefined && rb[k] !== '' ? Number(rb[k]) : null, after: ra2[k] !== undefined && ra2[k] !== '' ? Number(ra2[k]) : null };
     }).filter(p => p.before !== null || p.after !== null);
-    if(trend.length === 0) return null;
+    if(!trend.length) return null;
     if(k === 'br' && !sysIsBlu) return null;
     if(k === 'cl' && sysIsBlu)  return null;
     const ideal = idealRangesLocal[k];
     return `<div class="vrm-chart-wrap vrm-chart-mini">
       <div class="vrm-chart-title">${esc(paramLabels[k])}${paramUnits[k]?' ('+esc(paramUnits[k])+')':''}</div>
-      <div class="vrm-chart">${_svgLineChart(trend, {idealMin: ideal ? ideal[0] : undefined, idealMax: ideal ? ideal[1] : undefined})}</div>
+      <div class="vrm-chart">${_svgLineChart(trend, {idealMin: ideal?ideal[0]:undefined, idealMax: ideal?ideal[1]:undefined})}</div>
     </div>`;
   }).filter(Boolean).join('');
 
-  const visitTimelineHtml = rows.length === 0
-    ? `<div style="font-size:13px;color:var(--muted);font-style:italic;padding:12px;text-align:center">${esc(LANG==='es'?'Sin visitas en este periodo':'No visits in this period')}</div>`
-    : rows.map(r => {
-      const v = r.v;
-      const isVisited = v.status === 'done';
-      const dt = new Date(r.dateKey + 'T12:00:00');
-      const dStr = dt.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
-      const ck = v.checklist || {};
-      const delta = isVisited ? _readingsDeltaString(ck) : '';
-      const chemList = isVisited
-        ? Object.entries(ck.chemicals || {}).filter(([,v])=>v && String(v).trim())
-            .map(([id,val])=>{
-              const meta = (typeof CHK_CHEMICALS!=='undefined' && CHK_CHEMICALS[id]) || {label:id, unit:''};
-              return `${meta.label} ${val}${meta.unit?' '+meta.unit:''}`;
-            }).join(', ')
-        : '';
-      return `<div class="cr-visit ${isVisited?'ok':'no'}">
-        <div class="cr-visit-date">${esc(dStr)}</div>
-        <div class="cr-visit-body">
-          <div style="font-weight:700;color:${isVisited?'#15803D':'#B91C1C'}">${isVisited?'✓ '+(LANG==='es'?'Servicio realizado':'Service completed'):'✗ '+(LANG==='es'?'No se pudo visitar':'Could not visit')}</div>
-          ${delta?`<div style="font-size:12.5px;color:#834F21;margin-top:3px">🧪 ${esc(delta)}</div>`:''}
-          ${chemList?`<div style="font-size:12px;color:#7B7670;margin-top:3px">💊 ${esc(chemList)}</div>`:''}
-          ${v.notes?`<div style="font-size:12px;color:#5D5751;margin-top:3px;font-style:italic">📝 ${esc(v.notes)}</div>`:''}
-        </div>
-      </div>`;
-    }).join('');
-
-  const chemTotals = Object.entries(chems).sort((a,b)=>b[1]-a[1]);
-  const chemTableHtml = chemTotals.length === 0
-    ? ''
-    : `<div class="vrm-section">
-        <h3 class="vrm-section-title">💊 ${esc(LANG==='es'?'Productos químicos usados en el periodo':'Chemicals used during the period')}</h3>
-        <table class="vrm-table">
-          <thead><tr><th>${esc(LANG==='es'?'Producto':'Chemical')}</th><th class="num">${esc(LANG==='es'?'Total':'Total')}</th><th>${esc(LANG==='es'?'Unidad':'Unit')}</th></tr></thead>
-          <tbody>${chemTotals.map(([id,total])=>{
-            const meta = (typeof CHK_CHEMICALS!=='undefined' && CHK_CHEMICALS[id]) || {label:id, unit:''};
-            return `<tr><td>${esc(meta.label)}</td><td class="num"><b>${_formatChemAmount(total)}</b></td><td>${esc(meta.unit||'')}</td></tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>`;
-
-  // Photos captured during this period (base64, grouped by date)
+  // ── period photos ────────────────────────────────────────────────────────
   const periodPhotos = _collectClientPeriodPhotos(cid, period.fromKey, period.toKey);
   const photosByDate = {};
   periodPhotos.forEach(p => { (photosByDate[p.dateKey] = photosByDate[p.dateKey] || []).push(p); });
@@ -11329,8 +11389,8 @@ function _renderClientReport(){
     <div class="vrm-section">
       <h3 class="vrm-section-title">📷 ${esc(LANG==='es'?'Fotos del periodo':'Period photos')} <span style="font-weight:500;color:var(--muted);font-size:13px">(${periodPhotos.length})</span></h3>
       ${Object.keys(photosByDate).sort().map(dk => {
-        const dt = new Date(dk + 'T12:00:00');
-        const dStr = dt.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
+        const dt3 = new Date(dk + 'T12:00:00');
+        const dStr = dt3.toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'short',month:'short',day:'numeric'});
         return `<div style="margin-top:8px">
           <div style="font-size:12px;font-weight:700;color:#605950;margin-bottom:4px">${esc(dStr)}</div>
           <div class="cr-photo-grid">
@@ -11340,19 +11400,27 @@ function _renderClientReport(){
       }).join('')}
     </div>`;
 
+  // ── period title ─────────────────────────────────────────────────────────
+  const periodTitle = mode === 'week'
+    ? (LANG==='es'?'Semana':'Week') + ': ' + period.label
+    : mode === 'month'
+    ? (LANG==='es'?'Mes':'Month') + ': ' + period.label.charAt(0).toUpperCase()+period.label.slice(1)
+    : period.label;
+
+  // ── full HTML ─────────────────────────────────────────────────────────────
   const html = `
     <div class="vrm-actions">
       <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:#FFFFFF;margin-right:6px">
-        <button class="sum-mode-btn ${mode==='week'?'active':''}"   onclick="setClientReportMode('week')">📅 ${esc(LANG==='es'?'Semana':'Week')}</button>
-        <button class="sum-mode-btn ${mode==='month'?'active':''}"  onclick="setClientReportMode('month')">🗓 ${esc(LANG==='es'?'Mes':'Month')}</button>
+        <button class="sum-mode-btn ${mode==='week'?'active':''}"    onclick="setClientReportMode('week')">📅 ${esc(LANG==='es'?'Semana':'Week')}</button>
+        <button class="sum-mode-btn ${mode==='month'?'active':''}"   onclick="setClientReportMode('month')">🗓 ${esc(LANG==='es'?'Mes':'Month')}</button>
         <button class="sum-mode-btn ${mode==='quarter'?'active':''}" onclick="setClientReportMode('quarter')">📈 ${esc(LANG==='es'?'Trim.':'Qtr.')}</button>
       </div>
       <button class="btn" onclick="shiftClientReportPeriod(-1)">◀</button>
       <button class="btn" onclick="shiftClientReportPeriod(1)">▶</button>
       <span style="flex:1"></span>
       <button class="btn btn-brand" onclick="printClientReport()" title="${esc(LANG==='es'?'Imprimir o guardar PDF':'Print or save as PDF')}">🖨 ${esc(LANG==='es'?'PDF':'PDF')}</button>
-      ${periodPhotos.length ? `<button class="btn" onclick="downloadClientReportPhotos()" title="${esc(LANG==='es'?'Descargar todas las fotos del periodo en ZIP':'Download all period photos as a ZIP')}">📥 ${esc(LANG==='es'?'Fotos':'Photos')} (${periodPhotos.length})</button>` : ''}
-      ${periodPhotos.length ? `<button class="btn" style="border-color:#FCA5A5;color:#B91C1C" onclick="purgeClientReportPhotos()" title="${esc(LANG==='es'?'Borrar las fotos del periodo de la base de datos para liberar espacio':'Delete period photos from the database to free space')}">🧹 ${esc(LANG==='es'?'Liberar':'Free up')}</button>` : ''}
+      ${periodPhotos.length ? `<button class="btn" onclick="downloadClientReportPhotos()" title="${esc(LANG==='es'?'Descargar fotos':'Download photos')}">📥 ${esc(LANG==='es'?'Fotos':'Photos')} (${periodPhotos.length})</button>` : ''}
+      ${periodPhotos.length ? `<button class="btn" style="border-color:#FCA5A5;color:#B91C1C" onclick="purgeClientReportPhotos()">🧹 ${esc(LANG==='es'?'Liberar':'Free up')}</button>` : ''}
       ${c.phone?`<button class="btn btn-brand" onclick="smsClientReport()" title="SMS">📱 SMS</button>`:''}
       <button class="btn" onclick="closeClientReport()">✕</button>
     </div>
@@ -11363,6 +11431,7 @@ function _renderClientReport(){
         <div style="font-size:13px;color:var(--muted)">${c.addr?esc(c.addr):''}${c.phone?' · '+esc(c.phone):''}</div>
         <div style="font-size:13px;color:#A46229;font-weight:600;margin-top:6px;text-transform:capitalize">${esc(periodTitle)}</div>
       </div>
+      <!-- Period-level summary header cards -->
       <div class="vrm-section">
         <h3 class="vrm-section-title">📊 ${esc(LANG==='es'?'Resumen del periodo':'Period summary')}</h3>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px">
@@ -11375,7 +11444,7 @@ function _renderClientReport(){
             <div style="font-size:11px;color:#605950;font-weight:600;text-transform:uppercase">${esc(LANG==='es'?'Reagendados':'Rescheduled')}</div>
           </div>
           <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px;text-align:center">
-            <div style="font-size:24px;font-weight:800;color:#92400E">${_formatChemAmount(Object.values(chems).reduce((s,n)=>s+n,0))}</div>
+            <div style="font-size:24px;font-weight:800;color:#92400E">${_formatChemAmount(totalOz)}</div>
             <div style="font-size:11px;color:#78350F;font-weight:600;text-transform:uppercase">${esc(LANG==='es'?'oz químicos':'oz chems')}</div>
           </div>
         </div>
@@ -11384,11 +11453,8 @@ function _renderClientReport(){
         <h3 class="vrm-section-title">📈 ${esc(LANG==='es'?'Tendencias químicas':'Chemistry trends')}</h3>
         <div class="vrm-chart-grid">${trendsHtml}</div>
       </div>` : ''}
-      ${chemTableHtml}
-      <div class="vrm-section">
-        <h3 class="vrm-section-title">🗓 ${esc(LANG==='es'?'Línea de tiempo de visitas':'Visit timeline')}</h3>
-        <div class="cr-timeline">${visitTimelineHtml}</div>
-      </div>
+      <!-- Sub-period breakdown: quarter=month×3, month=week×N, week=visits -->
+      ${_subPeriodsHtml()}
       ${photoGalleryHtml}
       <div style="text-align:center;font-size:11.5px;color:var(--muted);padding:10px;font-style:italic">
         ${esc(LANG==='es'?'Aspen Spas — Mantenimiento profesional para tu spa.':'Aspen Spas — Professional spa maintenance.')}
