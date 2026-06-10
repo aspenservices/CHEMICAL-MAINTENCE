@@ -780,8 +780,19 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .v-dow-mark{font-size:10px;font-weight:700;color:#A16207;background:#FEF3C7;border:1px solid #FCD34D;border-radius:4px;padding:0 4px;line-height:1.4;letter-spacing:.3px;flex-shrink:0;cursor:help}
 /* Tech note indicator — small speech-bubble pill shown when the tech left a note on this visit.
    Clicking it opens the visit modal to read/edit. Tooltip shows the full note text. */
-.v-tech-note-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;line-height:1;background:#EFF6FF;border:1px solid #93C5FD;color:#1D4ED8;border-radius:10px;padding:1px 5px;flex-shrink:0;cursor:pointer;transition:background .15s,border-color .15s}
-.v-tech-note-badge:hover{background:#DBEAFE;border-color:#3B82F6}
+.v-tech-note-badge{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;font-size:11px;line-height:1;background:#FEF3C7;border:1.5px solid #F59E0B;color:#92400E;border-radius:50%;flex-shrink:0;cursor:pointer;transition:background .15s,border-color .15s,transform .08s;font-weight:600}
+.v-tech-note-badge:hover{background:#FDE68A;border-color:#D97706;transform:scale(1.12)}
+.v-tech-note-badge:active{transform:scale(.9)}
+/* Sub-row preview of tech note — ámbar claro, debajo del visit-row */
+.visit-tech-note-row{display:flex;align-items:flex-start;gap:5px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:4px 8px;margin:1px 0 4px 18px;cursor:pointer;font-size:11.5px;line-height:1.35;color:#78350F;transition:background .12s}
+.visit-tech-note-row:hover{background:#FEF3C7;border-color:#F59E0B}
+.vtnr-icon{flex-shrink:0;font-size:11px;line-height:1.35;opacity:.75}
+.vtnr-text{flex:1;min-width:0;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Header flag for tech notes count */
+.cc-tech-note-flag{font-size:11px;margin-left:1px;display:inline-flex;align-items:center;gap:1px;background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;border-radius:8px;padding:0 4px;line-height:1.5;cursor:default}
+/* Schedule follow-up button inside visit modal */
+.vis-followup-btn{display:flex;align-items:center;gap:6px;width:100%;padding:8px 12px;margin-top:8px;background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;color:#92400E;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.vis-followup-btn:hover{background:#FEF3C7;border-color:#F59E0B}
 .visit-row-anchor{background:linear-gradient(90deg,rgba(254,243,199,.35) 0%,transparent 60%)}
 .v-note{font-size:11.5px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65px}
 .cc-actions{padding:3px 6px 5px;display:flex;gap:4px}
@@ -1953,6 +1964,9 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <div id="vis-location-content" style="font-size:13px;color:#605950"></div>
   </div>
   <div class="frow"><label>Notas del servicio</label><textarea id="vis-notes" placeholder="Lectura química, productos usados, observaciones..."></textarea></div>
+  <div id="vis-followup-wrap" style="display:none;padding:0 0 4px">
+    <button class="vis-followup-btn" onclick="scheduleFollowUpFromVisit()">&#865021; Schedule follow-up in TECH-TICKETS</button>
+  </div>
   <div class="mfoot"><button class="btn" onclick="cm('mvisit')">Cancelar</button><button class="btn btn-brand" onclick="saveVisit()">Guardar visita</button></div>
 </div></div>
 
@@ -6477,13 +6491,17 @@ function buildWeekSection(wt,clients,q){
         const noteRow = dnote
           ? `<div class="visit-note-row" onclick="event.stopPropagation();editVisitDateNote(${c.id},'${dk}')" title="${esc(LANG==='es'?'Click para editar':'Click to edit')}"><span class="vnr-icon">📌</span><span class="vnr-text">${esc(dnote)}</span></div>`
           : '';
-        // Tech note badge — small 💬 pill when tech left a note on this visit.
-        // Tooltip shows full note; click opens the visit modal to read/edit.
+        // Tech note badge + preview sub-row — shown when tech left a note on this visit.
+        // Badge: small amber circle (●) pinned after the label. Matches admin 📝 style but amber tone.
+        // Sub-row: one-line italic preview below the visit row, click opens modal.
         const techNoteText = vl && !isTombstone && vl.notes ? vl.notes.trim() : '';
         const techNoteBadge = techNoteText
-          ? `<span class="v-tech-note-badge" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" title="${esc(techNoteText)}">💬</span>`
+          ? `<span class="v-tech-note-badge" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" title="${esc(LANG==='es'?'Nota del técnico: ':'Tech note: ')+esc(techNoteText)}">✎</span>`
           : '';
-        return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${techNoteBadge}${noteBtn}</div>${noteRow}`;
+        const techNoteRow = techNoteText
+          ? `<div class="visit-tech-note-row" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" title="${esc(LANG==='es'?'Click para ver/editar nota del técnico':'Click to view/edit tech note')}"><span class="vtnr-icon">📋</span><span class="vtnr-text">${esc(techNoteText)}</span></div>`
+          : '';
+        return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${techNoteBadge}${noteBtn}</div>${noteRow}${techNoteRow}`;
       }).join('');
 
       const techApptHtml=ta.map(a=>`
@@ -6504,6 +6522,11 @@ function buildWeekSection(wt,clients,q){
       // Drives the small 📝 flag in the header so admin sees at a glance "this client
       // has notes pending on the schedule." Counts only non-empty entries.
       const noteCount = dates.reduce((n,dk) => n + ((DNOTES[c.id] && DNOTES[c.id][dk] && String(DNOTES[c.id][dk]).trim()) ? 1 : 0), 0);
+      // Count tech notes (vl.notes) across visible visit dates for this client
+      const techNoteCount = dates.reduce((n,dk) => {
+        const v = VL[c.id] && VL[c.id][dk];
+        return n + (v && !v._deleted && v.notes && v.notes.trim() ? 1 : 0);
+      }, 0);
       card.innerHTML=`
         <div class="cal-cc-hd ${hdClass}" onclick="toggleCard(this)">
           <span class="drag-handle" onclick="event.stopPropagation()" title="${t('dragReorder')}">&#8942;</span>
@@ -6513,6 +6536,7 @@ function buildWeekSection(wt,clients,q){
           ${wbadge}
           ${hasTechAppt?'<span style="font-size:10.3px;color:#D48F53" title="Visita técnica agendada">&#865021;</span>':''}
           ${noteCount > 0 ? `<span class="cc-day-note-flag" title="${noteCount} ${LANG==='es'?'nota(s) del día':'day note(s)'}">📝${noteCount>1?'<sup style="font-size:8px">'+noteCount+'</sup>':''}</span>` : ''}
+          ${techNoteCount > 0 ? `<span class="cc-tech-note-flag" title="${techNoteCount} ${LANG==='es'?'nota(s) del técnico':'tech note(s)'}">✎${techNoteCount>1?'<sup style="font-size:8px">'+techNoteCount+'</sup>':''}</span>` : ''}
           <span class="cc-prog" style="color:${progC}">${done}/${total}</span>
         </div>
         <div class="cc-body">
@@ -6931,6 +6955,13 @@ function openVisitModal(cid,dateKey){
   document.getElementById('vis-status').value=vl?vl.status:'done';
   document.getElementById('vis-notes').value=vl?vl.notes||'':'';
   document.getElementById('vis-tech').value=vl?vl.tech||'':TECHS.length?TECHS[0].name:'';
+  // Show follow-up button only when the visit is done AND has tech notes to act on
+  const followUpWrap=document.getElementById('vis-followup-wrap');
+  if(followUpWrap){
+    const hasTechNote = vl && vl.notes && vl.notes.trim();
+    const isDone = vl && (vl.status==='done'||vl.status==='not_done');
+    followUpWrap.style.display = (hasTechNote && isDone) ? '' : 'none';
+  }
   // Show GPS location info if technician captured one
   const locWrap=document.getElementById('vis-location-info');
   const locContent=document.getElementById('vis-location-content');
@@ -6964,6 +6995,44 @@ function openVisitModal(cid,dateKey){
   }
   om('mvisit');
 }
+// Pre-fills the tech-appt modal with the tech's note as the problem description,
+// then sends it straight to TECH-TICKETS via the existing SL integration.
+function scheduleFollowUpFromVisit(){
+  const cid=parseInt(document.getElementById('vis-cid').value);
+  const c=C.find(x=>x.id===cid);
+  if(!c)return;
+  const notes=document.getElementById('vis-notes').value.trim();
+  const tech=document.getElementById('vis-tech').value||'';
+  const dateKey=document.getElementById('vis-date').value;
+  // Pre-fill the tech appt modal
+  refreshTechDataLists();
+  document.getElementById('ta-cid').value=cid;
+  document.getElementById('ta-cname').value=c.name;
+  // Set tech if it matches a known TECH
+  const taSelect=document.getElementById('ta-tech');
+  if(taSelect && tech){
+    // Try exact match first, then case-insensitive
+    for(let i=0;i<taSelect.options.length;i++){
+      if(taSelect.options[i].value.toLowerCase()===tech.toLowerCase()){
+        taSelect.selectedIndex=i;break;
+      }
+    }
+  }
+  // Default date to tomorrow (earliest realistic schedule date)
+  const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
+  document.getElementById('ta-date').value=tomorrow.toISOString().substring(0,10);
+  document.getElementById('ta-time').value='09:00';
+  // Pre-fill description with the tech's note
+  document.getElementById('ta-desc').value=notes;
+  // Default work type to general repair
+  const taType=document.getElementById('ta-type');
+  if(taType)taType.value='Reparación general';
+  document.getElementById('ta-status').value='scheduled';
+  // Close visit modal and open tech appt modal
+  cm('mvisit');
+  setTimeout(()=>om('mtech-appt'),80);
+}
+
 function saveVisit(){
   const cid=parseInt(document.getElementById('vis-cid').value);
   const dk=document.getElementById('vis-date').value;
