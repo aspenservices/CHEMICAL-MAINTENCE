@@ -811,6 +811,19 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .vd-techappt{background:#DDA675;border-color:#D48F53}
 .tech-appt-row{background:#FAF3ED;border:1px solid #E7C09E;border-radius:5px;padding:4px 6px;margin:3px 5px;display:flex;align-items:center;gap:5px;cursor:pointer}
 .tech-appt-row:hover{background:#F0D7C2}
+/* "Sent to TECH-TICKETS" confirmation badge on tech-appt-row */
+.ta-sent-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:#DCFCE7;border:1px solid #86EFAC;color:#166534;border-radius:8px;padding:1px 6px;flex-shrink:0;white-space:nowrap}
+/* Per-client summary row in the Summary tab */
+.sum-client-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:background .12s}
+.sum-client-row:hover{background:var(--warm2);border-color:var(--border)}
+.sum-client-row:nth-child(even){background:#FDFAF7}
+.sum-client-row:nth-child(even):hover{background:var(--warm2)}
+.sum-client-name{font-size:13px;font-weight:600;color:var(--text);min-width:140px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum-client-stat{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.sum-client-stat.ok{color:#15803D;font-weight:600}
+.sum-client-stat.warn{color:#B91C1C;font-weight:600}
+.sum-client-stat.amber{color:#92400E;font-weight:600}
+.sum-client-note-snip{font-size:11px;color:#78350F;background:#FFFBEB;border:1px solid #FDE68A;border-radius:4px;padding:1px 5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 
 /* drag and drop */
 .cal-cc{transition:opacity .15s,box-shadow .15s}
@@ -5660,6 +5673,7 @@ function _renderSummaryDay(out, dateKey, techFilt){
       ${_renderChemConsumptionTable(stats)}
     </div>
     ${_renderVisitDetailsTable(rows, dateKey)}
+    ${_renderPerClientTable(rows, dateKey, dateKey)}
   </div>`;
 }
 
@@ -5714,6 +5728,7 @@ function _renderSummaryWeek(out, dateKey, techFilt){
       ${_renderChemConsumptionTable(stats)}
     </div>
     ${_renderVisitDetailsTable(rows, null)}
+    ${_renderPerClientTable(rows, fromKey, toKey)}
   </div>`;
 }
 
@@ -5773,6 +5788,7 @@ function _renderSummaryMonth(out, dateKey, techFilt){
     </div>
     ${_renderVisitDetailsTable(detailRows, null)}
     ${truncatedNote}
+    ${_renderPerClientTable(rows, fromKey, toKey)}
   </div>`;
 }
 
@@ -5830,6 +5846,7 @@ function _renderSummaryQuarter(out, dateKey, techFilt){
     </div>
     ${_renderVisitDetailsTable(detailRows, null)}
     ${truncatedNote}
+    ${_renderPerClientTable(rows, fromKey, toKey)}
   </div>`;
 }
 
@@ -5985,6 +6002,95 @@ function _renderWeekDayBreakdown(dayBreakdown){
   return `<div class="sum-section" style="margin-bottom:14px">
     <div class="sum-section-title">📅 ${esc(t('sumWeekBreakdown'))}</div>
     <div class="sum-day-grid">${cells}</div>
+  </div>`;
+}
+
+// Per-client overview table for Summary tab.
+// Shows every active client with their visit count, chemicals, last tech,
+// and any tech note from that period — clickable to open the client report.
+// `allRows` = all visit rows in the period (from _collectVisitsInRange).
+// `fromKey`/`toKey` = period bounds (YYYY-MM-DD strings).
+function _renderPerClientTable(allRows, fromKey, toKey){
+  // Build per-client aggregates
+  const byClient = {};
+  C.filter(x=>x.status==='active').forEach(c => {
+    byClient[c.id] = { c, visits:0, noVisit:0, oz:0, lastTech:'', notes:[], hasSLTicket:false };
+  });
+  allRows.forEach(r => {
+    const agg = byClient[r.c.id];
+    if(!agg) return;
+    if(r.v.status === 'done') agg.visits++;
+    if(r.v.status === 'not_done') agg.noVisit++;
+    if(r.v.tech) agg.lastTech = r.v.tech;
+    if(r.v.notes && r.v.notes.trim()) agg.notes.push(r.v.notes.trim());
+    // Chemicals oz
+    const ck = r.v.checklist || {};
+    Object.values(ck.chemicals || {}).forEach(val => {
+      const n = parseFloat(val);
+      if(!isNaN(n)) agg.oz += n;
+    });
+  });
+  // Check for pending SL tickets (tech appts with slTicketId) in the period
+  Object.keys(TAPPTS).forEach(cidStr => {
+    const cid = parseInt(cidStr);
+    if(!byClient[cid]) return;
+    (TAPPTS[cid]||[]).forEach(a => {
+      if(a.slTicketId && a.date >= fromKey && a.date <= toKey){
+        byClient[cid].hasSLTicket = true;
+      }
+    });
+  });
+
+  const rows2 = Object.values(byClient).sort((a,b) => {
+    // Sort: clients with notes first, then by name
+    const aN = a.notes.length > 0 ? 0 : 1;
+    const bN = b.notes.length > 0 ? 0 : 1;
+    if(aN !== bN) return aN - bN;
+    return a.c.name.localeCompare(b.c.name);
+  });
+
+  const rowsHtml = rows2.map(agg => {
+    const {c, visits, noVisit, oz, lastTech, notes, hasSLTicket} = agg;
+    const visitStat = visits > 0
+      ? `<span class="sum-client-stat ok">✓ ${visits}</span>`
+      : `<span class="sum-client-stat" style="color:var(--muted)">—</span>`;
+    const noVisitStat = noVisit > 0
+      ? `<span class="sum-client-stat warn">✗ ${noVisit}</span>`
+      : '';
+    const ozStat = oz > 0
+      ? `<span class="sum-client-stat amber">💊 ${_formatChemAmount(oz)}</span>`
+      : '';
+    const slBadge = hasSLTicket
+      ? `<span class="ta-sent-badge" title="Has ticket in TECH-TICKETS">🎫</span>`
+      : '';
+    const noteSnip = notes.length > 0
+      ? `<span class="sum-client-note-snip" title="${esc(notes.join(' · '))}">📋 ${esc(notes[notes.length-1].substring(0,40))}${notes[notes.length-1].length>40?'…':''}</span>`
+      : '';
+    const techSpan = lastTech
+      ? `<span class="sum-client-stat" style="color:var(--muted);font-size:10.5px">👤 ${esc(lastTech)}</span>`
+      : '';
+    return `<div class="sum-client-row" onclick="openClientReport(${c.id},'quarter')" title="${esc(LANG==='es'?'Ver reporte completo':'View full report')}">
+      <span class="sum-client-name">${esc(c.name)}</span>
+      ${visitStat}${noVisitStat}${ozStat}${techSpan}${noteSnip}${slBadge}
+    </div>`;
+  }).join('');
+
+  const notesCount = rows2.filter(a => a.notes.length > 0).length;
+  const slCount = rows2.filter(a => a.hasSLTicket).length;
+  const subTitle = notesCount > 0
+    ? ` <span style="background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700">${notesCount} ${esc(LANG==='es'?'con notas':'with notes')}</span>`
+    : '';
+  const slBadgeSub = slCount > 0
+    ? ` <span class="ta-sent-badge">${slCount} sent</span>`
+    : '';
+
+  return `<div class="sum-section" style="margin-top:14px">
+    <div class="sum-section-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      👥 ${esc(LANG==='es'?'Vista por cliente':'Per-client overview')}
+      <span style="color:var(--muted);font-weight:500;font-size:11px">${rows2.length} ${esc(LANG==='es'?'clientes':'clients')}</span>
+      ${subTitle}${slBadgeSub}
+    </div>
+    <div style="margin-top:6px">${rowsHtml}</div>
   </div>`;
 }
 
@@ -6510,6 +6616,9 @@ function buildWeekSection(wt,clients,q){
           <span style="font-size:11.5px;font-weight:600;color:#AC672B">${a.date}${a.time?' '+a.time:''}</span>
           <span style="font-size:11.5px;color:#D48F53;flex:1">${a.type}</span>
           ${a.tech?`<span style="font-size:10.9px;color:var(--muted)">${a.tech}</span>`:''}
+          ${a.slTicketId
+            ? `<span class="ta-sent-badge" title="Ticket ID: ${esc(a.slTicketId)}">✓ Sent</span>`
+            : `<span style="font-size:10px;color:#EF4444;font-weight:600;flex-shrink:0" title="${LANG==='es'?'No enviado a TECH-TICKETS':'Not sent to TECH-TICKETS'}">⚠ Pending</span>`}
           <button class="btn btn-green" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();completeTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Completar':'Complete'}">✓</button>
           <button class="btn btn-red" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();deleteTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Eliminar':'Delete'}">✕</button>
         </div>`).join('');
