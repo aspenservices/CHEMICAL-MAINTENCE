@@ -778,6 +778,10 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
    actual weekday differs from the client's current `c.day` (i.e. an anchored
    historical visit from before the client was rescheduled to a new day). */
 .v-dow-mark{font-size:10px;font-weight:700;color:#A16207;background:#FEF3C7;border:1px solid #FCD34D;border-radius:4px;padding:0 4px;line-height:1.4;letter-spacing:.3px;flex-shrink:0;cursor:help}
+/* Tech note indicator — small speech-bubble pill shown when the tech left a note on this visit.
+   Clicking it opens the visit modal to read/edit. Tooltip shows the full note text. */
+.v-tech-note-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;line-height:1;background:#EFF6FF;border:1px solid #93C5FD;color:#1D4ED8;border-radius:10px;padding:1px 5px;flex-shrink:0;cursor:pointer;transition:background .15s,border-color .15s}
+.v-tech-note-badge:hover{background:#DBEAFE;border-color:#3B82F6}
 .visit-row-anchor{background:linear-gradient(90deg,rgba(254,243,199,.35) 0%,transparent 60%)}
 .v-note{font-size:11.5px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65px}
 .cc-actions{padding:3px 6px 5px;display:flex;gap:4px}
@@ -6473,7 +6477,13 @@ function buildWeekSection(wt,clients,q){
         const noteRow = dnote
           ? `<div class="visit-note-row" onclick="event.stopPropagation();editVisitDateNote(${c.id},'${dk}')" title="${esc(LANG==='es'?'Click para editar':'Click to edit')}"><span class="vnr-icon">📌</span><span class="vnr-text">${esc(dnote)}</span></div>`
           : '';
-        return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${noteBtn}</div>${noteRow}`;
+        // Tech note badge — small 💬 pill when tech left a note on this visit.
+        // Tooltip shows full note; click opens the visit modal to read/edit.
+        const techNoteText = vl && !isTombstone && vl.notes ? vl.notes.trim() : '';
+        const techNoteBadge = techNoteText
+          ? `<span class="v-tech-note-badge" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" title="${esc(techNoteText)}">💬</span>`
+          : '';
+        return`<div class="visit-row${isHistorical&&dowDiffers?' visit-row-anchor':''}" onclick="event.stopPropagation()"><span class="vdot ${dotC}" onclick="event.stopPropagation();toggleVisitQuick(${c.id},'${dk}')" style="cursor:pointer" title="${LANG==='es'?'Click para marcar/desmarcar':'Click to toggle'}"></span><span class="v-date" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${dlbl}</span>${dowBadge}<span class="v-note" onclick="event.stopPropagation();openVisitModal(${c.id},'${dk}')" style="cursor:pointer">${label}</span>${techNoteBadge}${noteBtn}</div>${noteRow}`;
       }).join('');
 
       const techApptHtml=ta.map(a=>`
