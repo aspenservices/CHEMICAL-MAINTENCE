@@ -2314,6 +2314,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   </div>
   <div class="edit-field"><label>Notas</label><textarea id="edit-notes"></textarea></div>
   <div class="edit-field"><label>Tags <span style="font-weight:400;font-size:12px;color:var(--muted)">(vip, dog, access, key, ...)</span></label><input id="edit-tags" placeholder="vip, perro, llave en caja"></div>
+  <div class="edit-field"><label>CRM ID <span style="font-weight:400;font-size:11px;color:var(--muted)">(Authorize.net)</span></label><input id="edit-crmid" readonly style="background:#F5F8FB;font-weight:600;color:#1A5276"><button type="button" id="edit-crmid-cp" onclick="copyText(this)" title="Copiar" style="border:1px solid var(--border);background:#FFFFFF;border-radius:6px;padding:4px 9px;font-size:13px;cursor:pointer">&#128203;</button></div>
   <div class="mfoot">
     <button class="btn" onclick="cm('medit')">Cancelar</button>
     <button class="btn btn-brand" onclick="saveEdit()">Guardar cambios</button>
@@ -3663,6 +3664,8 @@ function openEdit(id){
   const c=C.find(x=>x.id===id);if(!c)return;
   ["edit-id","edit-name","edit-phone","edit-email","edit-addr","edit-lwc","edit-nwc","edit-notes"].forEach((fid,i)=>{document.getElementById(fid).value=[id,c.name,c.phone,c.email||"",c.addr,c.lwc||"",c.nwc||"",c.notes||""][i];});
   const editTagsEl=document.getElementById("edit-tags");if(editTagsEl)editTagsEl.value=c.tags||"";
+  const _crmEl=document.getElementById("edit-crmid");if(_crmEl)_crmEl.value=crmIdFor(c);
+  const _crmCp=document.getElementById("edit-crmid-cp");if(_crmCp)_crmCp.setAttribute("data-cp",crmIdFor(c));
   document.getElementById("edit-freq").value=c.freq;
   document.getElementById("edit-day").value=c.day||"Mon";
   document.getElementById("edit-week").value=c.week||"A";
@@ -4255,6 +4258,46 @@ function _buildClientReportsHistorySection(c){
   </div>`;
 }
 
+// ─── CRM / Authorize.net linking helpers ──────────────────────────────────
+// Stable per-client key, derived from the immutable app id (NOT stored, so no
+// Firebase migration is needed). Paste this into Authorize.net's "Customer ID"
+// field (max 20 chars) so the same customer is searchable in both systems.
+// e.g. client #21 -> "ASPEN-0021".
+function crmIdFor(c){ return 'ASPEN-' + String(c && c.id != null ? c.id : 0).padStart(4,'0'); }
+
+// Split the stored "Last, First" name into Authorize.net's First/Last fields.
+// "Goggins, Brian & Kaye" -> {last:"Goggins", first:"Brian & Kaye"}.
+// No comma -> whole string goes in First (admin can move it to the Company field).
+function parseNameForAuthnet(name){
+  const n = String(name||'').trim();
+  const i = n.indexOf(',');
+  if(i === -1) return { first: n, last: '' };
+  return { last: n.slice(0,i).trim(), first: n.slice(i+1).trim() };
+}
+
+// One-tap copy with inline ✓ feedback. Robust to apostrophes/quotes because the
+// value lives in a data-attribute (data-cp), not in the onclick string.
+function copyText(el){
+  const txt = el.getAttribute('data-cp') || '';
+  const old = el.innerHTML;
+  const flash = ()=>{ el.innerHTML='&#10003;'; el.style.color='#15803D'; setTimeout(()=>{ el.innerHTML=old; el.style.color=''; },1100); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(flash).catch(()=>_fallbackCopy(txt,flash));
+  } else { _fallbackCopy(txt,flash); }
+}
+function _fallbackCopy(txt,cb){
+  const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta); if(cb)cb();
+}
+// Small inline copy button. `val` is the literal text to copy.
+function cpBtn(val){
+  if(val==null || val==='') return '';
+  const safe = esc(String(val));
+  return `<button type="button" data-cp="${safe}" onclick="copyText(this)" title="Copiar" style="border:1px solid var(--border);background:#FFFFFF;border-radius:6px;padding:1px 6px;font-size:12px;line-height:1.4;cursor:pointer;margin-left:6px;vertical-align:middle">&#128203;</button>`;
+}
+
 function vc(id){
   const c=C.find(x=>x.id===id);if(!c)return;
   const b=BL[id]||{};
@@ -4268,10 +4311,12 @@ function vc(id){
   const isPaused=c.status==='paused';
   const isCancelled=c.status==='cancelled';
   const fLbl=isW?t('weeklyLabel').toLowerCase():t('biweeklyLabel').toLowerCase();
+  const _an=parseNameForAuthnet(c.name);
+  const _crm=crmIdFor(c);
   document.getElementById('detbody').innerHTML=`
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.6rem;gap:8px;flex-wrap:wrap">
       <div>
-        <div style="font-size:19.5px;font-weight:600;color:var(--brand)">${esc(c.name)}</div>
+        <div style="font-size:19.5px;font-weight:600;color:var(--brand)">${esc(c.name)}${cpBtn(c.name)}</div>
         <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           ${sb(c.status)}
           ${c.week==='A&B'?`<span class="wb-ab">A+B ${t('weeklyLabel')}</span>`:c.week==='A'?`<span class="wb-a">${t('weekA')}</span>`:`<span class="wb-b">${t('weekB')}</span>`}
@@ -4287,12 +4332,22 @@ function vc(id){
     </div>
     <div style="height:2px;background:var(--brand);border-radius:2px;margin-bottom:12px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('phone')}</div><div style="font-size:14.9px">${esc(c.phone)}</div></div>
-      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('email')}</div><div style="font-size:12.6px;word-break:break-all">${esc(c.email)||'—'}</div></div>
-      <div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('address')}</div><div style="font-size:13.8px">${esc(c.addr)}</div></div>
+      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('phone')}</div><div style="font-size:14.9px">${esc(c.phone)}${cpBtn(c.phone)}</div></div>
+      <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('email')}</div><div style="font-size:12.6px;word-break:break-all">${esc(c.email)||'—'}${c.email?cpBtn(c.email):''}</div></div>
+      <div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('address')}</div><div style="font-size:13.8px">${esc(c.addr)}${c.addr?cpBtn(c.addr):''}</div></div>
       <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('freqLbl')} / ${t('dayLabel')}</div><div style="font-size:13.8px">${esc(c.freq)} — ${dln(c.day)} ${t('sem')} ${c.week}</div></div>
       <div><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('sanitizer')}</div><div style="font-size:13.8px">${esc(c.san)||'—'}</div></div>
       ${c.notes?`<div style="grid-column:1/-1"><div style="font-size:12.1px;color:var(--muted);font-weight:500">${t('notes')}</div><div style="font-size:13.2px;background:var(--warm2);padding:6px 8px;border-radius:6px;border-left:3px solid var(--brand2)">${esc(c.notes)}</div></div>`:''}
+    </div>
+    <div style="background:#F5F8FB;border:1px solid #D6E4F0;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:13.5px;font-weight:700;color:#1A5276">Authorize.net</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px">${LANG==='es'?'Copia cada campo y pégalo en el formulario Add New Customer':'Copy each field into the Add New Customer form'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px">
+        <div><div style="font-size:11px;color:var(--muted);font-weight:600">First name</div><div style="font-size:13.5px">${esc(_an.first)||'—'}${_an.first?cpBtn(_an.first):''}</div></div>
+        <div><div style="font-size:11px;color:var(--muted);font-weight:600">Last name</div><div style="font-size:13.5px">${esc(_an.last)||'—'}${_an.last?cpBtn(_an.last):''}</div></div>
+        <div style="grid-column:1/-1"><div style="font-size:11px;color:var(--muted);font-weight:600">Email</div><div style="font-size:13.5px;word-break:break-all">${esc(c.email)||'—'}${c.email?cpBtn(c.email):''}</div></div>
+        <div style="grid-column:1/-1"><div style="font-size:11px;color:var(--muted);font-weight:600">Customer ID</div><div style="font-size:13.5px;font-weight:600;color:#1A5276">${_crm}${cpBtn(_crm)}</div></div>
+      </div>
     </div>
     <div style="background:linear-gradient(135deg,#F8ECE1 0%,#FCF7F3 100%);border-radius:10px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--border)">
       <div style="font-size:14.4px;font-weight:600;color:var(--brand);margin-bottom:10px">${t('serviceValue')}</div>
