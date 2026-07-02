@@ -69,6 +69,8 @@ h1,h2,h3,h4{font-family:'Poppins',system-ui,sans-serif;letter-spacing:-.01em}
   --text:#2C2418;--muted:#7A7060;--dim:#A09888;
   --border:#E5DDD0;--border-dark:#D6CDB8;
   --green:#2D8A4E;--red:#C0392B;--purple:#D48F53;--cyan:#7E4C20;--blue:#B96F2E;--pink:#FF2D55;--indigo:#D59257;--teal:#DDA777;
+  /* Shared "chem = teal" identity — same values as TECH-TICKETS --c-chem-* */
+  --c-chem-bg:#dcf4f9;--c-chem-fg:#0e6a7d;--c-chem-strong:#1C8FA8;
   --header-bg:#2A211A;--header-text:#FFFFFF;
   --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
   --shadow-md:0 4px 16px rgba(0,0,0,.08);
@@ -851,6 +853,8 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .ta-sent-badge.st-inprogress{background:#DBEAFE;border-color:#93C5FD;color:#1D4ED8}
 .ta-sent-badge.st-done{background:#F0FDF4;border-color:#4ADE80;color:#14532D}
 .ta-sent-badge.st-pending{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+.ta-sent-badge.st-unassigned{background:var(--c-chem-bg);border-color:var(--c-chem-strong);color:var(--c-chem-fg)}
+.cc-zone-chip{font-size:9.3px;font-weight:700;padding:1px 6px;border-radius:5px;white-space:nowrap;flex-shrink:0;letter-spacing:.2px}
 /* ticket detail line below appt row */
 .ta-ticket-detail{font-size:10.5px;color:#605950;padding:2px 8px 4px 24px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Per-client summary row in the Summary tab */
@@ -4654,6 +4658,17 @@ const SL_DEFAULT_CONFIG={
 
 // ═══ ZIP → ZONE mapping (copied verbatim from the Service Log HTML) ═══
 const SL_ZIP_ZONES={"63101":"City","63102":"City","63103":"City","63104":"City","63105":"City","63106":"City","63107":"City","63108":"City","63109":"City","63110":"City","63112":"City","63113":"City","63115":"City","63116":"City","63117":"City","63118":"City","63139":"City","63130":"City","63124":"West","63131":"West","63132":"West","63141":"West","63143":"West","63144":"West","63043":"West","63005":"West","63017":"West","63038":"West","63040":"West","63011":"West","63021":"West","63069":"West","63146":"West","63119":"West","63122":"West","63126":"West","63127":"West","63025":"West","63088":"West","63049":"West","63051":"21/30","63016":"21/30","63114":"North","63120":"North","63121":"North","63133":"North","63134":"North","63135":"North","63140":"North","63136":"North","63137":"North","63138":"North","63147":"North","63074":"North","63044":"North","63031":"North","63034":"North","63042":"North","63033":"North","63341":"St. Charles","63390":"St. Charles","63304":"St. Charles","63303":"St. Charles","63301":"St. Charles","63376":"St. Charles","63368":"St. Charles","63367":"St. Charles","63366":"St. Charles","63385":"St. Charles","63383":"St. Charles","63379":"St. Charles","63362":"St. Charles","63369":"St. Charles","63359":"St. Charles","63123":"55 South","63125":"55 South","63128":"55 South","63129":"55 South","63010":"55 South","63052":"55 South","63012":"55 South","63070":"55 South","63028":"55 South","63048":"55 South","63628":"55 South","63020":"55 South","63670":"55 South","63050":"55 South","63111":"55 South","63601":"55 South","63640":"55 South","63673":"55 South","63014":"55 South","62206":"Route 3 (Illinois)","62240":"Route 3 (Illinois)","62239":"Route 3 (Illinois)","62236":"Route 3 (Illinois)","62260":"Route 3 (Illinois)","62285":"Route 3 (Illinois)","62298":"Route 3 (Illinois)","62244":"Route 3 (Illinois)","62278":"Route 3 (Illinois)","62243":"Route 3 (Illinois)","62255":"Route 3 (Illinois)","62217":"Route 3 (Illinois)","62286":"Route 3 (Illinois)","62939":"Route 3 (Illinois)","62864":"Route 3 (Illinois)","62216":"Route 3 (Illinois)","62035":"55 North (Illinois)","62002":"55 North (Illinois)","62024":"55 North (Illinois)","62095":"55 North (Illinois)","62084":"55 North (Illinois)","62087":"55 North (Illinois)","62063":"55 North (Illinois)","62012":"55 North (Illinois)","62010":"55 North (Illinois)","62046":"55 North (Illinois)","62069":"55 North (Illinois)","62088":"55 North (Illinois)","62009":"55 North (Illinois)","62033":"55 North (Illinois)","62626":"55 North (Illinois)","62056":"55 North (Illinois)","62049":"55 North (Illinois)","62052":"55 North (Illinois)","62246":"55 North (Illinois)","62254":"55 North (Illinois)","62281":"55 North (Illinois)","62249":"55 North (Illinois)","62294":"55 North (Illinois)","62062":"55 North (Illinois)","62034":"55 North (Illinois)","62025":"55 North (Illinois)","62234":"55 North (Illinois)","62080":"55 North (Illinois)","62471":"55 North (Illinois)","62040":"64 East (Illinois)","62232":"64 East (Illinois)","62208":"64 East (Illinois)","62226":"64 East (Illinois)","62220":"64 East (Illinois)","62221":"64 East (Illinois)","62061":"64 East (Illinois)","62269":"64 East (Illinois)","62293":"64 East (Illinois)","62230":"64 East (Illinois)","62271":"64 East (Illinois)","62258":"64 East (Illinois)","62801":"64 East (Illinois)","62223":"64 East (Illinois)"};
+// #8 (Jul 2026): same zone palette as TECH-TICKETS ZONE_COLORS — both apps
+// now speak the same visual language for zones.
+const SL_ZONE_COLORS={"City":{"bg":"#E6F1FB","text":"#0C447C"},"West":{"bg":"#EAF3DE","text":"#27500A"},"North":{"bg":"#FAEEDA","text":"#633806"},"44 West":{"bg":"#FAECE7","text":"#712B13"},"St. Charles":{"bg":"#EEEDFE","text":"#3C3489"},"55 South":{"bg":"#FBEAF0","text":"#72243E"},"21/30":{"bg":"#E1F5EE","text":"#085041"},"Route 3 (Illinois)":{"bg":"#F1EFE8","text":"#2C2C2A"},"55 North (Illinois)":{"bg":"#E1F5EE","text":"#085041"},"64 East (Illinois)":{"bg":"#FCEBEB","text":"#791F1F"}};
+function _clientZoneChip(c){
+  if(!c||!c.addr)return'';
+  const zip=(typeof _extractZip==='function')?_extractZip(c.addr):'';
+  const zone=zip?(SL_ZIP_ZONES[zip]||''):'';
+  if(!zone)return'';
+  const zc=SL_ZONE_COLORS[zone]||{bg:'#EEE',text:'#555'};
+  return `<span class="cc-zone-chip" style="background:${zc.bg};color:${zc.text}" title="${esc(LANG==='es'?'Zona — misma tabla que TECH-TICKETS':'Zone — same table as TECH-TICKETS')}">${esc(zone)}</span>`;
+}
 
 const SL_ZIP_CITIES={"63114":"Overland","63031":"Florissant","63135":"Ferguson","63123":"Affton","63129":"Oakville","63010":"Arnold","63005":"Chesterfield","63011":"Ballwin","63301":"St. Charles","63376":"St. Peters","63366":"O'Fallon","63385":"Wentzville","63122":"Kirkwood","63119":"Webster Groves","63126":"Crestwood","63128":"Concord","63125":"Mehlville","62221":"Belleville","62220":"Belleville","62223":"Belleville","62226":"Belleville","62208":"Fairview Heights","63108":"St. Louis","63130":"University City","63131":"Town and Country","63132":"Olivette","63141":"Creve Coeur","63146":"Maryland Heights","63303":"St. Charles","63304":"St. Charles","63368":"O'Fallon","63367":"Lake St. Louis"};
 
@@ -4784,6 +4799,28 @@ function _mapTypeToWorkType(apptType){
   return 'Service Call';
 }
 
+// #7 (Jul 2026): duplicate guard. Returns a human-readable list of OPEN
+// tickets for this client, or null. Remote (TECH-TICKETS Firestore) is the
+// source of truth when reachable; local "already sent" flag is the fallback.
+async function _findOpenTicketDup(cid){
+  if(slDB){
+    try{
+      if(slAuthReady)await slAuthReady;
+      const snap=await slDB.collection('tickets').where('chemClientId','==',cid).limit(10).get();
+      const open=[];
+      snap.forEach(doc=>{
+        const d=doc.data();
+        if(d.status==='canceled'||d.status==='done'||d.status==='completed')return;
+        if(d.fieldReportSubmitted)return;
+        open.push('#'+doc.id.substring(0,5)+' · '+(d.date||'no date')+' · '+((d.workTypes||[]).join(', ')||'Service')+' · '+((d.techs&&d.techs.length)?d.techs.join(', '):'Unassigned'));
+      });
+      return open.length?open.join('\n'):null; // remote answered — trust it
+    }catch(e){console.warn('remote dup check failed, using local:',e.message);}
+  }
+  const local=(TAPPTS[cid]||[]).find(a=>a.slTicketId&&a.status!=='done');
+  return local?('#'+String(local.slTicketId).substring(0,5)+' · '+local.date+' · '+local.type):null;
+}
+
 async function saveTechApptAndSendToSL(){
   const id=parseInt(document.getElementById('ta-cid').value);
   const c=C.find(x=>x.id===id);
@@ -4795,6 +4832,17 @@ async function saveTechApptAndSendToSL(){
   const tech=document.getElementById('ta-tech').value;
   const status=document.getElementById('ta-status').value;
   if(!date){showToast(t('enterDate'));return;}
+
+  // ── #7 DUPLICATE GUARD (Jul 2026): warn before creating a second open
+  // ticket for the same client. Never blocks — admin can always proceed.
+  // On cancel the modal stays open so the date/type can be adjusted.
+  try{
+    const dup=await _findOpenTicketDup(id);
+    if(dup){
+      const okDup=await showConfirm('⚠ '+c.name+' already has an OPEN ticket in TECH-TICKETS:\n\n'+dup+'\n\nCreate another ticket anyway?');
+      if(!okDup){showToast(LANG==='es'?'Cancelado — no se creó ticket duplicado':'Canceled — no duplicate ticket created');return;}
+    }
+  }catch(_e){console.warn('dup check skipped:',_e);}
 
   // Always save locally (existing behavior) — this is what shows the 🔧 badge on the schedule
   const appt={date,time,type,desc,tech,status,created:new Date().toISOString()};
@@ -4821,6 +4869,16 @@ async function saveTechApptAndSendToSL(){
     ra();saveData();return;
   }
 
+  await _sendApptTicketToSL(c,id,appt,false);
+}
+
+// ── CORE SENDER (Jul 2026 refactor) ─────────────────────────────────
+// Builds the ticket payload and writes it to TECH-TICKETS. Extracted from
+// saveTechApptAndSendToSL so the weekly batch sender (#9) reuses the EXACT
+// same logic. quiet=true suppresses per-ticket toasts (batch mode).
+// Returns true on success, false on failure. Mutates appt.slTicketId.
+async function _sendApptTicketToSL(c,id,appt,quiet){
+  const date=appt.date,time=appt.time,type=appt.type,desc=appt.desc,tech=appt.tech;
   // ── Wait for auth to complete before writing — Firestore rules require it ──
   // initServiceLogConnection kicks off an async signInAnonymously; if the user
   // clicks the button fast enough we'd otherwise race the auth and get
@@ -4829,8 +4887,8 @@ async function saveTechApptAndSendToSL(){
     try{await slAuthReady;}
     catch(e){
       console.error('🎫 Service Log auth never completed:',e);
-      showToast('❌ Service Log auth failed — ticket NOT sent.\n\nError: '+(e.code||e.message||e)+'\n\nThe tech visit WAS saved locally.\n\nFix: In Firebase Console (tech-tickets-a9485) → Authentication → Sign-in method → enable Anonymous.');
-      saveData();ra();return;
+      if(!quiet)showToast('❌ Service Log auth failed — ticket NOT sent.\n\nError: '+(e.code||e.message||e)+'\n\nThe tech visit WAS saved locally.\n\nFix: In Firebase Console (tech-tickets-a9485) → Authentication → Sign-in method → enable Anonymous.');
+      saveData();ra();return false;
     }
   }
 
@@ -4953,13 +5011,15 @@ async function saveTechApptAndSendToSL(){
     ra();
     const zoneMsg=finalZone?' · '+finalZone:'';
     const techHint=tech?' (suggested: '+tech+')':'';
-    _showSLToast('✓ Ticket sent — '+c.name+zoneMsg+' · Unassigned'+techHint);
+    if(!quiet)_showSLToast('✓ Ticket sent — '+c.name+zoneMsg+' · Unassigned'+techHint);
+    return true;
   }catch(e){
     console.error('❌ 🎫 SL ticket write FAILED:',e);
     console.error('   Error code:',e.code);
     console.error('   Error message:',e.message);
     saveData();ra();
-    showToast('❌ Ticket could NOT be sent to Service Log\n\nError: '+(e.code||'')+'\n'+e.message+'\n\nThe tech visit WAS saved locally.\n\nMost common cause: Firestore security rules are blocking writes.\n\nTo fix: In Firebase Console → Firestore Database → Rules, make sure writes to `tickets` are allowed.\n\nOpen browser DevTools → Console to see the full error.');
+    if(!quiet)showToast('❌ Ticket could NOT be sent to Service Log\n\nError: '+(e.code||'')+'\n'+e.message+'\n\nThe tech visit WAS saved locally.\n\nMost common cause: Firestore security rules are blocking writes.\n\nTo fix: In Firebase Console → Firestore Database → Rules, make sure writes to `tickets` are allowed.\n\nOpen browser DevTools → Console to see the full error.');
+    return false;
   }
 }
 
@@ -6765,9 +6825,10 @@ function buildWeekSection(wt,clients,q){
       const techApptHtml=ta.map(a=>{
         const rowClass = a.slTicketId ? 'ta-sent' : 'ta-pending';
         const cachedSt = a.slTicketId && _slTicketStatusCache[a.slTicketId];
-        const stClass = cachedSt ? ({in_progress:'st-inprogress',completed:'st-done',done:'st-done'}[cachedSt.status]||'st-scheduled') : 'st-scheduled';
+        const _lc = cachedSt ? _slBadgeLabelCls(cachedSt) : {label:'✓ Sent',cls:'st-scheduled'};
+        const stClass = _lc.cls;
         const rowColorClass = cachedSt ? ({in_progress:'ta-inprogress',completed:'ta-done',done:'ta-done'}[cachedSt.status]||'ta-sent') : rowClass;
-        const stLabel = cachedSt ? ({pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'}[cachedSt.status]||'✓ Sent') : '✓ Sent';
+        const stLabel = _lc.label;
         const shortId = a.slTicketId ? '#'+a.slTicketId.substring(0,5) : '';
         const descSnip = a.desc ? a.desc.substring(0,45)+(a.desc.length>45?'…':'') : '';
         return `<div class="tech-appt-row ${rowColorClass}" title="${esc(a.desc||'')}">
@@ -6775,7 +6836,7 @@ function buildWeekSection(wt,clients,q){
           <span style="font-size:11.5px;font-weight:600;color:#AC672B">${a.date}${a.time?' '+a.time:''}</span>
           <span style="font-size:11.5px;color:#2A1C0F;font-weight:600;flex:1">${esc(a.type)}${descSnip?`<span style="font-weight:400;color:var(--muted);font-size:10.5px"> · ${esc(descSnip)}</span>`:''}${a.tech?`<span style="font-size:10.5px;color:var(--muted)"> · ${esc(a.tech)}</span>`:''}</span>
           ${a.slTicketId
-            ? `<span class="ta-sent-badge ${stClass}" data-slid="${esc(a.slTicketId)}" onclick="event.stopPropagation();(async(el)=>{const info=await pollSLTicketStatus('${esc(a.slTicketId)}');if(info){const labels={pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'};const cls={pending:'st-scheduled',scheduled:'st-scheduled',in_progress:'st-inprogress',completed:'st-done',done:'st-done'};el.textContent=labels[info.status]||'✓ Sent';el.className='ta-sent-badge '+(cls[info.status]||'st-scheduled');}el.title='${esc(shortId)} · Click=refresh';})(event.currentTarget);" title="${esc(shortId)} · Click to refresh">${stLabel} ${shortId}</span>`
+            ? `<span class="ta-sent-badge ${stClass}" data-slid="${esc(a.slTicketId)}" onclick="event.stopPropagation();(async(el)=>{const info=await pollSLTicketStatus('${esc(a.slTicketId)}',true);if(info)_slBadgeApply(el,info);el.title='${esc(shortId)} · Click=refresh';})(event.currentTarget);" title="${esc(shortId)} · Click to refresh">${stLabel} ${shortId}</span>`
             : `<span style="font-size:10px;color:#EF4444;font-weight:700;flex-shrink:0;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:1px 5px" title="${LANG==='es'?'No enviado a TECH-TICKETS':'Not sent to TECH-TICKETS'}">⚠ Not sent</span>`}
           <button class="btn btn-green" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();completeTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Completar':'Complete'}">✓</button>
           <button class="btn btn-red" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();deleteTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Eliminar':'Delete'}">✕</button>
@@ -6823,6 +6884,7 @@ function buildWeekSection(wt,clients,q){
           <span class="chevron">&#9654;</span>
           <span class="cc-num">${ordNum}</span>
           <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
+          ${_clientZoneChip(c)}
           ${wbadge}
           ${hasTechAppt?'<span style="font-size:10.3px;color:#D48F53" title="Visita técnica agendada">&#865021;</span>':''}
           ${noteCount > 0 ? `<span class="cc-day-note-flag" title="${noteCount} ${LANG==='es'?'nota(s) del día':'day note(s)'}">📝${noteCount>1?'<sup style="font-size:8px">'+noteCount+'</sup>':''}</span>` : ''}
@@ -7735,7 +7797,7 @@ function openWeeklyChecklist(){
 
   // Section 2
   html += `<div style="margin-bottom:16px">
-    <div style="font-weight:700;font-size:14px;color:#991B1B;margin-bottom:6px">⚠ Tech appts not sent to TECH-TICKETS (${pendingSend.length})</div>`;
+    <div style="font-weight:700;font-size:14px;color:#991B1B;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>⚠ Tech appts not sent to TECH-TICKETS (${pendingSend.length})</span>${pendingSend.length?`<button class="btn btn-green" style="font-size:11px;padding:3px 10px" onclick="sendWeekPendingToSL()">🎫 ${LANG==='es'?'Enviar todos':'Send all'} (${pendingSend.length})</button>`:''}</div>`;
   if(!pendingSend.length){
     html += `<div style="font-size:12.5px;color:#16A34A;font-style:italic">✓ All sent</div>`;
   } else {
@@ -7780,39 +7842,129 @@ function openWeeklyChecklist(){
   om('mweekclose');
 }
 
+// #9 (Jul 2026): batch-send every pending tech appt of the CURRENT week to
+// TECH-TICKETS in one confirmed action. Reuses _sendApptTicketToSL so the
+// payload is IDENTICAL to a single send. Sequential on purpose — each write
+// runs its own prior-ticket Firestore merge queries.
+async function sendWeekPendingToSL(){
+  const todayKey=_localDateKey(todayLocal());
+  const monday=_mondayOf(todayKey);
+  const days=_weekDays(monday);
+  const fromKey=days[0],toKey=days[days.length-1];
+  const list=[];
+  Object.entries(TAPPTS).forEach(([cidStr,tappts])=>{
+    const c=C.find(x=>x.id===parseInt(cidStr));
+    if(!c)return;
+    (tappts||[]).forEach(a=>{
+      if(a.date<fromKey||a.date>toKey)return;
+      if(!a.slTicketId)list.push({c,a});
+    });
+  });
+  if(!list.length){showToast(LANG==='es'?'Nada pendiente esta semana':'Nothing pending this week');return;}
+  if(!slDB)initServiceLogConnection();
+  if(!slDB){showToast('❌ TECH-TICKETS not connected — use the 🎫 button first');return;}
+  const names=list.slice(0,8).map(x=>'• '+x.c.name+' · '+x.a.date+' · '+x.a.type).join('\n')+(list.length>8?'\n…+'+(list.length-8)+' more':'');
+  const ok=await showConfirm('🎫 Send '+list.length+' appointment(s) to TECH-TICKETS?\n\n'+names+'\n\nAll will land as Unassigned in the Service Log.');
+  if(!ok)return;
+  showToast('🎫 Sending '+list.length+'…');
+  let sent=0,failed=0;
+  for(const {c,a} of list){
+    const okOne=await _sendApptTicketToSL(c,c.id,a,true);
+    if(okOne)sent++;else failed++;
+  }
+  saveData();ra();
+  showToast(failed?('⚠ '+sent+' sent · '+failed+' failed — open DevTools console for details'):('✓ '+sent+' ticket(s) sent to TECH-TICKETS'));
+  openWeeklyChecklist(); // refresh so the pending section clears
+}
+
 /* ══════════════════════════════════════════════════════════════════
    FEATURE 6 — Poll TECH-TICKETS Firestore for ticket status
    Called lazily when a tech-appt with slTicketId is visible.
    Caches results in memory; does NOT re-poll if already fetched.
    ══════════════════════════════════════════════════════════════════ */
-const _slTicketStatusCache = {}; // ticketId → {status, updatedAt}
+const _slTicketStatusCache = {}; // ticketId → {status, tech, date, updatedAt, ts}
+const _SL_STATUS_TTL_MS = 5*60*1000; // re-poll after 5 min so badges stay honest
 
-async function pollSLTicketStatus(ticketId){
-  if(_slTicketStatusCache[ticketId]) return _slTicketStatusCache[ticketId];
-  if(!slDB) return null;
+async function pollSLTicketStatus(ticketId,force){
+  const hit=_slTicketStatusCache[ticketId];
+  if(hit&&!force&&hit.ts&&(Date.now()-hit.ts)<_SL_STATUS_TTL_MS) return hit;
+  if(!slDB) return hit||null;
   try{
     const snap = await slDB.collection('tickets').doc(ticketId).get();
     if(snap.exists){
       const d = snap.data();
-      const result = {status: d.status||'pending', tech: (d.techs&&d.techs[0])||'', updatedAt: d.updatedAt||''};
+      const result = {status:d.status||'pending', tech:(d.techs&&d.techs[0])||'', date:d.date||'', updatedAt:d.updatedAt||'', ts:Date.now()};
       _slTicketStatusCache[ticketId] = result;
       return result;
     }
   }catch(e){ console.warn('pollSLTicketStatus:',e.message); }
-  return null;
+  return hit||null;
 }
 
-// Refreshes the sent-badge on a rendered tech-appt-row with live status
+// #6 (Jul 2026): human label + css class for a ticket status. Priority:
+// terminal states → in progress → "who & when" → unassigned. The "👤 Pedro ·
+// 07/08" form is the whole point: Nela sees WHO and WHEN without opening
+// TECH-TICKETS.
+function _slBadgeLabelCls(info){
+  if(!info) return {label:'✓ Sent',cls:'st-scheduled'};
+  const st=info.status;
+  if(st==='completed'||st==='done') return {label:'✓ Done',cls:'st-done'};
+  if(st==='in_progress') return {label:'🔧 In Progress',cls:'st-inprogress'};
+  if(info.tech){
+    const dt=info.date?(' · '+String(info.date).substring(5).replace('-','/')):'';
+    return {label:'👤 '+info.tech+dt,cls:'st-scheduled'};
+  }
+  return {label:'⏳ Unassigned',cls:'st-unassigned'};
+}
+function _slBadgeApply(el,info){
+  const lc=_slBadgeLabelCls(info);
+  const sid=el.getAttribute('data-slid')||'';
+  el.textContent=lc.label+(sid?' #'+sid.substring(0,5):'');
+  el.className='ta-sent-badge '+lc.cls;
+}
+
+// #6 (Jul 2026): lazy auto-refresh of every visible sent-badge. Runs shortly
+// after load and every 90s; each pass fetches at most 15 stale statuses so a
+// big schedule never floods Firestore reads. Click-to-refresh still works.
+function _autoPollVisibleSLBadges(){
+  if(!slDB) return;
+  let n=0;
+  document.querySelectorAll('.ta-sent-badge[data-slid]').forEach(el=>{
+    const idd=el.getAttribute('data-slid');
+    const hit=_slTicketStatusCache[idd];
+    if(hit&&hit.ts&&(Date.now()-hit.ts)<_SL_STATUS_TTL_MS){_slBadgeApply(el,hit);return;}
+    if(n>=15) return; n++;
+    pollSLTicketStatus(idd,true).then(info=>{if(info)_slBadgeApply(el,info)}).catch(()=>{});
+  });
+}
+setTimeout(_autoPollVisibleSLBadges,1800);
+setInterval(_autoPollVisibleSLBadges,90*1000);
+
+// #3 (Jul 2026): deep link FROM TECH-TICKETS — opening ...#client=ID scrolls
+// to that client's card, expands it, and highlights it for a few seconds.
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    const m=(location.hash||'').match(/client=(\d+)/);
+    if(!m)return;
+    const el=document.querySelector('.cal-cc[data-cid="'+m[1]+'"]');
+    if(!el)return;
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    const body=el.querySelector('.cc-body');
+    if(body&&!body.classList.contains('open')){const hd=el.querySelector('.cal-cc-hd');if(hd)hd.click();}
+    el.style.outline='3px solid var(--c-chem-strong)';el.style.outlineOffset='2px';
+    setTimeout(function(){el.style.outline='';el.style.outlineOffset='';},3500);
+  },1400);
+});
+
+// Refreshes the sent-badge on a rendered tech-appt-row with live status.
+// NOTE: no call sites remain — kept as a public helper; now delegates to
+// _slBadgeApply so it can't drift from the badge logic above.
 async function refreshSLBadge(rowEl, ticketId){
-  const info = await pollSLTicketStatus(ticketId);
+  const info = await pollSLTicketStatus(ticketId,true);
   if(!info) return;
   const badge = rowEl.querySelector('.ta-sent-badge');
   if(!badge) return;
-  const colors = {pending:'#DCFCE7|#86EFAC|#166534', scheduled:'#DCFCE7|#86EFAC|#166534', in_progress:'#DBEAFE|#93C5FD|#1D4ED8', completed:'#F0FDF4|#4ADE80|#14532D', done:'#F0FDF4|#4ADE80|#14532D'};
-  const [bg,border,color] = (colors[info.status]||colors.pending).split('|');
-  const labels = {pending:'✓ Sent',scheduled:'📅 Scheduled',in_progress:'🔧 In Progress',completed:'✓ Done',done:'✓ Done'};
-  badge.style.cssText = `background:${bg};border-color:${border};color:${color}`;
-  badge.textContent = labels[info.status]||'✓ Sent';
+  _slBadgeApply(badge,info);
   if(info.tech) badge.title = `Tech: ${info.tech}`;
 }
 
