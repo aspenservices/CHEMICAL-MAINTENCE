@@ -2419,6 +2419,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 <div class="modal" style="max-width:520px">
   <h3>☁️ Firebase Cloud Sync</h3><div class="divider"></div>
   <div id="fb-status-area" style="margin-bottom:12px"></div>
+  <div id="fb-devices" style="margin-bottom:12px"></div>
   <p style="font-size:13.8px;color:var(--muted);margin-bottom:12px">Connect to Firebase to sync data across all devices in real-time. Create a free project at <a href="https://console.firebase.google.com" target="_blank" style="color:var(--brand)">console.firebase.google.com</a></p>
   <div class="frow"><label>API Key</label><input id="fb-apikey" placeholder="AIzaSy..."></div>
   <div class="frow"><label>Project ID</label><input id="fb-project" placeholder="aspen-spas-xxxxx"></div>
@@ -8572,6 +8573,9 @@ function doInit(config){
       });
       // FEATURE #4 — billing node listener (permission-aware)
       _initBillingSync();
+      // Device registry — so admins can promote devices from inside the app
+      try{ _registerDevice(); }catch(e){ dbgWarn('caught:',e); }
+      setTimeout(()=>{ try{ _registerDevice(); }catch(e){ dbgWarn('caught:',e); } },8000);
       // FEATURE #10 — live audit feed for the dashboard card
       try{ _attachAuditFeed(); }catch(e){ dbgWarn('caught:',e); }
       // FEATURE #2 — upgrade recent base64 photos to Storage URLs in the background
@@ -9030,6 +9034,76 @@ function _portalHtml(d){
     +'<div style="text-align:center;color:#A09888;font-size:12px;margin-top:24px">Questions? Call us at (314) 776-5050<br>Aspen Spas · 4609 McRee Ave, St. Louis, MO</div></div>';
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   Device registry + in-app admin manager
+   ══════════════════════════════════════════════════════════════════
+   Every device that connects writes a small card to aspen_spas/devices/
+   {uid} (who, role, platform, last seen). Admin devices see the list in
+   the ☁️ Cloud modal and can promote/demote admins with one tap — no one
+   ever needs to open the Firebase console or copy UIDs by hand. */
+function _registerDevice(){
+  try{
+    if(!fbDB||!firebase.auth) return;
+    const u=firebase.auth().currentUser; if(!u) return;
+    const who=CURRENT_ROLE==='tech'?(CURRENT_TECH||'Tech')
+      :CURRENT_ROLE==='organizer'?((typeof CURRENT_ORGANIZER!=='undefined'&&CURRENT_ORGANIZER)||'Organizer')
+      :CURRENT_ROLE==='admin'?'Admin':'(sin rol)';
+    const ua=navigator.userAgent||'';
+    const plat=/iPhone|iPad/.test(ua)?'iPhone/iPad':/Android/.test(ua)?'Android':/Mac/.test(ua)?'Mac':'PC';
+    fbDB.ref('aspen_spas/devices/'+u.uid).update({
+      who:who, role:CURRENT_ROLE||'?', platform:plat, lastSeen:new Date().toISOString()
+    }).catch(e=>dbgWarn('device registry',e));
+  }catch(e){ dbgWarn('device registry',e); }
+}
+function _renderDeviceList(){
+  const box=document.getElementById('fb-devices');
+  if(!box) return;
+  if(CURRENT_ROLE!=='admin'||!fbDB){ box.innerHTML=''; return; }
+  Promise.all([
+    fbDB.ref('aspen_spas/devices').once('value'),
+    fbDB.ref('aspen_spas/admins').once('value')
+  ]).then(([ds,as_])=>{
+    const devs=ds.val()||{}, admins=as_.val()||{};
+    const myUid=(firebase.auth().currentUser||{}).uid;
+    const uids=Object.keys(devs).sort((a,b)=>String(devs[b].lastSeen||'').localeCompare(String(devs[a].lastSeen||'')));
+    if(!uids.length){ box.innerHTML=''; return; }
+    const rows=uids.map(uid=>{
+      const d=devs[uid]||{};
+      const isAdmin=admins[uid]===true;
+      const isMe=uid===myUid;
+      const seen=d.lastSeen?new Date(d.lastSeen).toLocaleString('es-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      const btn=isMe
+        ?'<span style="font-size:11px;color:var(--muted)">(este dispositivo)</span>'
+        :isAdmin
+          ?'<button class="btn btn-red" style="font-size:11px;padding:3px 9px" onclick="toggleAdminUID(\''+uid+'\',false)">Quitar admin</button>'
+          :'<button class="btn btn-brand" style="font-size:11px;padding:3px 9px" onclick="toggleAdminUID(\''+uid+'\',true)">Hacer admin</button>';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);flex-wrap:wrap">'
+        +'<span style="font-size:16px">'+(d.platform==='iPhone/iPad'?'\uD83D\uDCF1':d.platform==='Android'?'\uD83E\uDD16':'\uD83D\uDCBB')+'</span>'
+        +'<span style="font-weight:700;font-size:13px">'+esc(d.who||'?')+'</span>'
+        +'<span style="font-size:11.5px;color:var(--muted)">'+esc(d.platform||'')+' \u00b7 '+esc(seen)+'</span>'
+        +(isAdmin?'<span style="background:#DCFCE7;color:#166534;border-radius:12px;padding:1px 8px;font-size:10.5px;font-weight:700">ADMIN</span>':'')
+        +'<span style="margin-left:auto">'+btn+'</span></div>';
+    }).join('');
+    box.innerHTML='<div style="background:var(--warm2);border-radius:8px;padding:10px 12px">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><strong style="font-size:13px;color:var(--brand)">\uD83D\uDCF2 Dispositivos conectados</strong>'
+      +'<button class="btn" style="font-size:10.5px;padding:2px 8px;margin-left:auto" onclick="_renderDeviceList()">\u21BB Refrescar</button></div>'
+      +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px">Cada dispositivo aparece aqu\u00ed al abrir la app. "Hacer admin" le da acceso a Facturaci\u00f3n.</div>'
+      +rows+'</div>';
+  }).catch(e=>{ dbgWarn('device list',e); box.innerHTML=''; });
+}
+function toggleAdminUID(uid,makeAdmin){
+  if(!fbDB) return;
+  const ref=fbDB.ref('aspen_spas/admins/'+uid);
+  const op=makeAdmin?ref.set(true):ref.remove();
+  op.then(()=>{
+    showToast(makeAdmin?'\u2713 Ahora es admin \u2014 Facturaci\u00f3n visible en ese dispositivo':'\u2713 Admin removido',makeAdmin?'ok':'warn');
+    try{ logAudit(makeAdmin?'makeAdmin':'removeAdmin',uid.slice(0,10)+'\u2026'); }catch(e){ dbgWarn('caught:',e); }
+    _renderDeviceList();
+  }).catch(e=>{
+    showToast('\u26A0 No se pudo \u2014 revisa que este dispositivo sea admin y las reglas est\u00e9n actualizadas','warn');
+    dbgWarn('toggleAdmin',e);
+  });
+}
 function saveToFirebase(){
   // Even if not connected, schedule a fail-safe release of fbSyncing in case the caller set it
   // (e.g. _techRecordVisit). Otherwise the local guard could stay locked when offline.
@@ -9134,6 +9208,7 @@ function updateCloudIndicator(connected,error){
       }catch(e){ dbgWarn('caught:',e); }
       area.innerHTML='<div style="background:#DCFCE7;border-radius:8px;padding:10px;font-size:13.8px;color:#166534"><strong>✓ Connected</strong> — Data syncs automatically across all devices.</div>'+uidHtml;
     }
+    try{ _renderDeviceList(); }catch(e){ dbgWarn('caught:',e); }
     // Fill in fields
     const config=getFirebaseConfig();
     if(config){
