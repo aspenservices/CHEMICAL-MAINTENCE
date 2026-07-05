@@ -2959,6 +2959,7 @@ function rebuildUI(){
   // Water Change tab
   const wcTitle=document.getElementById('ct-wctab');if(wcTitle)wcTitle.textContent=t('wcSchedule');
   const wcsrch=document.getElementById('wcsrch');if(wcsrch)wcsrch.placeholder=t('searchClient');
+  try{ _applyNewUiLang(); }catch(e){ dbgWarn('caught:',e); }
   const wcf=document.getElementById('wcfilter');
   if(wcf){wcf.options[0].text=t('allFilter');wcf.options[1].text=t('overdueFilter');wcf.options[2].text=t('upcomingFilter');wcf.options[3].text=t('pendingFilter');}
   const wcth=document.getElementById('wc-thead');
@@ -4772,6 +4773,7 @@ function stc(){
   const c=C.find(x=>x.id===id);
   c.techP=true;c.techI=issue;c.techD=document.getElementById('td').value;c.techS=document.getElementById('ts').value;
   if(c.techS==='done')c.techP=false;
+  c.lastModified=Date.now(); // FIX — merge races dropped tech-panel edits
   cm('mtech');ra();
 }
 function oTechAppt(id){
@@ -4994,6 +4996,7 @@ async function saveTechApptAndSendToSL(){
   const appt={date,time,type,desc,tech,status,created:new Date().toISOString()};
   if(!TAPPTS[id])TAPPTS[id]=[];
   TAPPTS[id].push(appt);
+  _touchTappts(id);
 
   // Close the modal immediately so it feels snappy
   cm('mtech-appt');
@@ -5261,13 +5264,15 @@ async function deleteTechAppt(cid,idx){
     :`Delete this appointment?\n\n${a.type} — ${a.date}${a.time?' '+a.time:''}\n${c.name}`;
   if(!await showConfirm(msg,{danger:true}))return;
   TAPPTS[cid].splice(idx,1);
-  if(TAPPTS[cid].length===0)delete TAPPTS[cid];
+  if(TAPPTS[cid].length===0){ delete TAPPTS[cid]; _fbMarkDeleted(['TAPPTS/'+cid]); }
+  _touchTappts(cid);
   saveData();ra();
 }
 
 function completeTechAppt(cid,idx){
   if(!TAPPTS[cid]||!TAPPTS[cid][idx])return;
   TAPPTS[cid][idx].status='done';
+  _touchTappts(cid);
   saveData();ra();
 }
 
@@ -5280,13 +5285,15 @@ async function deleteTechApptFromDetail(cid,idx){
     :`Delete this appointment?\n\n${a.type} — ${a.date}${a.time?' '+a.time:''}\n${c.name}`;
   if(!await showConfirm(msg,{danger:true}))return;
   TAPPTS[cid].splice(idx,1);
-  if(TAPPTS[cid].length===0)delete TAPPTS[cid];
+  if(TAPPTS[cid].length===0){ delete TAPPTS[cid]; _fbMarkDeleted(['TAPPTS/'+cid]); }
+  _touchTappts(cid);
   saveData();cm('mdet');ra();setTimeout(()=>vc(cid),80);
 }
 
 function completeTechApptFromDetail(cid,idx){
   if(!TAPPTS[cid]||!TAPPTS[cid][idx])return;
   TAPPTS[cid][idx].status='done';
+  _touchTappts(cid);
   saveData();cm('mdet');ra();setTimeout(()=>vc(cid),80);
 }
 
@@ -8681,6 +8688,12 @@ function doInit(config){
       // Listen for real-time changes
       fbRef.on('value',snap=>{
         const d=snap.val();
+        _fbGotFirstSnap=true;
+        if(!d){
+          // Cloud node is genuinely empty — a first save may legitimately seed it
+          _fbBaseline={};
+          if(window._fbDirty){ window._fbDirty=false; setTimeout(saveToFirebase,800); }
+        }
         if(d){
           // FEATURE #1 — baseline = the cloud state as this device knows it.
           // Granular saves diff against this, so entries we haven't seen are
@@ -8792,10 +8805,34 @@ function applyCloudData(d, cloudNewer){
     });
   }
   // ─── TAPPTS (technician appointments) — replace whole-key only if cloud is newer. These are admin-managed. ───
-  if(cloudNewer&&d.TAPPTS){Object.keys(TAPPTS).forEach(k=>delete TAPPTS[k]);Object.assign(TAPPTS,d.TAPPTS);}
+  if(d.TAPPTS){
+    // FIX — per-client authority merge instead of gated wholesale replace.
+    // The newest appointment state of EACH client wins (tapptTs); clients
+    // without stamps keep the legacy cloudNewer behavior; and appointments
+    // for clients this device doesn't have yet always come in additively.
+    const _cliArr=d.clients?(Array.isArray(d.clients)?d.clients:Object.values(d.clients).filter(Boolean)):[];
+    const _cloudTs={}; _cliArr.forEach(cl=>{ _cloudTs[cl.id]=cl.tapptTs||0; });
+    const _localTs={}; C.forEach(cl=>{ _localTs[cl.id]=cl.tapptTs||0; });
+    Object.keys(d.TAPPTS).forEach(cid=>{
+      const cts=_cloudTs[cid]||0, lts=_localTs[cid]||0;
+      if((cts||lts)?(cts>=lts):cloudNewer) TAPPTS[cid]=d.TAPPTS[cid];
+      else if(!(cid in TAPPTS)) TAPPTS[cid]=d.TAPPTS[cid];
+    });
+    // Cross-device deletion of a client's LAST appointment: the cloud client
+    // is stamped newer AND the cloud no longer carries an array for it.
+    Object.keys(TAPPTS).forEach(cid=>{
+      if(d.TAPPTS[cid]!==undefined) return;
+      if((_cloudTs[cid]||0)>(_localTs[cid]||0)) delete TAPPTS[cid];
+    });
+  }
   // ─── DNOTES (per-date day-notes) — admin-managed pre-visit notes. Wholesale ok since these are
   // typed by admin only, no race-condition risk like VL has with concurrent tech edits. ───
-  if(cloudNewer&&d.DNOTES){Object.keys(DNOTES).forEach(k=>delete DNOTES[k]);Object.assign(DNOTES,d.DNOTES);}
+  if(d.DNOTES){
+    if(cloudNewer){Object.keys(DNOTES).forEach(k=>delete DNOTES[k]);Object.assign(DNOTES,d.DNOTES);}
+    // FIX — additive when the cloud isn't globally newer: other devices' NEW
+    // day-notes still appear; existing local notes are never reverted.
+    else{Object.keys(d.DNOTES).forEach(k=>{ if(!(k in DNOTES)) DNOTES[k]=d.DNOTES[k]; });}
+  }
   // ─── TECHS / CAL_ORDER / clients — admin-managed, safe to apply wholesale (savedAt gate above already protects) ───
   if(cloudNewer&&d.TECHS){
     const ta=Array.isArray(d.TECHS)?d.TECHS:Object.values(d.TECHS).filter(Boolean);
@@ -8879,6 +8916,7 @@ async function _idbHydrateIfNeeded(){
    NEVER inferred from absence — only explicit deletes (deleteClient)
    mark paths for removal; VL deletions keep using tombstones. */
 let _fbBaseline=null;
+let _fbGotFirstSnap=false;
 let _cloudNeedsFullMigration=false;
 const _fbPendingDeletes=new Set();
 function _fbMarkDeleted(paths){ (paths||[]).forEach(p=>_fbPendingDeletes.add(p)); }
@@ -8899,6 +8937,16 @@ function _diffForSync(baseline,current){
   const upd={};
   Object.keys(current).forEach(k=>{
     if(baseline&&baseline[k]===current[k]) return;
+    if(baseline&&baseline[k]!==undefined&&k.indexOf('TAPPTS/')===0){
+      // FIX — push an appointment array only if this device's copy is the
+      // newest (authority = the owning client's tapptTs).
+      try{
+        const cid=k.slice(7);
+        const lc=current['clients/c'+cid]?JSON.parse(current['clients/c'+cid]):null;
+        const cc=baseline['clients/c'+cid]?JSON.parse(baseline['clients/c'+cid]):null;
+        if(lc&&cc&&(lc.tapptTs||0)<(cc.tapptTs||0)) return;
+      }catch(e){ dbgWarn('caught:',e); }
+    }
     if(baseline&&baseline[k]!==undefined&&k.indexOf('clients/')===0){
       // FIX #3 — never push a client edit older than what the cloud holds
       // (mirror of the VL guard below, keyed on lastModified).
@@ -9087,6 +9135,14 @@ async function _migrateRecentPhotos(){
   const cutoff=Date.now()-7*86400000;
   let upgraded=0;
   try{
+    // FIX — cross-device lock: without it every admin device scanned and
+    // re-uploaded the same photos concurrently (duplicate Storage files).
+    try{
+      const lockRef=fbRef.child('_migrateLock');
+      const lockTs=(await lockRef.once('value')).val()||0;
+      if(Date.now()-lockTs<3600000){ dbg('photo migrate: another device ran within the hour \u2014 skipping'); return; }
+      await lockRef.set(Date.now());
+    }catch(e){ dbgWarn('migrate lock (continuing):',e&&e.message); }
     // Read VL straight from the CLOUD. The base64 photos often exist only
     // there (local copies get pruned for quota), so scanning local memory
     // would miss them on admin devices.
@@ -9159,7 +9215,7 @@ function _renderWCRemindBar(){
         +'<strong style="cursor:pointer;color:var(--brand)" onclick="vc('+c.id+')">'+esc(c.name)+'</strong>'
         +'<span style="font-size:12.8px;color:var(--muted)">'+esc(c.nwc)+'</span>'+badge
         +'<span style="margin-left:auto;display:flex;gap:6px">'
-        +'<button class="btn btn-amber" style="font-size:12px" onclick="sendWCReminderSMS('+c.id+');wcMarkNotified('+c.id+',true)">💬 SMS</button>'
+        +'<button class="btn btn-amber" style="font-size:12px" onclick="sendWCReminderSMS('+c.id+')">💬 SMS</button>'
         +'<button class="btn" style="font-size:12px" onclick="wcMarkNotified('+c.id+')">✓ '+(LANG==='es'?'Avisado':'Notified')+'</button>'
         +'</span></div>';
     }).join('');
@@ -9275,6 +9331,26 @@ function _portalHtml(d){
    the ☁️ Cloud modal and can promote/demote admins with one tap — no one
    ever needs to open the Firebase console or copy UIDs by hand. */
 /* ══════════ DEEP FIXES v1.2.1 — helpers ══════════ */
+/* FIX — appointment authority: every TAPPTS mutation stamps the owning
+   client (tapptTs), which syncs safely via the per-client merge. The diff
+   guard and receive-merge use it so a stale device can never delete or
+   revert another device's appointments. */
+function _applyNewUiLang(){
+  try{
+    const es=LANG==='es';
+    const nav=document.querySelectorAll('#bnav .bnav-item');
+    if(nav.length===5){
+      const labels=es?['Dashboard','Clientes','Agenda','W.Change','M\u00e1s']:['Dashboard','Clients','Schedule','W.Change','More'];
+      nav.forEach((b,i)=>{ const ic=b.querySelector('span'); const icHtml=ic?ic.outerHTML:''; b.innerHTML=icHtml+labels[i]; });
+    }
+    const at=document.getElementById('audit-title'); if(at)at.textContent=es?'Actividad reciente':'Recent activity';
+    const bb=document.getElementById('bnav-billing'); if(bb)bb.textContent=es?'\uD83D\uDCB5 Facturaci\u00f3n':'\uD83D\uDCB5 Billing';
+  }catch(e){ dbgWarn('caught:',e); }
+}
+function _touchTappts(cid){
+  const c=C.find(x=>x.id===Number(cid)||x.id===cid);
+  if(c){ c.tapptTs=Date.now(); c.lastModified=Date.now(); }
+}
 /* FIX #2 — apply a cloud snapshot with per-entry merges; wholesale branches
    (TAPPTS/DNOTES/TECHS/CAL_ORDER) still require the cloud to be globally newer. */
 function _applySnap(d){
@@ -9489,6 +9565,15 @@ function _saveToFirebaseNow(){
   // (e.g. _techRecordVisit). Otherwise the local guard could stay locked when offline.
   if(!fbConnected||!fbRef){
     setTimeout(()=>{fbSyncing=false;},2000);
+    return;
+  }
+  if(!_fbGotFirstSnap){
+    // ANTI-WIPE — a save fired in the window between auth and the first
+    // snapshot would take the full-write path with this device's (possibly
+    // EMPTY) local data and replace the whole cloud node. Never write before
+    // hearing the cloud once; the snapshot handler retries via _fbDirty.
+    window._fbDirty=true;
+    setTimeout(()=>{fbSyncing=false;},1500);
     return;
   }
   fbSyncing=true;
@@ -15014,6 +15099,29 @@ _idbHydrateIfNeeded();
 try{ _gcPhotoBackupKeys(); }catch(e){ dbgWarn('caught:',e); }
 // FIX #5 — retry pending cloud writes when the connection returns
 window.addEventListener('online',()=>{ try{ if(window._fbDirty&&fbConnected) saveToFirebase(); }catch(e){ dbgWarn('caught:',e); } });
+// FIX — midnight rollover: a tech tab left open overnight kept recording
+// visits under YESTERDAY's dateKey. Check every minute; when the day flips,
+// jump the tech view back to "today". The cloud badge time also refreshes.
+window._lastKnownDateKey=_localDateKey();
+setInterval(()=>{
+  try{
+    const nowKey=_localDateKey();
+    if(nowKey!==window._lastKnownDateKey){
+      const oldKey=window._lastKnownDateKey;
+      window._lastKnownDateKey=nowKey;
+      if(CURRENT_ROLE==='tech'){
+        try{
+          const viewedKey=_localDateKey(_techViewedDate());
+          if(viewedKey===oldKey&&typeof techGoToToday==='function'){
+            techGoToToday();
+            showToast(LANG==='es'?'\uD83C\uDF05 Nuevo d\u00eda \u2014 agenda actualizada':'\uD83C\uDF05 New day \u2014 schedule refreshed','ok');
+          }
+        }catch(e){ dbgWarn('caught:',e); }
+      } else { try{ rd(); }catch(e){ dbgWarn('caught:',e); } }
+    }
+    if(fbConnected&&!fbSyncing) updateCloudIndicator(true); // keep "Synced \u00b7 hh:mm" honest
+  }catch(e){ dbgWarn('rollover',e); }
+},60000);
 // FIX — multi-tab: when another tab of this same browser saves, merge its
 // state here (per-entry, timestamp-safe) instead of silently diverging.
 window.addEventListener('storage',ev=>{
@@ -15024,6 +15132,8 @@ window.addEventListener('storage',ev=>{
 });
 // FIX #4 — flush a pending debounced write if the app is being closed
 window.addEventListener('pagehide',()=>{ try{ if(_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
+// FIX — iOS Safari doesn't always fire pagehide; visibilitychange does.
+document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='hidden'&&_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
 // V4 — Dark Pro: restore saved preference
 try{ if(localStorage.getItem('aspen_cm_dark')==='1'){ document.body.classList.add('dark'); const _dt=document.getElementById('dark-toggle'); if(_dt)_dt.textContent='\u2600\uFE0F'; } }catch(e){ dbgWarn('caught:',e); }
 // FEATURE #7 — client portal mode (read-only overlay driven by ?portal=token)
