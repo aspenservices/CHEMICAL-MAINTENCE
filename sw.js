@@ -13,7 +13,7 @@
    - Firebase data traffic (RTDB websockets, auth POSTs) is never
      intercepted: non-GET requests and non-matched hosts pass through.
    ═══════════════════════════════════════════════════════════════════ */
-const CACHE_VERSION = 'cm-v1.2.3';
+const CACHE_VERSION = 'cm-v1.3.2';
 const APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', e => {
