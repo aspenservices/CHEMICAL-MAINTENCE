@@ -188,6 +188,12 @@ body.dark #bnav,body.dark #bnav-more-sheet{background:#241C15}
 #bnav-more-sheet button{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 14px;font-size:14.5px;font-family:inherit;color:var(--text);font-weight:600;border-radius:8px;cursor:pointer}
 #bnav-more-sheet button:active{background:var(--warm)}
 body.no-billing #bnav-billing{display:none}
+/* FIX — print: never print the app chrome, and never waste toner on dark mode */
+@media print{
+  #bnav,#bnav-more-sheet,#wc-chips,#dark-toggle,#sw-update-banner,#wc-remind-bar{display:none!important}
+  body.dark{--warm:#F5EFE6;--warm2:#FAF7F1;--light:#FFFFFF;--text:#2C2418;--muted:#7A7060;--border:#E5DDD0;background:#FFF!important;color:#2C2418!important}
+  body.dark .card,body.dark .metric,body.dark .modal{background:#FFF!important}
+}
 @media(max-width:820px){
   body.role-admin #bnav,body.role-organizer #bnav{display:flex}
   body.role-admin{padding-bottom:64px}
@@ -5365,13 +5371,18 @@ function sinv(){
   const num=document.getElementById('inum').value.trim();
   if(!num){showToast(t('enterInvoiceNum'));return;}
   if(!BL[id])BL[id]={};
-  BL[id][q]={i:num,a:document.getElementById('iamt').value,s:document.getElementById('ist').value,n:document.getElementById('inotes').value.trim()};
+  // FIX — without a timestamp, the billing merge treated a just-typed
+  // invoice and a stale cloud copy as equals, and the cloud copy won.
+  BL[id][q]={i:num,a:document.getElementById('iamt').value,s:document.getElementById('ist').value,n:document.getElementById('inotes').value.trim(),_timestamp:Date.now(),saved:new Date().toISOString()};
   cm('minv');rb();rd();
 }
 function ac(){
   const name=document.getElementById('nn').value.trim();
   if(!name){showToast(t('nameRequired'));return;}
-  const nid=Math.max(...C.map(c=>c.id))+1;
+  // FIX — unique IDs. Math.max(ids)+1 collided when two devices created
+  // clients while offline, and returned NaN with an empty list. Epoch-ms is
+  // globally unique and always > any legacy id.
+  const nid=Math.max(Date.now(), C.length?Math.max(...C.map(c=>c.id))+1:1);
   // Auto-derive nwc from lwc (+6 months) so admin doesn't have to fill both.
   const lwc = document.getElementById('nwc').value;
   let nwc = '';
@@ -7201,6 +7212,7 @@ function changeClientWeek(id, newWeek){
   const cl=C.find(x=>x.id===id);if(!cl)return;
   cl.week=newWeek;
   cl.freq=newWeek==='A&B'?'weekly':'biweekly';
+  cl.lastModified=Date.now(); // FIX — merge races dropped calendar drags
   // If leaving A&B (weekly) mode, drop any per-week day overrides — pure-A
   // and pure-B clients only show in one week section, so dayA/dayB no longer
   // make sense. We keep c.day as the single source of truth for them.
@@ -7240,6 +7252,7 @@ function changeClientDay(id, newDay, weekScope){
   scopes.forEach(wt => { oldDays[wt] = _dayForWeek(cl, wt); });
   // No-op: if the new day already matches in all affected scopes, skip
   if(scopes.every(wt => oldDays[wt] === newDay)) return;
+  cl.lastModified=Date.now(); // FIX — merge races dropped calendar drags
   // Count historical visits already recorded — preserved automatically by
   // the anchor logic in getVisitDatesForWeek; the message confirms this
   // for admin confidence.
@@ -8415,6 +8428,22 @@ function _showDataIntegrityBanner(warnings){
 
 async function clearAllData(){
   if(!await showConfirm(t('confirmClear'),{danger:true,okText:LANG==='es'?'Borrar TODO':'DELETE ALL'}))return;
+  // FIX — the old version cleared localStorage and reloaded… and the Firebase
+  // listener immediately restored everything, so "delete all" was silently a
+  // no-op (and IndexedDB would re-hydrate too). Now the user picks the scope.
+  let wipeCloud=false;
+  if(fbConnected&&fbRef){
+    wipeCloud=await showConfirm(LANG==='es'
+      ?'¿Borrar también la NUBE (todos los dispositivos)?\n\nAceptar = borra Firebase para todo el equipo.\nCancelar = borra solo este dispositivo (la nube lo restaurará al recargar).'
+      :'Also wipe the CLOUD (all devices)?\n\nOK = erases Firebase for the whole team.\nCancel = clears only this device (the cloud will restore it on reload).',
+      {danger:true,okText:LANG==='es'?'Borrar nube':'Wipe cloud'});
+  }
+  if(wipeCloud){
+    try{ logAudit('clearAllData','FULL WIPE'); }catch(e){ dbgWarn('caught:',e); }
+    try{ await fbRef.set({version:'aspen_cm_v2',savedAt:new Date().toISOString(),clients:{}}); }catch(e){ dbgWarn('wipe cloud',e); }
+    try{ if(fbBillingRef&&BILLING_ACCESS) await fbBillingRef.set(null); }catch(e){ dbgWarn('caught:',e); }
+  }
+  try{ await idbSet(LS_KEY,null); }catch(e){ dbgWarn('caught:',e); }
   localStorage.removeItem(LS_KEY);
   location.reload();
 }
@@ -8436,6 +8465,9 @@ function getBackupPayload(){
       wcN:cl.wcN||false,wcD:cl.wcD||false,
       techP:cl.techP||false,techI:cl.techI||'',
       techD:cl.techD||'',techS:cl.techS||'',
+      // FIX — these fields were silently dropped from the sync payload, so
+      // portal links, "notified" marks and tags vanished on the next merge.
+      wcNoti:cl.wcNoti||'',portalToken:cl.portalToken||'',tags:cl.tags||'',
       lastModified:cl.lastModified||0
     }))
   };
@@ -8537,12 +8569,18 @@ async function restoreBackup(input){
         C.length=0;
         clientsArr.forEach(cl=>C.push(cl));
       }
-      saveData();
+      // FIX — with granular sync + debounced writes, saveData()+instant
+      // reload pushed NOTHING to the cloud, and the next snapshot restored
+      // the OLD data. A restore must fully replace the cloud node and let
+      // the write leave before reloading.
+      _cloudNeedsFullMigration=true;
+      try{ persistLocal(); }catch(e2){ dbgWarn('caught:',e2); }
+      try{ _saveToFirebaseNow(); }catch(e2){ dbgWarn('caught:',e2); }
       const okMsg=LANG==='es'
         ?`✓ Backup restaurado: ${clientsArr.length} clientes cargados.\n\nFecha del backup: ${d.exportedAt?new Date(d.exportedAt).toLocaleString():''}`
         :`✓ Backup restored: ${clientsArr.length} clients loaded.\n\nBackup date: ${d.exportedAt?new Date(d.exportedAt).toLocaleString():''}`;
       showToast(okMsg);
-      location.reload();
+      setTimeout(()=>location.reload(), fbConnected?1500:200);
     }catch(err){
       showToast(LANG==='es'?'Error al leer el archivo: '+err.message:'Error reading file: '+err.message);
     }
@@ -8988,6 +9026,12 @@ function _initBillingSync(){
 function logAudit(action,detail){
   try{
     if(!fbConnected||!fbDB) return;
+    // FIX — throttle bursts: an identical action+detail within 15s logs once
+    // (calendar drags and bulk ops used to flood the audit node).
+    const _dk2=String(action||'')+'|'+String(detail||'');
+    window._auditLast=window._auditLast||{};
+    if(window._auditLast[_dk2]&&Date.now()-window._auditLast[_dk2]<15000) return;
+    window._auditLast[_dk2]=Date.now();
     const who=CURRENT_ROLE==='admin'?'Admin':(CURRENT_TECH||CURRENT_ROLE||'?');
     fbDB.ref('aspen_spas/audit').push({ ts:Date.now(), at:new Date().toISOString(), role:CURRENT_ROLE||'?', who:who, action:String(action||''), detail:String(detail||'').slice(0,200) });
   }catch(e){ dbgWarn('audit',e); }
@@ -9466,6 +9510,7 @@ function _saveToFirebaseNow(){
     fbRef.set(full).then(()=>{
       _fbBaseline=flat; _cloudNeedsFullMigration=false; _fbPendingDeletes.clear();
       window._fbDirty=false;
+      window._fbFailToasted=false;
       window._lastSyncAt=Date.now();
       console.log('☁️ Full sync to Firebase (baseline/migration)');
       updateCloudIndicator(true);
@@ -9473,6 +9518,7 @@ function _saveToFirebaseNow(){
     }).catch(e=>{
       console.warn('Firebase save error:',e);
       window._fbDirty=true; // FIX #5 — retried on reconnect / next snapshot
+      if(!window._fbFailToasted){ window._fbFailToasted=true; try{ showToast(LANG==='es'?'⚠ No se pudo guardar en la nube — se reintentará solo':'⚠ Cloud save failed — will retry automatically','warn'); }catch(e2){ dbgWarn('caught:',e2); } }
       updateCloudIndicator(false,e.message);
       fbSyncing=false;
     });
@@ -9489,6 +9535,7 @@ function _saveToFirebaseNow(){
     _fbBaseline=flat;
     Array.from(_fbPendingDeletes).forEach(k=>{ if(k.indexOf('BL/')!==0) _fbPendingDeletes.delete(k); });
     window._fbDirty=false;
+    window._fbFailToasted=false;
     window._lastSyncAt=Date.now();
     console.log('☁️ Synced '+nKeys+' change(s) to Firebase');
     updateCloudIndicator(true);
@@ -9496,6 +9543,7 @@ function _saveToFirebaseNow(){
   }).catch(e=>{
     console.warn('Firebase save error:',e);
     window._fbDirty=true; // FIX #5 — retried on reconnect / next snapshot
+    if(!window._fbFailToasted){ window._fbFailToasted=true; try{ showToast(LANG==='es'?'⚠ No se pudo guardar en la nube — se reintentará solo':'⚠ Cloud save failed — will retry automatically','warn'); }catch(e2){ dbgWarn('caught:',e2); } }
     updateCloudIndicator(false,e.message);
     fbSyncing=false;
   });
@@ -14966,6 +15014,14 @@ _idbHydrateIfNeeded();
 try{ _gcPhotoBackupKeys(); }catch(e){ dbgWarn('caught:',e); }
 // FIX #5 — retry pending cloud writes when the connection returns
 window.addEventListener('online',()=>{ try{ if(window._fbDirty&&fbConnected) saveToFirebase(); }catch(e){ dbgWarn('caught:',e); } });
+// FIX — multi-tab: when another tab of this same browser saves, merge its
+// state here (per-entry, timestamp-safe) instead of silently diverging.
+window.addEventListener('storage',ev=>{
+  try{
+    if(ev.key!==LS_KEY||!ev.newValue) return;
+    applyCloudData(JSON.parse(ev.newValue), false);
+  }catch(e){ dbgWarn('storage sync',e); }
+});
 // FIX #4 — flush a pending debounced write if the app is being closed
 window.addEventListener('pagehide',()=>{ try{ if(_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
 // V4 — Dark Pro: restore saved preference
