@@ -133,6 +133,67 @@ select.hbtn option{color:#2C2418;background:#FFFFFF}
 .tab:hover:not(.active){color:var(--brand);background:rgba(181,115,58,.04)}
 /* FEATURE #4 — devices without billing permission never see the tab */
 body.no-billing #tab-billing{display:none!important}
+/* ═══ VISUAL PACK v1.2 ═══════════════════════════════════════════ */
+/* V6 — cloud indicator with live dot + last-sync time */
+#cloud-ind{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.cdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.cdot.g{background:#4ADE80;animation:cdot-pulse 2.2s infinite}
+.cdot.a{background:#FBBF24;animation:cdot-blink .7s infinite alternate}
+.cdot.r{background:#F87171}
+@keyframes cdot-pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.45)}70%{box-shadow:0 0 0 6px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+@keyframes cdot-blink{to{opacity:.35}}
+/* V3 — client initials avatar (status strip goes inline on the row) */
+.cav{width:32px;height:32px;border-radius:50%;background:var(--brand-light);color:var(--brand-dark);font-weight:700;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+/* V5 — filter chips with live counters (Water Change) */
+.chips-row{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{background:var(--light);border:1.5px solid var(--border);border-radius:20px;padding:5px 11px;font-size:12.2px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.chip b{background:var(--brand-light);border-radius:10px;padding:0 6px;margin-left:3px;font-size:10.8px;color:var(--brand-dark)}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#FFF}
+.chip.on b{background:rgba(255,255,255,.25);color:#FFF}
+#wcfilter{display:none}
+/* V9 — eyebrow labels */
+.eyebrow{display:block;font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--brand);font-weight:700;line-height:1.3}
+/* V10 — illustrated empty states */
+.empty-state{text-align:center;padding:30px 16px;color:var(--muted)}
+.empty-state .es-ico{font-size:42px;filter:grayscale(.15)}
+.empty-state h4{font-family:'Poppins',sans-serif;font-size:15px;color:var(--text);margin:8px 0 4px}
+.empty-state p{font-size:12.8px;margin-bottom:12px}
+/* V8 — tech checklist progress ring + field-sized buttons */
+.tcc-ring{transform:rotate(-90deg)}
+.tcc-ring-bg{fill:none;stroke:rgba(0,0,0,.12);stroke-width:3.5}
+.tcc-ring-fill{fill:none;stroke:#16A34A;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:75.4;transition:stroke-dashoffset .3s ease}
+@media(max-width:820px){
+  .tcc-chk-action-btn{font-size:14.5px!important;padding:12px 16px!important;border-radius:12px!important}
+  .tcc-chk-final{padding:14px!important}
+}
+/* V4 — Dark Pro */
+body.dark{--warm:#171208;--warm2:#221A12;--light:#241C15;--text:#EDE6DB;--muted:#A08B72;--dim:#8A7A64;--border:#3A2E22;--border-dark:#4A3A2A;--brand-light:#33261A;--mid:#4A3A2A;background:#171208;color:#EDE6DB}
+body.dark .card,body.dark .metric,body.dark .modal{background:#241C15}
+body.dark input,body.dark select,body.dark textarea{background:#1C150E;color:#EDE6DB;border-color:#3A2E22}
+body.dark table th{background:#221A12;color:#C9B99F}
+body.dark table td{border-color:#3A2E22}
+body.dark .btn{background:#2E2418;color:#EDE6DB;border-color:#4A3A2A}
+body.dark .btn.btn-brand{background:var(--brand);color:#FFF}
+body.dark .btn.btn-amber{background:#7A4E1E;color:#FFE9CF;border-color:#8F5C24}
+body.dark .btn.btn-green{background:#1E5A34;color:#D8F7E3;border-color:#2D8A4E}
+body.dark .btn.btn-red{background:#5C1E1E;color:#FFD9D9;border-color:#7A2828}
+body.dark #bnav,body.dark #bnav-more-sheet{background:#241C15}
+/* V1 — mobile bottom navigation (admin/organizer) */
+#bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--light);border-top:1px solid var(--border);z-index:9000;box-shadow:0 -4px 18px rgba(44,36,24,.10);padding-bottom:env(safe-area-inset-bottom)}
+#bnav .bnav-item{flex:1;text-align:center;padding:7px 0 8px;font-size:9.8px;color:var(--muted);font-weight:600;background:none;border:none;font-family:inherit;cursor:pointer}
+#bnav .bnav-item span{display:block;font-size:19px;margin-bottom:1px}
+#bnav .bnav-item.on{color:var(--brand)}
+#bnav-more-sheet{display:none;position:fixed;bottom:56px;left:10px;right:10px;background:var(--light);border:1px solid var(--border);border-radius:14px;z-index:9001;box-shadow:0 -8px 30px rgba(44,36,24,.18);padding:8px}
+#bnav-more-sheet.open{display:block}
+#bnav-more-sheet button{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 14px;font-size:14.5px;font-family:inherit;color:var(--text);font-weight:600;border-radius:8px;cursor:pointer}
+#bnav-more-sheet button:active{background:var(--warm)}
+body.no-billing #bnav-billing{display:none}
+@media(max-width:820px){
+  body.role-admin #bnav,body.role-organizer #bnav{display:flex}
+  body.role-admin{padding-bottom:64px}
+  body.role-organizer{padding-bottom:64px}
+  .tabs-bar{display:none}
+}
 .body{background:#FFFFFF;padding:16px 20px;border-radius:0;border:1px solid var(--border);border-top:none;min-height:500px}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
 /* Metric card — used on dashboard. Subtle hover lift, clearer hierarchy.
@@ -425,8 +486,11 @@ body.role-organizer .role-admin-only{display:none!important}
   .cc-actions{flex-wrap:wrap;gap:4px}
   .cc-actions .btn{font-size:11.5px;flex:none;min-height:30px;padding:5px 8px}
   /* Modals: more breathing room on mobile, full-screen-ish */
-  .modal-bg{padding:8px;align-items:flex-start;padding-top:8px}
-  .modal{padding:1rem;max-width:100%;width:100%;max-height:calc(100vh - 16px);border-radius:12px}
+  /* V7 — modals become bottom sheets on mobile */
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{padding:1rem;padding-top:.5rem;max-width:100%;width:100%;max-height:92vh;border-radius:18px 18px 0 0;animation:sheet-in .22s cubic-bezier(.2,.9,.3,1)}
+  .modal::before{content:'';display:block;width:44px;height:4.5px;background:var(--border-dark);border-radius:3px;margin:4px auto 12px}
+  @keyframes sheet-in{from{transform:translateY(48px);opacity:.6}to{transform:none;opacity:1}}
   .modal h3{font-size:16px}
   .mfoot{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .mfoot .btn{flex:1 1 auto;min-height:40px;font-size:14px}
@@ -1653,7 +1717,8 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 </div>
 <span id="save-ind"  style="font-size:11px;color:#E9C6A7;opacity:0;transition:opacity .6s;align-self:center;white-space:nowrap;margin-left:4px">&#10003;</span>
     <span id="last-backup" style="font-size:10px;color:#E9C6A7;opacity:.7;align-self:center;white-space:nowrap" title="Last backup"></span>
-    <span id="cloud-ind" style="font-size:10px;color:#E9C6A7;opacity:.7;align-self:center;white-space:nowrap"></span>
+    <button id="dark-toggle" onclick="toggleDarkMode()" title="Modo oscuro / Dark mode" style="background:none;border:1px solid rgba(233,198,167,.35);border-radius:8px;color:#E9C6A7;font-size:13px;padding:3px 8px;cursor:pointer;align-self:center">🌙</button>
+    <span id="cloud-ind" style="font-size:11px;color:#E9C6A7;opacity:.85;align-self:center;white-space:nowrap"></span>
   </div>
 </div>
 
@@ -1667,6 +1732,20 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <button class="tab" onclick="st('wctab',this)">💧 Water Change</button>
 </div>
 
+<!-- V1 — Mobile bottom navigation (admin/organizer, ≤820px) -->
+<nav id="bnav">
+  <button class="bnav-item on" onclick="_bnavGo('dash',this)"><span>📊</span>Dashboard</button>
+  <button class="bnav-item" onclick="_bnavGo('clients',this)"><span>👥</span>Clientes</button>
+  <button class="bnav-item" onclick="_bnavGo('calendar',this)"><span>📅</span>Agenda</button>
+  <button class="bnav-item" onclick="_bnavGo('wctab',this)"><span>💧</span>W.Change</button>
+  <button class="bnav-item" onclick="_bnavMore()"><span>⋯</span>Más</button>
+</nav>
+<div id="bnav-more-sheet">
+  <button id="bnav-billing" onclick="_bnavGo('billing')">💵 Facturación</button>
+  <button onclick="_bnavGo('visits')">📝 Visitas</button>
+  <button onclick="_bnavGo('summary')">📋 Summary</button>
+</div>
+
 <div class="body">
 
 <!-- DASHBOARD -->
@@ -1676,7 +1755,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <div class="two-col">
     <div class="card">
       <div class="card-head" style="cursor:pointer" onclick="toggleAlerts()">
-        <span class="card-title">&#9888; Alertas activas</span>
+        <div><span class="eyebrow">Dashboard</span><span class="card-title">&#9888; Alertas activas</span></div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="badge bpending" id="acnt">0</span>
           <span id="alert-chev" style="font-size:12.6px;color:var(--muted);transition:transform .2s;display:inline-block">&#9654; Ver todas</span>
@@ -1685,19 +1764,19 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
       <div id="alist" style="padding:10px 12px"></div>
     </div>
     <div class="card">
-      <div class="card-head"><span class="card-title" id="ct-billing-q">&#128202; Facturación por trimestre</span></div>
+      <div class="card-head"><div><span class="eyebrow">Dashboard</span><span class="card-title" id="ct-billing-q">&#128202; Facturación por trimestre</span></div></div>
       <div class="tgrid" id="qsum"></div>
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><span class="card-title" id="ct-clients-day">&#875122; Clientes por día</span></div>
+    <div class="card-head"><div><span class="eyebrow">Dashboard</span><span class="card-title" id="ct-clients-day">&#875122; Clientes por día</span></div></div>
     <div class="day-chart" id="dchart"></div>
   </div>
   <!-- Today's roster — quick overview of who's on the schedule today, with
        one-click share to WhatsApp/SMS for the team. Populated by rd(). -->
   <div class="card" id="today-card" style="border-left:4px solid var(--brand)">
     <div class="card-head">
-      <span class="card-title">📅 <span id="today-title">Hoy</span> <span id="today-count" style="font-weight:500;color:var(--muted);font-size:13.5px;margin-left:6px"></span></span>
+      <div><span class="eyebrow">Dashboard</span><span class="card-title">📅 <span id="today-title">Hoy</span> <span id="today-count" style="font-weight:500;color:var(--muted);font-size:13.5px;margin-left:6px"></span></span></div>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="openSpotlight()" title="Búsqueda global (⌘K)">🔍 <span id="spot-btn-lbl">Buscar</span></button>
         <button class="btn" style="font-size:11.5px;padding:4px 10px" onclick="openChemInventory()" title="Inventario de químicos">💊 <span id="inv-btn-lbl">Inventario</span></button>
@@ -1710,7 +1789,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   </div>
   <!-- FEATURE #10 — Audit trail: who changed what, live from aspen_spas/audit (admin only) -->
   <div class="card role-admin-only" id="audit-card" style="display:none">
-    <div class="card-head"><span class="card-title">📜 <span id="audit-title">Actividad reciente</span></span></div>
+    <div class="card-head"><div><span class="eyebrow">Admin</span><span class="card-title">📜 <span id="audit-title">Actividad reciente</span></span></div></div>
     <div id="audit-list" style="padding:8px 14px;font-size:13px;max-height:260px;overflow:auto"></div>
   </div>
   <div class="card unpaid-section" id="unpaid-card">
@@ -1928,7 +2007,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 <div id="pwctab" class="hidden">
   <div class="card">
     <div class="card-head">
-      <span class="card-title" id="ct-wctab">💧 Water Change Schedule</span>
+      <div><span class="eyebrow">Programa · Schedule</span><span class="card-title" id="ct-wctab">💧 Water Change Schedule</span></div>
       <div class="fbar">
         <input type="text" id="wcsrch" placeholder="Search..." oninput="rwc()" style="width:150px">
         <select id="wcfilter" onchange="rwc()">
@@ -1939,6 +2018,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
           <option value="pending">Pending (flagged)</option>
           <option value="noDate">Missing date</option>
         </select>
+        <span id="wc-chips" class="chips-row"></span>
       </div>
     </div>
     <!-- Bulk selection toolbar — shown when at least one WC row is checked.
@@ -3487,7 +3567,7 @@ function rd(){
     {t2:"wc",l:t("wcPending"),v:wn,c:"mv-rust"},
     {t2:"tech",l:t("techVisits"),v:tn,c:"mv-gold"},
   ];
-  document.getElementById("mets").innerHTML=md.map(m=>`<div class="metric" onclick="showMetricPopup('${m.t2}')" title="Click"><div class="mlabel">${m.l}</div><div class="mval ${m.c}">${m.v}</div><div style="font-size:10.9px;color:var(--muted);margin-top:3px">${t('seeList')}</div></div>`).join("");
+  document.getElementById("mets").innerHTML=md.map(m=>`<div class="metric" onclick="showMetricPopup('${m.t2}')" title="Click"><div class="mlabel">${m.l}</div><div class="mval ${m.c}">${m.v}</div><div style="font-size:10.9px;color:var(--muted);margin-top:3px">${t('seeList')}</div></div>`).join("")+_visitsSparkHtml();
   const acCl=C.filter(x=>x.status==="active");
   const totQRev=acCl.reduce((s,x)=>s+clientQRate(x),0);
   const totAnn=acCl.reduce((s,x)=>s+clientAnnualRate(x),0);
@@ -4080,10 +4160,19 @@ function rc(){
     const isAB=c.week==='A&B';
     const nameStyle=isAB?'font-weight:600;color:#D6945B;font-style:italic':'font-weight:600;color:var(--brand)';
     const noteSub=c.notes?`<div class="tcell" style="font-size:11.5px;color:var(--muted);max-width:170px;margin-top:2px" title="${esc(c.notes)}">${esc(c.notes)}</div>`:'';
-    return`<tr>
+    // V3 — status strip (left edge) + initials avatar
+    const _d=parseLocalDate(c.nwc), _now=todayLocal();
+    let strip='#16A34A';
+    if(c.status!=='active') strip='#A09888';
+    else if(_d&&_d<_now&&!c.wcN) strip='#DC2626';
+    else if(_d&&((_d-_now)/86400000)<=30) strip='#F59E0B';
+    else if(!_d) strip='#D6CDB8';
+    const _p=String(c.name||'').replace(',',' ').split(/\s+/).filter(Boolean);
+    const _ini=((_p[0]||' ')[0]+((_p[1]||' ')[0]||'')).toUpperCase();
+    return`<tr style="box-shadow:inset 4px 0 0 ${strip}">
       <td style="text-align:center"><input type="checkbox" class="bulk-cb" data-id="${c.id}" onchange="bulkUpdate()" ${_bulkSel.has(c.id)?'checked':''}></td>
       <td style="font-size:12.6px;color:var(--muted);text-align:center">${st2+i+1}</td>
-      <td><div style="${nameStyle}">${esc(c.name)}</div>${noteSub}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><span class="cav">${_ini}</span><div><div style="${nameStyle}">${esc(c.name)}</div>${noteSub}</div></div></td>
       <td style="font-size:13.2px;white-space:nowrap">${esc(c.phone)}</td>
       <td class="tcell" style="font-size:12.6px;color:var(--muted);max-width:140px" title="${esc(c.email)}">${esc(c.email)||'—'}</td>
       <td class="tcell" style="font-size:12.6px;max-width:170px" title="${esc(c.addr)}">${esc(c.addr)}</td>
@@ -4101,7 +4190,7 @@ function rc(){
         <button class="btn ${c.status==='active'?'btn-amber':'btn-green'}" onclick="${c.status==='cancelled'?`activateClient(${c.id})`:`tp(${c.id})`}">${c.status==='active'?t('pause'):t('activate')}</button>
         <button class="btn btn-red role-admin-only" onclick="deleteClient(${c.id})" title="${LANG==='es'?'Eliminar permanentemente':'Delete permanently'}">${t('delete')}</button>
       </div></td></tr>`;
-  }).join('');
+  }).join('')||_emptyRowHtml(15,'clients');
   bulkUpdate();
 }
 function pp(){if(pg>0){pg--;rc();document.getElementById('pclients')?.scrollIntoView({behavior:'smooth',block:'start'});}}
@@ -6517,6 +6606,7 @@ function exportSummaryCSV(){
 function rwc(){
   const s=(document.getElementById('wcsrch').value||'').toLowerCase();
   const fl=document.getElementById('wcfilter').value;
+  _renderWCChips();
   const now=todayLocal();
   let f=C.filter(c=>c.status==='active');
   if(s)f=f.filter(c=>c.name.toLowerCase().includes(s));
@@ -6564,7 +6654,7 @@ function rwc(){
         <button class="btn btn-amber" style="font-size:12.1px" onclick="owc(${c.id})">💧 ${LANG==='es'?'Registrar':'Register'}</button>
         <button class="btn" style="font-size:12.1px" onclick="editWCDate(${c.id})">📅 ${LANG==='es'?'Cambiar fecha':'Change date'}</button>
       </div></td></tr>`;
-  }).join('');
+  }).join('')||_emptyRowHtml(8,'wc');
   _wcBulkRefreshBar();
   _renderWCRemindBar();
 }
@@ -8556,6 +8646,7 @@ function doInit(config){
           // write that migrates them to keyed-object form ("c{id}").
           _cloudNeedsFullMigration=Array.isArray(d.clients);
           _fbBaseline=_flattenForSync(d);
+          window._lastSyncAt=Date.now();
         }
         if(fbSyncing)return; // skip merge if we just wrote
         if(d&&d.savedAt){
@@ -9086,6 +9177,86 @@ function _portalHtml(d){
    {uid} (who, role, platform, last seen). Admin devices see the list in
    the ☁️ Cloud modal and can promote/demote admins with one tap — no one
    ever needs to open the Firebase console or copy UIDs by hand. */
+/* ══════════ VISUAL PACK v1.2 — helpers ══════════ */
+/* V1 — mobile bottom nav */
+function _bnavGo(id,btnEl){
+  const topBtn=Array.from(document.querySelectorAll('.tabs-bar .tab')).find(b=>(b.getAttribute('onclick')||'').indexOf("'"+id+"'")>=0);
+  st(id, topBtn||document.querySelector('.tabs-bar .tab'));
+  document.querySelectorAll('#bnav .bnav-item').forEach(b=>b.classList.remove('on'));
+  if(btnEl) btnEl.classList.add('on');
+  const sheet=document.getElementById('bnav-more-sheet');
+  if(sheet) sheet.classList.remove('open');
+}
+function _bnavMore(){
+  const s=document.getElementById('bnav-more-sheet');
+  if(s) s.classList.toggle('open');
+}
+/* V4 — Dark Pro */
+function toggleDarkMode(){
+  const on=document.body.classList.toggle('dark');
+  try{ localStorage.setItem('aspen_cm_dark',on?'1':'0'); }catch(e){ dbgWarn('caught:',e); }
+  const b=document.getElementById('dark-toggle');
+  if(b) b.textContent=on?'\u2600\uFE0F':'\uD83C\uDF19';
+}
+/* V6 — "saving…" state for the cloud badge */
+function _setCloudSyncing(){
+  const el=document.getElementById('cloud-ind');
+  if(el) el.innerHTML='<span class="cdot a"></span><span>'+(LANG==='es'?'Guardando\u2026':'Saving\u2026')+'</span>';
+}
+/* V2 — weekly-visits sparkline metric (computed from real VL history) */
+function _visitsSparkHtml(){
+  try{
+    const now=todayLocal();
+    const weeks=new Array(8).fill(0);
+    const start=new Date(now); start.setDate(start.getDate()-start.getDay()-49);
+    Object.keys(VL).forEach(cid=>{ Object.keys(VL[cid]||{}).forEach(dk=>{
+      const v=VL[cid][dk];
+      if(!v||v._deleted||v.status==='not_done') return;
+      const d=parseLocalDate(dk); if(!d) return;
+      const idx=Math.floor((d-start)/(7*86400000));
+      if(idx>=0&&idx<8) weeks[idx]++;
+    });});
+    const max=Math.max.apply(null,weeks.concat([1]));
+    const pts=weeks.map((v,i)=>(i*10)+','+(24-(v/max)*20).toFixed(1)).join(' ');
+    const thisW=weeks[7], d2=thisW-weeks[6], up=d2>=0;
+    const col=up?'#16A34A':'#DC2626';
+    return '<div class="metric" style="cursor:default;border-left-color:'+col+'">'
+      +'<div class="mlabel">'+(LANG==='es'?'Visitas \u00b7 8 semanas':'Visits \u00b7 8 weeks')+'</div>'
+      +'<div class="mval '+(up?'mv-green':'mv-rust')+'">'+thisW+'</div>'
+      +'<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px">'
+      +'<span style="font-size:10.9px;color:'+col+';font-weight:700">'+(up?'\u25B2':'\u25BC')+' '+(d2>=0?'+':'')+d2+' '+(LANG==='es'?'vs sem. ant.':'vs last wk')+'</span>'
+      +'<svg width="72" height="26" style="flex-shrink:0"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/></svg>'
+      +'</div></div>';
+  }catch(e){ dbgWarn('spark',e); return ''; }
+}
+/* V5 — Water Change filter chips with live counts */
+function _renderWCChips(){
+  const box=document.getElementById('wc-chips');
+  if(!box) return;
+  const now=todayLocal(), es=LANG==='es';
+  const act=C.filter(c=>c.status==='active');
+  const n={all:act.length,overdue:0,veryOverdue:0,upcoming:0,pending:0,noDate:0};
+  act.forEach(c=>{
+    const d=parseLocalDate(c.nwc);
+    if(c.wcN) n.pending++;
+    if(!d){ n.noDate++; return; }
+    if(d<now&&!c.wcN){ n.overdue++; if((now-d)>365*86400000) n.veryOverdue++; }
+    const diff=(d-now)/86400000;
+    if(diff>=0&&diff<=30) n.upcoming++;
+  });
+  const cur=document.getElementById('wcfilter').value;
+  const chips=[['',es?'Todos':'All',n.all],['overdue',es?'Vencidos':'Overdue',n.overdue],['veryOverdue','+1 '+(es?'a\u00f1o':'yr'),n.veryOverdue],['upcoming',es?'Pr\u00f3x. 30d':'Next 30d',n.upcoming],['pending',es?'Pendientes':'Pending',n.pending],['noDate',es?'Sin fecha':'No date',n.noDate]];
+  box.innerHTML=chips.map(ch=>'<button type="button" class="chip'+(cur===ch[0]?' on':'')+'" onclick="document.getElementById(\'wcfilter\').value=\''+ch[0]+'\';rwc()">'+ch[1]+' <b>'+ch[2]+'</b></button>').join('');
+}
+/* V10 — illustrated empty state row for tables */
+function _emptyRowHtml(colspan,kind){
+  const es=LANG==='es';
+  const msg=kind==='wc'?(es?'Sin resultados con este filtro':'No results for this filter'):(es?'Ning\u00fan cliente coincide':'No clients match');
+  const btn=kind==='wc'
+    ?'<button class="btn btn-brand" onclick="document.getElementById(\'wcfilter\').value=\'\';document.getElementById(\'wcsrch\').value=\'\';rwc()">'+(es?'Ver todos':'Show all')+'</button>'
+    :'<button class="btn btn-brand" onclick="document.getElementById(\'srch\').value=\'\';document.getElementById(\'ffreq\').value=\'\';document.getElementById(\'fstat\').value=\'\';document.getElementById(\'fday\').value=\'\';pg=0;rc()">'+(es?'Limpiar filtros':'Clear filters')+'</button>';
+  return '<tr><td colspan="'+colspan+'"><div class="empty-state"><div class="es-ico">\uD83E\uDDEA</div><h4>'+msg+'</h4><p>'+(es?'Prueba con otra b\u00fasqueda o limpia los filtros.':'Try a different search or clear the filters.')+'</p>'+btn+'</div></td></tr>';
+}
 function _registerDevice(){
   try{
     if(!fbDB||!firebase.auth) return;
@@ -9158,6 +9329,7 @@ function saveToFirebase(){
   }
   fbSyncing=true;
   _bumpFbSyncingWatchdog();
+  try{ _setCloudSyncing(); }catch(e){ dbgWarn('caught:',e); }
   const payload=getBackupPayload();
   payload.savedAt=new Date().toISOString();
   // FEATURE #4 — billing (BL + pricing) syncs to its own restricted node
@@ -9173,6 +9345,7 @@ function saveToFirebase(){
     (payload.clients||[]).forEach(c=>{ full.clients['c'+c.id]=c; });
     fbRef.set(full).then(()=>{
       _fbBaseline=flat; _cloudNeedsFullMigration=false; _fbPendingDeletes.clear();
+      window._lastSyncAt=Date.now();
       console.log('☁️ Full sync to Firebase (baseline/migration)');
       updateCloudIndicator(true);
       setTimeout(()=>{fbSyncing=false;},2000);
@@ -9193,6 +9366,7 @@ function saveToFirebase(){
   fbRef.update(upd).then(()=>{
     _fbBaseline=flat;
     Array.from(_fbPendingDeletes).forEach(k=>{ if(k.indexOf('BL/')!==0) _fbPendingDeletes.delete(k); });
+    window._lastSyncAt=Date.now();
     console.log('☁️ Synced '+nKeys+' change(s) to Firebase');
     updateCloudIndicator(true);
     setTimeout(()=>{fbSyncing=false;},2000);
@@ -9240,7 +9414,7 @@ function updateCloudIndicator(connected,error){
   const disc=document.getElementById('fb-disconnect-btn');
   const area=document.getElementById('fb-status-area');
   if(connected){
-    if(el){el.textContent='☁️ Synced';el.style.color='#86EFAC';}
+    if(el){const tm=new Date(window._lastSyncAt||Date.now()).toLocaleTimeString(LANG==='es'?'es-US':'en-US',{hour:'numeric',minute:'2-digit'});el.innerHTML='<span class="cdot g"></span><span>Synced · '+tm+'</span>';el.style.color='#B8E6C8';}
     if(btn)btn.textContent='Synced ✓';
     if(disc)disc.style.display='inline-block';
     if(area){
@@ -9262,7 +9436,7 @@ function updateCloudIndicator(connected,error){
       document.getElementById('fb-dburl').value=config.databaseURL||'';
     }
   } else {
-    if(el){el.textContent=error?'☁️ Error':'☁️ Offline';el.style.color=error?'#FECACA':'#FDE68A';}
+    if(el){el.innerHTML='<span class="cdot '+(error?'r':'a')+'"></span><span>'+(error?'Error':'Offline')+'</span>';el.style.color=error?'#FECACA':'#FDE68A';}
     if(btn)btn.textContent='Cloud';
     if(disc)disc.style.display='none';
     if(area){
@@ -11614,8 +11788,11 @@ function _refreshChkProgress(cid){
   const checked = root.querySelectorAll('[data-chk-item].checked');
   const pct = all.length ? Math.round((checked.length/all.length)*100) : 0;
   const lbl = root.querySelector('.tcc-chk-progress-mini > span:first-child');
-  const fill = root.querySelector('.tcc-chk-progress-fill');
   if(lbl) lbl.textContent = `${checked.length}/${all.length}`;
+  // V8 — progress ring (replaces the old mini bar)
+  const ring = root.querySelector('.tcc-ring-fill');
+  if(ring) ring.style.strokeDashoffset = (75.4 - 75.4*pct/100) + 'px';
+  const fill = root.querySelector('.tcc-chk-progress-fill');
   if(fill) fill.style.width = pct+'%';
   // When ALL checklist items are complete, auto-check the final
   // "Work satisfactorily" attestation. The tech can still untoggle it
@@ -11846,7 +12023,7 @@ function _renderChkEditable(c, dateKey){
       </span>
       <span class="tcc-chk-progress-mini">
         <span>${checked}/${total}</span>
-        <span class="tcc-chk-progress-bar"><span class="tcc-chk-progress-fill" style="width:${pct}%"></span></span>
+        <svg class="tcc-ring" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle class="tcc-ring-bg" cx="15" cy="15" r="12"></circle><circle class="tcc-ring-fill" cx="15" cy="15" r="12" style="stroke-dashoffset:${(75.4-75.4*pct/100).toFixed(1)}px"></circle></svg>
       </span>
       <span class="tcc-chk-arrow">▼</span>
     </button>
@@ -14661,6 +14838,8 @@ loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
 // FEATURE #8 — async re-hydrate from IndexedDB if localStorage was pruned/lost
 _idbHydrateIfNeeded();
+// V4 — Dark Pro: restore saved preference
+try{ if(localStorage.getItem('aspen_cm_dark')==='1'){ document.body.classList.add('dark'); const _dt=document.getElementById('dark-toggle'); if(_dt)_dt.textContent='\u2600\uFE0F'; } }catch(e){ dbgWarn('caught:',e); }
 // FEATURE #7 — client portal mode (read-only overlay driven by ?portal=token)
 if(PORTAL_TOKEN) _renderClientPortal(PORTAL_TOKEN);
 
