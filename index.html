@@ -8157,9 +8157,13 @@ function saveData(){
   // 2) Local persistence with quota-safe photo pruning.
   let res;
   try{ res = persistLocal(); }catch(e){ dbgErr('Save error:',e); res = {ok:false,trimmed:false}; }
-  // FEATURE #8 — mirror the FULL payload (photos included) to IndexedDB,
-  // which has no 5MB quota. localStorage stays the fast synchronous boot source.
-  try{ idbSet(LS_KEY, _lsPayloadStr(null)); }catch(e){ dbgWarn('caught:',e); }
+  // FEATURE #8 — mirror the FULL payload to IndexedDB (no 5MB quota).
+  // FIX #6 — debounced: serializing the whole payload on EVERY save caused
+  // needless CPU work during bursts; the mirror now trails saves by 4s.
+  try{
+    clearTimeout(window._idbT);
+    window._idbT=setTimeout(()=>{ try{ idbSet(LS_KEY,_lsPayloadStr(null)); }catch(e){ dbgWarn('caught:',e); } },4000);
+  }catch(e){ dbgWarn('caught:',e); }
   if(res.ok){
     flashSave();
     markClean();
@@ -8647,17 +8651,25 @@ function doInit(config){
           _cloudNeedsFullMigration=Array.isArray(d.clients);
           _fbBaseline=_flattenForSync(d);
           window._lastSyncAt=Date.now();
+          if(window._fbDirty){ window._fbDirty=false; setTimeout(saveToFirebase,800); }
         }
-        if(fbSyncing)return; // skip merge if we just wrote
-        if(d&&d.savedAt){
-          const localRaw=localStorage.getItem(LS_KEY);
-          const localData=localRaw?JSON.parse(localRaw):null;
-          // Only apply cloud data if it's newer than local
-          if(!localData||!localData.savedAt||new Date(d.savedAt)>new Date(localData.savedAt)){
-            applyCloudData(d);
-            console.log('☁️ Cloud data applied (newer than local)');
-          }
+        if(fbSyncing){
+          // FIX #10 — our own write's echo. Before, this snapshot was dropped
+          // entirely, losing any CONCURRENT edits from other devices for ~2s.
+          // Now we park it and re-process once the write settles.
+          window._fbEchoSkip=d;
+          clearTimeout(window._fbEchoT);
+          window._fbEchoT=setTimeout(()=>{
+            const dd=window._fbEchoSkip; window._fbEchoSkip=null;
+            if(dd&&!fbSyncing){ try{ _applySnap(dd); }catch(e){ dbgWarn('caught:',e); } }
+          },2300);
+          return;
         }
+        // FIX #2 — merge on EVERY snapshot. The old global savedAt gate meant a
+        // device that had just saved wouldn't see a tech's visit until someone
+        // else wrote to the cloud. Per-entry timestamp merges (VL, BL, clients)
+        // make applying every snapshot safe; wholesale branches stay gated.
+        _applySnap(d);
         // Self-heal: if this device holds entries the cloud doesn't have yet
         // (e.g. saved while offline), push them shortly after the snapshot.
         if(d){ clearTimeout(window._fbResyncT); window._fbResyncT=setTimeout(_fbResyncLocalExtras,3000); }
@@ -8671,6 +8683,8 @@ function doInit(config){
       try{ _attachAuditFeed(); }catch(e){ dbgWarn('caught:',e); }
       // FEATURE #2 — upgrade recent base64 photos to Storage URLs in the background
       setTimeout(()=>{ try{ _migrateRecentPhotos(); }catch(e){ dbgWarn('caught:',e); } },6000);
+      // FIX #8 — cloud housekeeping (audit cap + stale devices), admin only
+      setTimeout(()=>{ try{ _gcCloudHousekeeping(); }catch(e){ dbgWarn('caught:',e); } },12000);
       fbConnected=true;
       updateCloudIndicator(true);
       console.log('☁️ Firebase connected');
@@ -8684,7 +8698,12 @@ function doInit(config){
   }
 }
 
-function applyCloudData(d){
+function applyCloudData(d, cloudNewer){
+  // cloudNewer: whether the cloud snapshot is globally newer than local.
+  // Timestamped branches (VL, BL, clients) merge per-entry regardless;
+  // wholesale branches (TAPPTS, DNOTES, TECHS, CAL_ORDER) only replace
+  // when the cloud is newer, preserving their original semantics.
+  if(cloudNewer===undefined) cloudNewer=true;
   try{
   // ─── VL (visit log) — merge per-client per-date, keeping the entry with the newest _timestamp ───
   // CRITICAL: never wipe VL wholesale, AND never auto-delete local visits based on cloud absence.
@@ -8735,20 +8754,20 @@ function applyCloudData(d){
     });
   }
   // ─── TAPPTS (technician appointments) — replace whole-key only if cloud is newer. These are admin-managed. ───
-  if(d.TAPPTS){Object.keys(TAPPTS).forEach(k=>delete TAPPTS[k]);Object.assign(TAPPTS,d.TAPPTS);}
+  if(cloudNewer&&d.TAPPTS){Object.keys(TAPPTS).forEach(k=>delete TAPPTS[k]);Object.assign(TAPPTS,d.TAPPTS);}
   // ─── DNOTES (per-date day-notes) — admin-managed pre-visit notes. Wholesale ok since these are
   // typed by admin only, no race-condition risk like VL has with concurrent tech edits. ───
-  if(d.DNOTES){Object.keys(DNOTES).forEach(k=>delete DNOTES[k]);Object.assign(DNOTES,d.DNOTES);}
+  if(cloudNewer&&d.DNOTES){Object.keys(DNOTES).forEach(k=>delete DNOTES[k]);Object.assign(DNOTES,d.DNOTES);}
   // ─── TECHS / CAL_ORDER / clients — admin-managed, safe to apply wholesale (savedAt gate above already protects) ───
-  if(d.TECHS){
+  if(cloudNewer&&d.TECHS){
     const ta=Array.isArray(d.TECHS)?d.TECHS:Object.values(d.TECHS).filter(Boolean);
     TECHS=ta;
   }
-  if(d.ORGANIZERS){
+  if(cloudNewer&&d.ORGANIZERS){
     const oa=Array.isArray(d.ORGANIZERS)?d.ORGANIZERS:Object.values(d.ORGANIZERS).filter(Boolean);
     ORGANIZERS=oa;
   }
-  if(d.CAL_ORDER){
+  if(cloudNewer&&d.CAL_ORDER){
     ['A','B'].forEach(wt=>{
       if(d.CAL_ORDER&&d.CAL_ORDER[wt])Object.assign(CAL_ORDER[wt],d.CAL_ORDER[wt]);
     });
@@ -8757,8 +8776,24 @@ function applyCloudData(d){
     // Firebase may convert arrays to objects — normalize
     const arr=Array.isArray(d.clients)?d.clients:Object.values(d.clients).filter(Boolean);
     if(arr.length>0){
-      C.length=0;
-      arr.forEach(cl=>C.push(cl));
+      // FIX #1 — per-client merge by lastModified instead of wholesale replace.
+      // The old wholesale replace (gated on a GLOBAL savedAt) meant a device
+      // that had just saved would either miss other devices' client edits or,
+      // worse, push its stale copy back over them. Now the newest edit of
+      // EACH client wins, regardless of who saved last overall.
+      const byId=new Map(C.map(c=>[c.id,c]));
+      arr.forEach(cl=>{
+        const loc=byId.get(cl.id);
+        if(!loc){ C.push(cl); byId.set(cl.id,cl); return; }
+        const cts=cl.lastModified||0, lts=loc.lastModified||0;
+        if(cts>=lts){ C[C.indexOf(loc)]=cl; byId.set(cl.id,cl); }
+      });
+      if(cloudNewer){
+        // A globally-newer cloud is also authoritative about which clients
+        // EXIST — this is how deleteClient propagates to other devices.
+        const cloudIds=new Set(arr.map(c=>c.id));
+        for(let i=C.length-1;i>=0;i--){ if(!cloudIds.has(C[i].id)) C.splice(i,1); }
+      }
     }
   }
   // Save merged result back to localStorage so the next reload starts from the correct state.
@@ -8826,6 +8861,14 @@ function _diffForSync(baseline,current){
   const upd={};
   Object.keys(current).forEach(k=>{
     if(baseline&&baseline[k]===current[k]) return;
+    if(baseline&&baseline[k]!==undefined&&k.indexOf('clients/')===0){
+      // FIX #3 — never push a client edit older than what the cloud holds
+      // (mirror of the VL guard below, keyed on lastModified).
+      try{
+        const lv=JSON.parse(current[k])||{}, cv=JSON.parse(baseline[k])||{};
+        if((lv.lastModified||0)<(cv.lastModified||0)) return;
+      }catch(e){ dbgWarn('caught:',e); }
+    }
     if(baseline&&baseline[k]!==undefined&&k.indexOf('VL/')===0){
       // Timestamp-aware guard for visits: local copies get their photos pruned
       // for localStorage quota, so a booted device may hold a LIGHTER copy of a
@@ -8860,7 +8903,17 @@ function _fbResyncLocalExtras(){
     const p=getBackupPayload(); delete p.BL;
     const f=_flattenForSync(p);
     let extras=0;
-    Object.keys(f).forEach(k=>{ if(_fbBaseline[k]===undefined) extras++; });
+    Object.keys(f).forEach(k=>{
+      if(_fbBaseline[k]!==undefined) return;
+      if(k.indexOf('clients/')===0){
+        // A client missing from the cloud is far more likely DELETED elsewhere
+        // than newly created offline — only re-push genuinely fresh ones
+        // (created/edited in the last 10 minutes). Prevents deleted clients
+        // from resurrecting via the self-heal path.
+        try{ const cl=JSON.parse(f[k]); if(!cl.lastModified||Date.now()-cl.lastModified>600000) return; }catch(e){ dbgWarn('caught:',e); }
+      }
+      extras++;
+    });
     if(extras){ dbg('resync: pushing',extras,'local-only entrie(s) to cloud'); saveToFirebase(); }
   }catch(e){ dbgWarn('resync',e); }
 }
@@ -9177,6 +9230,63 @@ function _portalHtml(d){
    {uid} (who, role, platform, last seen). Admin devices see the list in
    the ☁️ Cloud modal and can promote/demote admins with one tap — no one
    ever needs to open the Firebase console or copy UIDs by hand. */
+/* ══════════ DEEP FIXES v1.2.1 — helpers ══════════ */
+/* FIX #2 — apply a cloud snapshot with per-entry merges; wholesale branches
+   (TAPPTS/DNOTES/TECHS/CAL_ORDER) still require the cloud to be globally newer. */
+function _applySnap(d){
+  if(!d||!d.savedAt) return;
+  let cloudNewer=true;
+  try{
+    const localRaw=localStorage.getItem(LS_KEY);
+    const localData=localRaw?JSON.parse(localRaw):null;
+    cloudNewer=!localData||!localData.savedAt||new Date(d.savedAt)>=new Date(localData.savedAt);
+  }catch(e){ dbgWarn('caught:',e); }
+  applyCloudData(d, cloudNewer);
+}
+/* FIX #7 — proactive GC of per-photo localStorage backups. They were only
+   cleaned reactively when the quota blew up; now keys older than 14 days go
+   at boot (the photos live in Storage/RTDB anyway). */
+function _gcPhotoBackupKeys(){
+  try{
+    const cutoff=new Date(Date.now()-14*86400000);
+    const stale=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      const m=k&&k.match(/^aspen_chk_photo_\d+_(\d{4}-\d{2}-\d{2})_/);
+      if(m){ const dd=parseLocalDate(m[1]); if(dd&&dd<cutoff) stale.push(k); }
+    }
+    stale.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){ dbgWarn('caught:',e); } });
+    if(stale.length) dbg('gc: removed',stale.length,'old photo backup key(s)');
+  }catch(e){ dbgWarn('gc photos',e); }
+}
+/* FIX #8 — cloud housekeeping (admin devices): audit capped at ~400 entries,
+   devices unseen for 60 days removed. Both nodes grew forever otherwise. */
+function _gcCloudHousekeeping(){
+  try{
+    if(CURRENT_ROLE!=='admin'||!fbDB) return;
+    fbDB.ref('aspen_spas/audit').once('value').then(s=>{
+      const d=s.val()||{}; const keys=Object.keys(d);
+      if(keys.length>600){
+        keys.sort((a,b)=>((d[a]&&d[a].ts)||0)-((d[b]&&d[b].ts)||0));
+        const del={}; keys.slice(0,keys.length-400).forEach(k=>del[k]=null);
+        fbDB.ref('aspen_spas/audit').update(del).catch(e=>dbgWarn('gc audit',e));
+      }
+    }).catch(e=>dbgWarn('gc audit',e));
+    fbDB.ref('aspen_spas/devices').once('value').then(s=>{
+      const d=s.val()||{}; const cutoff=Date.now()-60*86400000; const del={};
+      Object.keys(d).forEach(uid=>{ const t2=Date.parse((d[uid]&&d[uid].lastSeen)||'')||0; if(t2&&t2<cutoff) del[uid]=null; });
+      if(Object.keys(del).length) fbDB.ref('aspen_spas/devices').update(del).catch(e=>dbgWarn('gc devices',e));
+    }).catch(e=>dbgWarn('gc devices',e));
+  }catch(e){ dbgWarn('gc cloud',e); }
+}
+/* FIX #9 — keep client portals fresh when the ADMIN changes things (register
+   WC, edit client). Before, portals only refreshed on tech visit commits. */
+function _portalRepublishSoon(){
+  clearTimeout(window._prT);
+  window._prT=setTimeout(()=>{
+    try{ C.filter(c=>c.portalToken).forEach(c=>_publishClientPortal(c)); }catch(e){ dbgWarn('portal republish',e); }
+  },8000);
+}
 /* ══════════ VISUAL PACK v1.2 — helpers ══════════ */
 /* V1 — mobile bottom nav */
 function _bnavGo(id,btnEl){
@@ -9211,7 +9321,7 @@ function _visitsSparkHtml(){
     const start=new Date(now); start.setDate(start.getDate()-start.getDay()-49);
     Object.keys(VL).forEach(cid=>{ Object.keys(VL[cid]||{}).forEach(dk=>{
       const v=VL[cid][dk];
-      if(!v||v._deleted||v.status==='not_done') return;
+      if(!v||v._deleted||v.status==='not_done'||v.status==='pending') return;
       const d=parseLocalDate(dk); if(!d) return;
       const idx=Math.floor((d-start)/(7*86400000));
       if(idx>=0&&idx<8) weeks[idx]++;
@@ -9320,7 +9430,17 @@ function toggleAdminUID(uid,makeAdmin){
     dbgWarn('toggleAdmin',e);
   });
 }
+/* FIX #4 — debounce cloud writes. Bulk actions (pause 20 clients, bulk WC)
+   used to fire one update() + one snapshot per row. Now rapid saves collapse
+   into a single write 350ms after the burst ends; pagehide flushes it. */
+let _stfT=null;
 function saveToFirebase(){
+  if(!fbConnected||!fbRef){ setTimeout(()=>{fbSyncing=false;},2000); return; }
+  clearTimeout(_stfT);
+  _stfT=setTimeout(_saveToFirebaseNow,350);
+}
+function _saveToFirebaseNow(){
+  _stfT=null;
   // Even if not connected, schedule a fail-safe release of fbSyncing in case the caller set it
   // (e.g. _techRecordVisit). Otherwise the local guard could stay locked when offline.
   if(!fbConnected||!fbRef){
@@ -9345,12 +9465,14 @@ function saveToFirebase(){
     (payload.clients||[]).forEach(c=>{ full.clients['c'+c.id]=c; });
     fbRef.set(full).then(()=>{
       _fbBaseline=flat; _cloudNeedsFullMigration=false; _fbPendingDeletes.clear();
+      window._fbDirty=false;
       window._lastSyncAt=Date.now();
       console.log('☁️ Full sync to Firebase (baseline/migration)');
       updateCloudIndicator(true);
       setTimeout(()=>{fbSyncing=false;},2000);
     }).catch(e=>{
       console.warn('Firebase save error:',e);
+      window._fbDirty=true; // FIX #5 — retried on reconnect / next snapshot
       updateCloudIndicator(false,e.message);
       fbSyncing=false;
     });
@@ -9366,12 +9488,14 @@ function saveToFirebase(){
   fbRef.update(upd).then(()=>{
     _fbBaseline=flat;
     Array.from(_fbPendingDeletes).forEach(k=>{ if(k.indexOf('BL/')!==0) _fbPendingDeletes.delete(k); });
+    window._fbDirty=false;
     window._lastSyncAt=Date.now();
     console.log('☁️ Synced '+nKeys+' change(s) to Firebase');
     updateCloudIndicator(true);
     setTimeout(()=>{fbSyncing=false;},2000);
   }).catch(e=>{
     console.warn('Firebase save error:',e);
+    window._fbDirty=true; // FIX #5 — retried on reconnect / next snapshot
     updateCloudIndicator(false,e.message);
     fbSyncing=false;
   });
@@ -14791,7 +14915,7 @@ function loadFirebaseOnStartup(){
 }
 
 // Wrap all data-mutating functions to auto-save
-function wrapSave(fn,name){return function(){const r=fn.apply(this,arguments);saveData();try{logAudit(name||'change','');}catch(e){dbgWarn('caught:',e);}return r;};}
+function wrapSave(fn,name){return function(){const r=fn.apply(this,arguments);saveData();try{logAudit(name||'change','');}catch(e){dbgWarn('caught:',e);}try{_portalRepublishSoon();}catch(e){dbgWarn('caught:',e);}return r;};}
 // These will be wrapped after definition
 window.addEventListener('DOMContentLoaded',()=>{
   ['swc','stc','sinv','ac','saveEdit','saveVisit','activateClient',
@@ -14838,6 +14962,12 @@ loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
 // FEATURE #8 — async re-hydrate from IndexedDB if localStorage was pruned/lost
 _idbHydrateIfNeeded();
+// FIX #7 — clean stale per-photo backup keys
+try{ _gcPhotoBackupKeys(); }catch(e){ dbgWarn('caught:',e); }
+// FIX #5 — retry pending cloud writes when the connection returns
+window.addEventListener('online',()=>{ try{ if(window._fbDirty&&fbConnected) saveToFirebase(); }catch(e){ dbgWarn('caught:',e); } });
+// FIX #4 — flush a pending debounced write if the app is being closed
+window.addEventListener('pagehide',()=>{ try{ if(_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
 // V4 — Dark Pro: restore saved preference
 try{ if(localStorage.getItem('aspen_cm_dark')==='1'){ document.body.classList.add('dark'); const _dt=document.getElementById('dark-toggle'); if(_dt)_dt.textContent='\u2600\uFE0F'; } }catch(e){ dbgWarn('caught:',e); }
 // FEATURE #7 — client portal mode (read-only overlay driven by ?portal=token)
