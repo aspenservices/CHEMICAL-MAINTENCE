@@ -8733,7 +8733,31 @@ function _flattenForSync(p){
 }
 function _diffForSync(baseline,current){
   const upd={};
-  Object.keys(current).forEach(k=>{ if(!baseline||baseline[k]!==current[k]) upd[k]=JSON.parse(current[k]); });
+  Object.keys(current).forEach(k=>{
+    if(baseline&&baseline[k]===current[k]) return;
+    if(baseline&&baseline[k]!==undefined&&k.indexOf('VL/')===0){
+      // Timestamp-aware guard for visits: local copies get their photos pruned
+      // for localStorage quota, so a booted device may hold a LIGHTER copy of a
+      // visit than the cloud. Never let that stale/pruned copy overwrite the
+      // cloud one — that would silently destroy the photos.
+      try{
+        const lv=JSON.parse(current[k])||{}, cv=JSON.parse(baseline[k])||{};
+        const lts=lv._timestamp||0, cts=cv._timestamp||0;
+        if(lts<cts) return; // cloud is newer — the merge will bring it to us
+        const lStripped=lv&&lv.checklist&&lv.checklist._photosStripped;
+        const cPhotos=cv&&cv.checklist&&cv.checklist.photos;
+        if(lStripped&&cPhotos&&Object.keys(cPhotos).length){
+          // Genuine local edit on a pruned copy — push it, but carry the cloud
+          // photos along instead of wiping them.
+          lv.checklist=Object.assign({},lv.checklist,{photos:cPhotos});
+          delete lv.checklist._photosStripped;
+          upd[k]=lv;
+          return;
+        }
+      }catch(e){ dbgWarn('caught:',e); }
+    }
+    upd[k]=JSON.parse(current[k]);
+  });
   // NOTE: no "missing key → delete" clause on purpose. Absence is not proof
   // of deletion (the exact bug class that once wiped tech visits). Explicit
   // deletions go through _fbPendingDeletes instead.
@@ -8870,31 +8894,52 @@ async function _uploadChkPhoto(b64,cid,dateKey,iid,backupKey){
 }
 let _photoMigrateRan=false;
 async function _migrateRecentPhotos(){
-  if(_photoMigrateRan||!fbConnected||!firebase.storage) return;
+  if(_photoMigrateRan||!fbConnected||!firebase.storage||!fbRef) return;
   _photoMigrateRan=true;
   const cutoff=Date.now()-7*86400000;
   let upgraded=0;
-  for(const cid of Object.keys(VL)){
-    for(const dk of Object.keys(VL[cid]||{})){
-      const v=VL[cid][dk];
-      if(!v||v._deleted||!v.checklist||!v.checklist.photos) continue;
-      const ts=v._timestamp||_dateKeyToTs(dk)||0;
-      if(ts<cutoff) continue;
-      for(const iid of Object.keys(v.checklist.photos)){
-        const p=v.checklist.photos[iid];
-        if(typeof p!=='string'||p.indexOf('data:')!==0) continue;
-        try{
+  try{
+    // Read VL straight from the CLOUD. The base64 photos often exist only
+    // there (local copies get pruned for quota), so scanning local memory
+    // would miss them on admin devices.
+    const snap=await fbRef.child('VL').once('value');
+    const cloudVL=snap.val()||{};
+    for(const cid of Object.keys(cloudVL)){
+      const days=cloudVL[cid]||{};
+      for(const dk of Object.keys(days)){
+        const v=days[dk];
+        if(!v||v._deleted||!v.checklist||!v.checklist.photos) continue;
+        const ts=v._timestamp||_dateKeyToTs(dk)||0;
+        if(ts<cutoff) continue;
+        for(const iid of Object.keys(v.checklist.photos)){
+          const p=v.checklist.photos[iid];
+          if(typeof p!=='string'||p.indexOf('data:')!==0) continue;
           const path='chem_photos/'+cid+'/'+dk+'/'+iid+'_'+Date.now()+'.jpg';
           const sref=firebase.storage().ref(path);
           await sref.putString(p,'data_url');
-          v.checklist.photos[iid]=await sref.getDownloadURL();
-          v._timestamp=Date.now();
+          const url=await sref.getDownloadURL();
+          // Write the tiny URL straight back to the cloud entry (granular)
+          const upd={};
+          upd['VL/'+cid+'/'+dk+'/checklist/photos/'+iid]=url;
+          upd['VL/'+cid+'/'+dk+'/_timestamp']=Date.now();
+          await fbRef.update(upd);
+          // Mirror in local memory if this device holds the visit
+          try{
+            if(VL[cid]&&VL[cid][dk]&&VL[cid][dk].checklist&&VL[cid][dk].checklist.photos&&VL[cid][dk].checklist.photos[iid]){
+              VL[cid][dk].checklist.photos[iid]=url;
+              VL[cid][dk]._timestamp=Date.now();
+            }
+          }catch(e){ dbgWarn('caught:',e); }
           upgraded++;
-        }catch(e){ dbgWarn('photo migrate stopped:',e&&e.message); if(upgraded) saveData(); return; }
+        }
       }
     }
-  }
-  if(upgraded){ dbg('photo migrate: upgraded',upgraded,'photo(s) to Storage URLs'); saveData(); }
+    if(upgraded){
+      dbg('photo migrate: upgraded',upgraded,'photo(s) to Storage URLs');
+      saveData();
+      showToast('\uD83D\uDCF7 '+upgraded+' foto(s) migradas a Storage','ok');
+    }
+  }catch(e){ dbgWarn('photo migrate stopped:',e&&e.message); }
 }
 
 /* ══════════════════════════════════════════════════════════════════
