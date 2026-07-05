@@ -49,8 +49,41 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ── FEATURE #3 — Service Worker: offline shell + forced-update banner ──
+   sw.js (separate file, must be deployed alongside index.html) caches the app
+   shell so the PWA opens with no signal, and lets us push a "new version"
+   banner the same way TECH-TICKETS does with its CACHE_VERSION bump. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        if(!nw)return;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed'&&navigator.serviceWorker.controller) _showSwUpdateBanner(reg);
+        });
+      });
+    }).catch(()=>{/* SW is a nice-to-have; app works without it */});
+    let _swReloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(_swReloaded)return; _swReloaded=true; location.reload();
+    });
+  });
+}
+function _showSwUpdateBanner(reg){
+  if(document.getElementById('sw-update-banner'))return;
+  const b=document.createElement('div');
+  b.id='sw-update-banner';
+  b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#2A211A;color:#FFF;padding:12px 18px;border-radius:12px;z-index:999998;display:flex;gap:12px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.3);font-family:inherit;font-size:14px;white-space:nowrap';
+  b.innerHTML='<span>🔄 Nueva versión / New version</span><button style="background:#B5733A;color:#FFF;border:none;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit" id="sw-update-btn">Actualizar</button>';
+  document.body.appendChild(b);
+  document.getElementById('sw-update-btn').onclick=()=>{ const w=reg.waiting; if(w)w.postMessage({type:'SKIP_WAITING'}); };
+}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5EFE6;color:#2C2418;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv02','cv03','cv04','cv11'}
@@ -98,6 +131,8 @@ select.hbtn option{color:#2C2418;background:#FFFFFF}
 .tab{padding:13px 18px;font-size:14.5px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:inherit;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;font-weight:600;letter-spacing:-.1px;transition:color .14s ease,border-color .14s ease,background .14s ease;border-radius:6px 6px 0 0}
 .tab.active{color:var(--brand);font-weight:700;border-bottom-color:var(--brand);background:linear-gradient(180deg,rgba(181,115,58,.05),transparent)}
 .tab:hover:not(.active){color:var(--brand);background:rgba(181,115,58,.04)}
+/* FEATURE #4 — devices without billing permission never see the tab */
+body.no-billing #tab-billing{display:none!important}
 .body{background:#FFFFFF;padding:16px 20px;border-radius:0;border:1px solid var(--border);border-top:none;min-height:500px}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
 /* Metric card — used on dashboard. Subtle hover lift, clearer hierarchy.
@@ -1626,7 +1661,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <button class="tab active" onclick="st('dash',this)">Dashboard</button>
   <button class="tab" onclick="st('clients',this)">Clientes</button>
   <button class="tab" onclick="st('calendar',this)">&#875122; Agenda A/B</button>
-  <button class="tab" onclick="st('billing',this)">Facturación</button>
+  <button class="tab" id="tab-billing" onclick="st('billing',this)">Facturación</button>
   <button class="tab" onclick="st('visits',this)">Visitas</button>
   <button class="tab" onclick="st('summary',this)">📋 Summary</button>
   <button class="tab" onclick="st('wctab',this)">💧 Water Change</button>
@@ -1672,6 +1707,11 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
       </div>
     </div>
     <div id="today-list" style="padding:8px 12px"></div>
+  </div>
+  <!-- FEATURE #10 — Audit trail: who changed what, live from aspen_spas/audit (admin only) -->
+  <div class="card role-admin-only" id="audit-card" style="display:none">
+    <div class="card-head"><span class="card-title">📜 <span id="audit-title">Actividad reciente</span></span></div>
+    <div id="audit-list" style="padding:8px 14px;font-size:13px;max-height:260px;overflow:auto"></div>
   </div>
   <div class="card unpaid-section" id="unpaid-card">
     <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
@@ -1904,6 +1944,9 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <!-- Bulk selection toolbar — shown when at least one WC row is checked.
          Lets Alberto register today's water change for multiple clients at
          once, or shift their next-WC date by a uniform offset. -->
+    <!-- FEATURE #5 — Water-change reminder queue: everyone due in the next 14
+         days who hasn't been sent a reminder for their current date. -->
+    <div id="wc-remind-bar" style="display:none;background:#FFF8EE;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 14px"></div>
     <div id="wc-bulk-bar" style="display:none;background:#FCF7F2;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:9px 14px;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-weight:700;color:var(--brand)"><span id="wc-bulk-count">0</span> <span id="wc-bulk-label">seleccionados</span></span>
       <button class="btn btn-amber" onclick="wcBulkRegister()" title="Register water change for all selected">💧 <span id="wc-bulk-register-lbl">Registrar CA hoy</span></button>
@@ -2977,6 +3020,8 @@ async function openPricingConfig(){
   const w=Number(wkRaw), b=Number(biRaw);
   if(!isFinite(w)||w<=0||!isFinite(b)||b<=0){showToast(LANG==='es'?'Valores inválidos':'Invalid values','err');return;}
   localStorage.setItem(PRICING_KEY,JSON.stringify({weekly:w,biweekly:b}));
+  // FEATURE #4 — pricing lives with billing in the restricted node
+  try{ saveBillingToFirebase(BL); }catch(e){ dbgWarn('caught:',e); }
   showToast(LANG==='es'?`Precios actualizados: Sem $${w} / Bi-sem $${b}`:`Pricing updated: Wk $${w} / Bi-wk $${b}`,'ok');
   ra();
 }
@@ -4332,6 +4377,7 @@ function vc(id){
         <button class="btn btn-amber" onclick="owc(${c.id})">&#128167; ${t('waterChangeLbl')}</button>
         <button class="btn btn-red" onclick="otc(${c.id})">&#865021; ${t('techVisitLbl')}</button>
         <button class="btn btn-purple" onclick="oTechAppt(${c.id})">&#875122; ${t('schedule')}</button>
+        <button class="btn" onclick="copyClientPortalLink(${c.id})" title="Copy read-only portal link for this client">🔗 Portal</button>
       </div>
     </div>
     <div style="height:2px;background:var(--brand);border-radius:2px;margin-bottom:12px"></div>
@@ -4429,6 +4475,10 @@ async function deleteClient(id){
     ? `¿Eliminar permanentemente al cliente "${c.name}"?\n\nSe borrará:\n• El cliente completo\n• Todas sus visitas registradas\n• Su historial de cambios de agua\n• Sus visitas técnicas agendadas\n\nEsta acción se puede deshacer durante esta sesión, pero NO después de cerrar la app.`
     : `Permanently delete client "${c.name}"?\n\nThis will erase:\n• The client record\n• All recorded visits\n• Water-change history\n• Scheduled tech appointments\n\nThis can be undone during this session only, NOT after closing the app.`;
   if(!await showConfirm(msg1,{danger:true}))return;
+  // FEATURE #10 + #1 — audit the deletion and mark the cloud paths for
+  // explicit removal (granular sync never infers deletions from absence).
+  try{ logAudit('deleteClient', c.name); }catch(e){ dbgWarn('caught:',e); }
+  try{ _fbMarkDeleted(['clients/c'+id,'TAPPTS/'+id,'BL/'+id]); }catch(e){ dbgWarn('caught:',e); }
   // Snapshot for undo
   const snapshot = {
     client: JSON.parse(JSON.stringify(c)),
@@ -6515,6 +6565,7 @@ function rwc(){
       </div></td></tr>`;
   }).join('');
   _wcBulkRefreshBar();
+  _renderWCRemindBar();
 }
 
 /* ── Bulk WC actions ───────────────────────────────────────────────────────
@@ -7497,8 +7548,15 @@ function _vlWithoutHeavyPhotos(VLsrc, keepDays){
           out[cid][dk] = v; // recent — keep photos locally too
         } else {
           const chk = Object.assign({}, v.checklist);
-          delete chk.photos;
-          chk._photosStripped = nPhotos; // marker: real photos live in Firebase
+          // FEATURE #2 — keep tiny https Storage URLs; strip only heavy base64 blobs.
+          const kept = {}; let stripped = 0;
+          Object.keys(photos).forEach(iid=>{
+            const p = photos[iid];
+            if(typeof p === 'string' && p.indexOf('https://') === 0) kept[iid] = p;
+            else stripped++;
+          });
+          if(Object.keys(kept).length) chk.photos = kept; else delete chk.photos;
+          if(stripped) chk._photosStripped = stripped; // marker: real photos live in Firebase
           out[cid][dk] = Object.assign({}, v, {checklist: chk});
         }
       } else {
@@ -8008,6 +8066,9 @@ function saveData(){
   // 2) Local persistence with quota-safe photo pruning.
   let res;
   try{ res = persistLocal(); }catch(e){ dbgErr('Save error:',e); res = {ok:false,trimmed:false}; }
+  // FEATURE #8 — mirror the FULL payload (photos included) to IndexedDB,
+  // which has no 5MB quota. localStorage stays the fast synchronous boot source.
+  try{ idbSet(LS_KEY, _lsPayloadStr(null)); }catch(e){ dbgWarn('caught:',e); }
   if(res.ok){
     flashSave();
     markClean();
@@ -8472,7 +8533,10 @@ function doInit(config){
     firebase.initializeApp({
       apiKey:config.apiKey,
       projectId:config.projectId,
-      databaseURL:config.databaseURL
+      databaseURL:config.databaseURL,
+      // FEATURE #2 — needed for Storage photo uploads. Falls back to the modern
+      // default bucket name when the saved config predates this field.
+      storageBucket:config.storageBucket||(config.projectId+'.firebasestorage.app')
     });
     // ── Anonymous Auth gate ──
     // Firebase security rules require auth != null. We MUST sign in before any
@@ -8483,8 +8547,16 @@ function doInit(config){
       fbRef=fbDB.ref('aspen_spas/data');
       // Listen for real-time changes
       fbRef.on('value',snap=>{
-        if(fbSyncing)return; // skip if we just wrote
         const d=snap.val();
+        if(d){
+          // FEATURE #1 — baseline = the cloud state as this device knows it.
+          // Granular saves diff against this, so entries we haven't seen are
+          // never touched. Legacy array-form clients trigger a one-time full
+          // write that migrates them to keyed-object form ("c{id}").
+          _cloudNeedsFullMigration=Array.isArray(d.clients);
+          _fbBaseline=_flattenForSync(d);
+        }
+        if(fbSyncing)return; // skip merge if we just wrote
         if(d&&d.savedAt){
           const localRaw=localStorage.getItem(LS_KEY);
           const localData=localRaw?JSON.parse(localRaw):null;
@@ -8494,7 +8566,16 @@ function doInit(config){
             console.log('☁️ Cloud data applied (newer than local)');
           }
         }
+        // Self-heal: if this device holds entries the cloud doesn't have yet
+        // (e.g. saved while offline), push them shortly after the snapshot.
+        if(d){ clearTimeout(window._fbResyncT); window._fbResyncT=setTimeout(_fbResyncLocalExtras,3000); }
       });
+      // FEATURE #4 — billing node listener (permission-aware)
+      _initBillingSync();
+      // FEATURE #10 — live audit feed for the dashboard card
+      try{ _attachAuditFeed(); }catch(e){ dbgWarn('caught:',e); }
+      // FEATURE #2 — upgrade recent base64 photos to Storage URLs in the background
+      setTimeout(()=>{ try{ _migrateRecentPhotos(); }catch(e){ dbgWarn('caught:',e); } },6000);
       fbConnected=true;
       updateCloudIndicator(true);
       console.log('☁️ Firebase connected');
@@ -8596,6 +8677,359 @@ function applyCloudData(d){
   }catch(e){console.error('applyCloudData error:',e);ra();}
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #8 — IndexedDB backup layer (no 5MB quota)
+   ══════════════════════════════════════════════════════════════════
+   localStorage stays as the fast synchronous boot source, but the FULL
+   payload (photos included) is mirrored to IndexedDB on every save.
+   If localStorage was pruned/lost, boot re-hydrates from IndexedDB. */
+const IDB_NAME='aspen_cm_idb', IDB_STORE='kv';
+function _idbOpen(){ return new Promise((res,rej)=>{ try{ const rq=indexedDB.open(IDB_NAME,1); rq.onupgradeneeded=()=>rq.result.createObjectStore(IDB_STORE); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }catch(e){ rej(e); } }); }
+function idbSet(key,val){ return _idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).put(val,key); tx.oncomplete=()=>{db.close();res(true);}; tx.onerror=()=>{db.close();rej(tx.error);}; })).catch(e=>{ dbgWarn('idbSet',e); return false; }); }
+function idbGet(key){ return _idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readonly'); const rq=tx.objectStore(IDB_STORE).get(key); rq.onsuccess=()=>{db.close();res(rq.result);}; rq.onerror=()=>{db.close();rej(rq.error);}; })).catch(e=>{ dbgWarn('idbGet',e); return null; }); }
+async function _idbHydrateIfNeeded(){
+  try{
+    const lsRaw=localStorage.getItem(LS_KEY);
+    const idbRaw=await idbGet(LS_KEY);
+    if(!idbRaw) return;
+    const at=s=>{ try{ const d=JSON.parse(s); return new Date(d.savedAt||d.exportedAt||0).getTime()||0; }catch(e){ return 0; } };
+    if(!lsRaw || at(idbRaw)>at(lsRaw)){
+      applyCloudData(JSON.parse(idbRaw));
+      dbg('idb: hydrated local state from IndexedDB backup');
+    }
+  }catch(e){ dbgWarn('idbHydrate',e); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #1 — Granular Firebase writes (diff-based multi-path update)
+   ══════════════════════════════════════════════════════════════════
+   fbRef.set(payload) used to REPLACE the entire node on every save —
+   heavy (full payload each time) and able to clobber cloud entries this
+   device hadn't received yet. Now we keep a baseline of the last-known
+   cloud state and push only what changed via one multi-path update().
+   Keys the device doesn't know about are never touched. Deletions are
+   NEVER inferred from absence — only explicit deletes (deleteClient)
+   mark paths for removal; VL deletions keep using tombstones. */
+let _fbBaseline=null;
+let _cloudNeedsFullMigration=false;
+const _fbPendingDeletes=new Set();
+function _fbMarkDeleted(paths){ (paths||[]).forEach(p=>_fbPendingDeletes.add(p)); }
+function _flattenForSync(p){
+  const m={};
+  const cl=p.clients||[];
+  (Array.isArray(cl)?cl:Object.values(cl)).filter(Boolean).forEach(c=>{ m['clients/c'+c.id]=JSON.stringify(c); });
+  Object.keys(p.VL||{}).forEach(cid=>{ const inner=p.VL[cid]||{}; Object.keys(inner).forEach(dk=>{ if(inner[dk]!==undefined) m['VL/'+cid+'/'+dk]=JSON.stringify(inner[dk]); }); });
+  Object.keys(p.TAPPTS||{}).forEach(k=>{ m['TAPPTS/'+k]=JSON.stringify(p.TAPPTS[k]); });
+  Object.keys(p.DNOTES||{}).forEach(k=>{ m['DNOTES/'+k]=JSON.stringify(p.DNOTES[k]); });
+  m['TECHS']=JSON.stringify(p.TECHS||[]);
+  m['ORGANIZERS']=JSON.stringify(p.ORGANIZERS||[]);
+  m['CAL_ORDER']=JSON.stringify(p.CAL_ORDER||{});
+  m['version']=JSON.stringify(p.version||'aspen_cm_v2');
+  return m;
+}
+function _diffForSync(baseline,current){
+  const upd={};
+  Object.keys(current).forEach(k=>{ if(!baseline||baseline[k]!==current[k]) upd[k]=JSON.parse(current[k]); });
+  // NOTE: no "missing key → delete" clause on purpose. Absence is not proof
+  // of deletion (the exact bug class that once wiped tech visits). Explicit
+  // deletions go through _fbPendingDeletes instead.
+  return upd;
+}
+function _fbResyncLocalExtras(){
+  try{
+    if(!fbConnected||!_fbBaseline||fbSyncing) return;
+    const p=getBackupPayload(); delete p.BL;
+    const f=_flattenForSync(p);
+    let extras=0;
+    Object.keys(f).forEach(k=>{ if(_fbBaseline[k]===undefined) extras++; });
+    if(extras){ dbg('resync: pushing',extras,'local-only entrie(s) to cloud'); saveToFirebase(); }
+  }catch(e){ dbgWarn('resync',e); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #4 — Billing in its own RTDB node (aspen_spas/billing)
+   ══════════════════════════════════════════════════════════════════
+   Security rules can now restrict billing (BL + pricing) to admin UIDs.
+   Until admin UIDs are configured in the rules, everyone keeps access —
+   nothing breaks on deploy. When a device gets permission-denied, the
+   Facturación tab is hidden on that device. */
+let fbBillingRef=null, BILLING_ACCESS=true, _fbBillingBaseline=null;
+function _flattenBilling(bl,pricing){
+  const m={};
+  Object.keys(bl||{}).forEach(cid=>{ Object.keys(bl[cid]||{}).forEach(q=>{ m['BL/'+cid+'/'+q]=JSON.stringify(bl[cid][q]); }); });
+  try{ m['pricing']=JSON.stringify(pricing||getPricing()); }catch(e){ dbgWarn('caught:',e); }
+  return m;
+}
+function saveBillingToFirebase(bl){
+  if(!fbBillingRef||!BILLING_ACCESS) return;
+  const flat=_flattenBilling(bl);
+  const upd={};
+  Object.keys(flat).forEach(k=>{ if(!_fbBillingBaseline||_fbBillingBaseline[k]!==flat[k]) upd[k]=JSON.parse(flat[k]); });
+  _fbPendingDeletes.forEach(k=>{ if(k.indexOf('BL/')===0) upd[k]=null; });
+  if(!Object.keys(upd).length) return;
+  upd['savedAt']=new Date().toISOString();
+  fbBillingRef.update(upd).then(()=>{
+    _fbBillingBaseline=flat;
+    Array.from(_fbPendingDeletes).forEach(k=>{ if(k.indexOf('BL/')===0) _fbPendingDeletes.delete(k); });
+    dbg('billing: synced',Object.keys(upd).length,'change(s)');
+  }).catch(e=>{ dbgWarn('billing write (expected to fail on non-admin devices):',e&&e.message); });
+}
+function _mergeBLFromCloud(cloudBL){
+  Object.keys(cloudBL||{}).forEach(cid=>{
+    const cloudDates=cloudBL[cid]||{};
+    if(!BL[cid]) BL[cid]={};
+    Object.keys(cloudDates).forEach(q=>{
+      const ce=cloudDates[q], le=BL[cid][q];
+      const cts=(ce&&(ce._timestamp||(ce.saved&&new Date(ce.saved).getTime())))||0;
+      const lts=(le&&(le._timestamp||(le.saved&&new Date(le.saved).getTime())))||0;
+      if(!le||cts>=lts) BL[cid][q]=ce;
+    });
+  });
+}
+function _initBillingSync(){
+  try{
+    fbBillingRef=fbDB.ref('aspen_spas/billing');
+    fbBillingRef.on('value',snap=>{
+      const d=snap.val();
+      BILLING_ACCESS=true;
+      document.body.classList.remove('no-billing');
+      if(d){
+        _fbBillingBaseline=_flattenBilling(d.BL||{}, d.pricing);
+        if(d.pricing&&d.pricing.weekly){ try{ localStorage.setItem(PRICING_KEY,JSON.stringify(d.pricing)); }catch(e){ dbgWarn('caught:',e); } }
+        if(d.BL){ _mergeBLFromCloud(d.BL); try{ rd(); }catch(e){ dbgWarn('caught:',e); } }
+      } else if(Object.keys(BL).length){
+        // First run: billing node empty but legacy BL exists → seed the new node
+        setTimeout(()=>{ try{ saveBillingToFirebase(BL); }catch(e){ dbgWarn('caught:',e); } },2000);
+      }
+    },err=>{
+      BILLING_ACCESS=false;
+      document.body.classList.add('no-billing');
+      dbgWarn('billing access denied on this device:',err&&err.message);
+      try{ const bt=document.getElementById('tab-billing'); if(bt&&bt.classList.contains('active')) st('dash',document.querySelector('.tab')); }catch(e){ dbgWarn('caught:',e); }
+    });
+  }catch(e){ dbgWarn('billing sync init',e); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #10 — Audit trail (aspen_spas/audit)
+   ══════════════════════════════════════════════════════════════════ */
+function logAudit(action,detail){
+  try{
+    if(!fbConnected||!fbDB) return;
+    const who=CURRENT_ROLE==='admin'?'Admin':(CURRENT_TECH||CURRENT_ROLE||'?');
+    fbDB.ref('aspen_spas/audit').push({ ts:Date.now(), at:new Date().toISOString(), role:CURRENT_ROLE||'?', who:who, action:String(action||''), detail:String(detail||'').slice(0,200) });
+  }catch(e){ dbgWarn('audit',e); }
+}
+let _auditAttached=false;
+function _attachAuditFeed(){
+  if(_auditAttached||!fbDB) return;
+  _auditAttached=true;
+  fbDB.ref('aspen_spas/audit').limitToLast(40).on('value',snap=>{
+    const d=snap.val();
+    const el=document.getElementById('audit-list'), card=document.getElementById('audit-card');
+    if(!el||!card) return;
+    if(!d){ card.style.display='none'; return; }
+    card.style.display='';
+    const rows=Object.values(d).sort((a,b)=>(b.ts||0)-(a.ts||0));
+    el.innerHTML=rows.map(r=>{
+      const when=r.at?new Date(r.at).toLocaleString(LANG==='es'?'es-US':'en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      return '<div style="padding:5px 0;border-bottom:1px dashed var(--border);display:flex;gap:8px;flex-wrap:wrap"><span style="color:var(--muted);min-width:108px">'+esc(when)+'</span><strong>'+esc(r.who||'?')+'</strong><span style="color:var(--brand);font-weight:600">'+esc(r.action||'')+'</span><span style="color:var(--muted)">'+esc(r.detail||'')+'</span></div>';
+    }).join('');
+  },err=>{ dbgWarn('audit feed',err&&err.message); });
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #2 — Photos in Firebase Storage (URL instead of base64)
+   ══════════════════════════════════════════════════════════════════
+   New photos upload to Storage in the background; the tiny https URL
+   replaces the heavy base64 everywhere (localStorage, RTDB, portal).
+   If the upload fails (offline / Storage not enabled), the base64 path
+   keeps working exactly as before — zero risk for the tech in the field.
+   Storage files are NEVER deleted from the app (orphans are cheap;
+   reference-count deletion bugs are not — Delivery Tracker lesson). */
+async function _uploadChkPhoto(b64,cid,dateKey,iid,backupKey){
+  try{
+    if(!fbConnected||!firebase.storage) return;
+    const path='chem_photos/'+cid+'/'+dateKey+'/'+iid+'_'+Date.now()+'.jpg';
+    const sref=firebase.storage().ref(path);
+    await sref.putString(b64,'data_url');
+    const url=await sref.getDownloadURL();
+    // Swap in the URL only if the tech hasn't retaken the photo meanwhile
+    try{ if(localStorage.getItem(backupKey)===b64) localStorage.setItem(backupKey,url); }catch(e){ dbgWarn('caught:',e); }
+    // If the visit was already committed carrying the b64, upgrade it in place
+    try{
+      const v=VL[cid]&&VL[cid][dateKey];
+      if(v&&v.checklist&&v.checklist.photos&&v.checklist.photos[iid]===b64){ v.checklist.photos[iid]=url; v._timestamp=Date.now(); saveData(); }
+    }catch(e){ dbgWarn('caught:',e); }
+    dbg('photo → Storage:',path);
+  }catch(e){ dbgWarn('photo upload failed (kept as base64):',e&&e.message); }
+}
+let _photoMigrateRan=false;
+async function _migrateRecentPhotos(){
+  if(_photoMigrateRan||!fbConnected||!firebase.storage) return;
+  _photoMigrateRan=true;
+  const cutoff=Date.now()-7*86400000;
+  let upgraded=0;
+  for(const cid of Object.keys(VL)){
+    for(const dk of Object.keys(VL[cid]||{})){
+      const v=VL[cid][dk];
+      if(!v||v._deleted||!v.checklist||!v.checklist.photos) continue;
+      const ts=v._timestamp||_dateKeyToTs(dk)||0;
+      if(ts<cutoff) continue;
+      for(const iid of Object.keys(v.checklist.photos)){
+        const p=v.checklist.photos[iid];
+        if(typeof p!=='string'||p.indexOf('data:')!==0) continue;
+        try{
+          const path='chem_photos/'+cid+'/'+dk+'/'+iid+'_'+Date.now()+'.jpg';
+          const sref=firebase.storage().ref(path);
+          await sref.putString(p,'data_url');
+          v.checklist.photos[iid]=await sref.getDownloadURL();
+          v._timestamp=Date.now();
+          upgraded++;
+        }catch(e){ dbgWarn('photo migrate stopped:',e&&e.message); if(upgraded) saveData(); return; }
+      }
+    }
+  }
+  if(upgraded){ dbg('photo migrate: upgraded',upgraded,'photo(s) to Storage URLs'); saveData(); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #5 — Water-change reminder queue ("Por avisar")
+   ══════════════════════════════════════════════════════════════════ */
+function _renderWCRemindBar(){
+  const bar=document.getElementById('wc-remind-bar');
+  if(!bar) return;
+  const now=todayLocal();
+  const due=C.filter(c=>{
+    if(c.status!=='active'||!c.nwc||!c.phone) return false;
+    if(c.wcNoti===c.nwc) return false; // already notified for this date
+    const d=parseLocalDate(c.nwc); if(!d) return false;
+    const diff=(d-now)/86400000;
+    return diff<=14&&diff>=-60; // due in ≤2 weeks, or recently overdue
+  }).sort((a,b)=>(parseLocalDate(a.nwc)||0)-(parseLocalDate(b.nwc)||0));
+  if(!due.length){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  bar.innerHTML='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+    +'<strong style="color:var(--brand)">📣 '+(LANG==='es'?'Por avisar':'To notify')+' ('+due.length+')</strong>'
+    +'<span style="font-size:12.5px;color:var(--muted)">'+(LANG==='es'?'Cambio de agua en ≤14 días · sin recordatorio enviado':'Water change due in ≤14 days · no reminder sent yet')+'</span></div>'
+    +due.map(c=>{
+      const d=parseLocalDate(c.nwc);
+      const days=Math.ceil((d-now)/86400000);
+      const badge=days<0
+        ?'<span style="color:#DC2626;font-weight:700;font-size:12.5px">'+Math.abs(days)+'d '+(LANG==='es'?'vencido':'overdue')+'</span>'
+        :'<span style="color:#B5733A;font-weight:700;font-size:12.5px">'+(days===0?(LANG==='es'?'HOY':'TODAY'):days+'d')+'</span>';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px dashed var(--border);flex-wrap:wrap">'
+        +'<strong style="cursor:pointer;color:var(--brand)" onclick="vc('+c.id+')">'+esc(c.name)+'</strong>'
+        +'<span style="font-size:12.8px;color:var(--muted)">'+esc(c.nwc)+'</span>'+badge
+        +'<span style="margin-left:auto;display:flex;gap:6px">'
+        +'<button class="btn btn-amber" style="font-size:12px" onclick="sendWCReminderSMS('+c.id+');wcMarkNotified('+c.id+',true)">💬 SMS</button>'
+        +'<button class="btn" style="font-size:12px" onclick="wcMarkNotified('+c.id+')">✓ '+(LANG==='es'?'Avisado':'Notified')+'</button>'
+        +'</span></div>';
+    }).join('');
+}
+function wcMarkNotified(cid,quiet){
+  const c=C.find(x=>x.id===cid); if(!c) return;
+  c.wcNoti=c.nwc;
+  c.lastModified=Date.now();
+  saveData();
+  try{ logAudit('wcReminder',c.name); }catch(e){ dbgWarn('caught:',e); }
+  try{ rwc(); }catch(e){ dbgWarn('caught:',e); }
+  if(!quiet) showToast(LANG==='es'?'✓ Marcado como avisado':'✓ Marked as notified','ok');
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FEATURE #7 — Client portal (read-only link, aspen_spas/portal/{token})
+   ══════════════════════════════════════════════════════════════════
+   A sanitized per-client snapshot is published to its own node, so the
+   client's browser reads ONLY their data — never the full database.
+   Customer-facing → English. */
+const PORTAL_TOKEN=(()=>{ try{ return new URLSearchParams(location.search).get('portal'); }catch(e){ return null; } })();
+function _publishClientPortal(c){
+  try{
+    if(!fbConnected||!fbDB||!c||!c.portalToken) return;
+    const vl=VL[c.id]||{};
+    const visits=[];
+    Object.keys(vl).sort().reverse().forEach(dk=>{
+      if(visits.length>=12) return;
+      const v=vl[dk];
+      if(!v||v._deleted) return;
+      const chk=v.checklist||{};
+      const photos=Object.values(chk.photos||{}).filter(p=>typeof p==='string'&&p.indexOf('https://')===0);
+      visits.push({ date:dk, status:v.status||'done', tech:v.tech||chk.tech||'', readings:chk.readings||null, chemicals:chk.chemicals||null, photos:photos });
+    });
+    const snap={ name:c.name, freq:c.freq||'', nextWaterChange:c.nwc||'', lastWaterChange:c.lwc||'', sanitizer:c.san||'', visits:visits, updatedAt:new Date().toISOString() };
+    fbDB.ref('aspen_spas/portal/'+c.portalToken).set(snap).catch(e=>dbgWarn('portal publish',e));
+  }catch(e){ dbgWarn('portal',e); }
+}
+function copyClientPortalLink(cid){
+  const c=C.find(x=>x.id===cid); if(!c) return;
+  if(!c.portalToken){
+    c.portalToken='p'+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,8);
+    c.lastModified=Date.now();
+    saveData();
+  }
+  _publishClientPortal(c);
+  const link=location.origin+location.pathname+'?portal='+c.portalToken;
+  copyText(link);
+  try{ logAudit('portalLink',c.name); }catch(e){ dbgWarn('caught:',e); }
+  showToast(LANG==='es'?'🔗 Link del portal copiado — envíaselo al cliente':'🔗 Portal link copied — send it to the client','ok');
+}
+function _renderClientPortal(token){
+  const ov=document.createElement('div');
+  ov.id='client-portal';
+  ov.style.cssText='position:fixed;inset:0;z-index:999999;background:#F5EFE6;overflow:auto;-webkit-overflow-scrolling:touch';
+  ov.innerHTML='<div style="max-width:640px;margin:0 auto;padding:0 16px 60px" id="cp-body"><div style="text-align:center;padding:80px 0;color:#7A7060;font-size:15px">Loading your spa care history…</div></div>';
+  document.body.appendChild(ov);
+  let tries=0;
+  const tryLoad=()=>{
+    if(!fbDB){ if(++tries<20){ setTimeout(tryLoad,600); } else { document.getElementById('cp-body').innerHTML='<div style="text-align:center;padding:80px 0;color:#7A7060">Could not connect. Please check your internet and reload.</div>'; } return; }
+    fbDB.ref('aspen_spas/portal/'+token).once('value').then(s=>{
+      const d=s.val();
+      const el=document.getElementById('cp-body');
+      if(!d){ el.innerHTML='<div style="text-align:center;padding:80px 0;color:#7A7060">This link is not active.<br>Please contact Aspen Spas at (314) 776-5050.</div>'; return; }
+      el.innerHTML=_portalHtml(d);
+    }).catch(()=>{
+      document.getElementById('cp-body').innerHTML='<div style="text-align:center;padding:80px 0;color:#7A7060">Could not load your history right now.<br>Please try again later or call (314) 776-5050.</div>';
+    });
+  };
+  setTimeout(tryLoad,800);
+}
+function _portalHtml(d){
+  const fmtD=s=>{ try{ return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }catch(e){ return s; } };
+  const readingsRow=r=>{
+    if(!r) return '';
+    const items=Object.entries(r).filter(([,v])=>v!==''&&v!=null).map(([k,v])=>'<span style="background:#F4E7DA;border-radius:6px;padding:3px 9px;font-size:12.5px;color:#874E22;font-weight:600">'+esc(String(k).toUpperCase())+': '+esc(String(v))+'</span>');
+    return items.length?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+items.join('')+'</div>':'';
+  };
+  const chemRow=ch=>{
+    if(!ch) return '';
+    const items=Object.entries(ch).filter(([,v])=>v&&v!=='0').map(([k,v])=>esc(k)+' ('+esc(String(v))+')');
+    return items.length?'<div style="font-size:12.8px;color:#7A7060;margin-top:5px">Chemicals: '+items.join(' · ')+'</div>':'';
+  };
+  const photoRow=ph=>{
+    if(!ph||!ph.length) return '';
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+ph.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener" style="line-height:0;border-radius:8px;overflow:hidden;border:1px solid #E5DDD0"><img src="'+esc(u)+'" style="width:92px;height:92px;object-fit:cover;display:block"></a>').join('')+'</div>';
+  };
+  const visits=(d.visits||[]).map(v=>{
+    const done=v.status!=='not_done';
+    return '<div style="background:#FFFFFF;border:1px solid #E5DDD0;border-radius:12px;padding:14px 16px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><strong style="color:#2C2418;font-size:15px">'+fmtD(v.date)+'</strong>'
+      +(done?'<span style="background:#DCFCE7;color:#166534;border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:700">✓ Serviced</span>':'<span style="background:#FEF3C7;color:#92400E;border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:700">Rescheduled</span>')
+      +(v.tech?'<span style="color:#7A7060;font-size:12.8px">by '+esc(v.tech)+'</span>':'')+'</div>'
+      +readingsRow(v.readings)+chemRow(v.chemicals)+photoRow(v.photos)
+      +'</div>';
+  }).join('');
+  return '<div style="background:#2A211A;margin:0 -16px;padding:26px 20px 22px;text-align:center">'
+    +'<div style="color:#FFFFFF;font-size:22px;font-weight:300;letter-spacing:2px;font-family:Poppins,sans-serif">ASPEN SPAS</div>'
+    +'<div style="color:#B5733A;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-top:3px">Your Spa Care Portal</div></div>'
+    +'<div style="padding-top:18px"><h2 style="color:#2C2418;font-size:20px;margin-bottom:2px;font-family:Poppins,sans-serif">'+esc(d.name||'')+'</h2>'
+    +'<div style="color:#7A7060;font-size:13px;margin-bottom:14px">Updated '+(d.updatedAt?new Date(d.updatedAt).toLocaleDateString('en-US',{month:'long',day:'numeric'}):'')+'</div>'
+    +(d.nextWaterChange?'<div style="background:linear-gradient(135deg,#B5733A,#874E22);color:#FFF;border-radius:14px;padding:16px 18px;margin-bottom:16px"><div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;opacity:.85;font-weight:700">Next water change</div><div style="font-size:21px;font-weight:700;margin-top:2px">'+fmtD(d.nextWaterChange)+'</div>'+(d.sanitizer?'<div style="font-size:12.5px;opacity:.85;margin-top:4px">Sanitizer: '+esc(d.sanitizer)+'</div>':'')+'</div>':'')
+    +'<h3 style="color:#2C2418;font-size:15px;margin:6px 0 10px;font-family:Poppins,sans-serif">Recent service visits</h3>'
+    +(visits||'<div style="color:#7A7060;font-size:14px">No visits recorded yet.</div>')
+    +'<div style="text-align:center;color:#A09888;font-size:12px;margin-top:24px">Questions? Call us at (314) 776-5050<br>Aspen Spas · 4609 McRee Ave, St. Louis, MO</div></div>';
+}
+
 function saveToFirebase(){
   // Even if not connected, schedule a fail-safe release of fbSyncing in case the caller set it
   // (e.g. _techRecordVisit). Otherwise the local guard could stay locked when offline.
@@ -8607,8 +9041,40 @@ function saveToFirebase(){
   _bumpFbSyncingWatchdog();
   const payload=getBackupPayload();
   payload.savedAt=new Date().toISOString();
-  fbRef.set(payload).then(()=>{
-    console.log('☁️ Saved to Firebase');
+  // FEATURE #4 — billing (BL + pricing) syncs to its own restricted node
+  try{ saveBillingToFirebase(payload.BL); }catch(e){ dbgWarn('billing save',e); }
+  delete payload.BL;
+  const flat=_flattenForSync(payload);
+  // FEATURE #1 — first save on this device, or legacy array-form clients in the
+  // cloud → do ONE full write to establish the baseline / migrate the format.
+  if(!_fbBaseline||_cloudNeedsFullMigration){
+    const full={version:payload.version,exportedAt:payload.exportedAt,savedAt:payload.savedAt,
+      VL:payload.VL,TAPPTS:payload.TAPPTS,CAL_ORDER:payload.CAL_ORDER,TECHS:payload.TECHS,
+      ORGANIZERS:payload.ORGANIZERS,DNOTES:payload.DNOTES,clients:{}};
+    (payload.clients||[]).forEach(c=>{ full.clients['c'+c.id]=c; });
+    fbRef.set(full).then(()=>{
+      _fbBaseline=flat; _cloudNeedsFullMigration=false; _fbPendingDeletes.clear();
+      console.log('☁️ Full sync to Firebase (baseline/migration)');
+      updateCloudIndicator(true);
+      setTimeout(()=>{fbSyncing=false;},2000);
+    }).catch(e=>{
+      console.warn('Firebase save error:',e);
+      updateCloudIndicator(false,e.message);
+      fbSyncing=false;
+    });
+    return;
+  }
+  // Normal path: multi-path update() with ONLY what changed since the last
+  // known cloud state. Entries this device hasn't seen are never touched.
+  const upd=_diffForSync(_fbBaseline,flat);
+  _fbPendingDeletes.forEach(k=>{ if(k.indexOf('BL/')!==0) upd[k]=null; });
+  const nKeys=Object.keys(upd).length;
+  if(nKeys===0){ updateCloudIndicator(true); setTimeout(()=>{fbSyncing=false;},400); return; }
+  upd['savedAt']=payload.savedAt;
+  fbRef.update(upd).then(()=>{
+    _fbBaseline=flat;
+    Array.from(_fbPendingDeletes).forEach(k=>{ if(k.indexOf('BL/')!==0) _fbPendingDeletes.delete(k); });
+    console.log('☁️ Synced '+nKeys+' change(s) to Firebase');
     updateCloudIndicator(true);
     setTimeout(()=>{fbSyncing=false;},2000);
   }).catch(e=>{
@@ -8658,7 +9124,16 @@ function updateCloudIndicator(connected,error){
     if(el){el.textContent='☁️ Synced';el.style.color='#86EFAC';}
     if(btn)btn.textContent='Synced ✓';
     if(disc)disc.style.display='inline-block';
-    if(area)area.innerHTML='<div style="background:#DCFCE7;border-radius:8px;padding:10px;font-size:13.8px;color:#166534"><strong>✓ Connected</strong> — Data syncs automatically across all devices.</div>';
+    if(area){
+      // FEATURE #4 — show this device's anonymous UID so it can be whitelisted
+      // as an admin in the RTDB security rules (aspen_spas/admins/{uid}: true).
+      let uidHtml='';
+      try{
+        const u=firebase.auth&&firebase.auth().currentUser;
+        if(u) uidHtml='<div style="margin-top:8px;background:#F4E7DA;border-radius:8px;padding:8px 10px;font-size:12.6px;color:#4A443E">Device UID (for admin rules): <code style="font-size:11.3px;word-break:break-all">'+u.uid+'</code> <button class="btn" style="font-size:11px;padding:2px 8px;margin-left:6px" onclick="copyText(\''+u.uid+'\')">Copy</button></div>';
+      }catch(e){ dbgWarn('caught:',e); }
+      area.innerHTML='<div style="background:#DCFCE7;border-radius:8px;padding:10px;font-size:13.8px;color:#166534"><strong>✓ Connected</strong> — Data syncs automatically across all devices.</div>'+uidHtml;
+    }
     // Fill in fields
     const config=getFirebaseConfig();
     if(config){
@@ -9952,6 +10427,8 @@ function applyRole(){
 
 // Show the role-selection overlay (called on first load + via switch-user)
 function showRoleSelection(){
+  // FEATURE #7 — clients opening a portal link never see the role picker
+  if(typeof PORTAL_TOKEN!=='undefined'&&PORTAL_TOKEN)return;
   const card=document.getElementById('role-pick-card');
   if(!card)return;
   card.innerHTML = `
@@ -10711,13 +11188,13 @@ function _captureChkFromDOM(cid){
       if(!k || k.indexOf(prefix) !== 0) continue;
       const iid = k.substring(prefix.length);
       const v = localStorage.getItem(k);
-      if(v && v.indexOf('data:') === 0) photos[iid] = v;
+      if(v && (v.indexOf('data:') === 0 || v.indexOf('https://') === 0)) photos[iid] = v;
     }
   }catch(e){ /* localStorage unavailable */ }
   // Legacy fallback: pre-fix data may have actual b64 strings in main state.
   // Only use them when the dedicated key didn't already provide a value.
   Object.entries(stored.photos || {}).forEach(([iid, val]) => {
-    if(!photos[iid] && typeof val === 'string' && val.indexOf('data:') === 0){
+    if(!photos[iid] && typeof val === 'string' && (val.indexOf('data:') === 0 || val.indexOf('https://') === 0)){
       photos[iid] = val;
     }
   });
@@ -10961,6 +11438,9 @@ async function handleChkPhoto(cid, iid, evt){
     saved.photos = saved.photos || {};
     saved.photos[iid] = true; // marker only — actual data lives in backupKey
     _saveChkState(cid, dateKey, saved);
+    // FEATURE #2 — upload to Firebase Storage in the background; on success the
+    // small https URL replaces the heavy base64 (see _uploadChkPhoto).
+    _uploadChkPhoto(b64, cid, dateKey, iid, backupKey);
     showToast(LANG==='es'?'✓ Foto guardada':'✓ Photo saved','ok');
     _rerenderCardChecklist(cid);
   }catch(err){
@@ -11109,12 +11589,12 @@ function _renderChkItem(c, item, saved){
     // the source of truth — if neither place has a base64 string, no thumb.
     let photoB64 = null;
     const mainState = (saved.photos||{})[item.id];
-    if(typeof mainState === 'string' && mainState.indexOf('data:') === 0){
+    if(typeof mainState === 'string' && (mainState.indexOf('data:') === 0 || mainState.indexOf('https://') === 0)){
       photoB64 = mainState; // legacy state path
     } else {
       try{
         const stored = localStorage.getItem(`aspen_chk_photo_${c.id}_${dateKey}_${item.id}`);
-        if(stored && stored.indexOf('data:') === 0) photoB64 = stored;
+        if(stored && (stored.indexOf('data:') === 0 || stored.indexOf('https://') === 0)) photoB64 = stored;
       }catch(_){}
     }
     const fileId = `chk-ph-${c.id}-${item.id}`;
@@ -12383,7 +12863,7 @@ function _collectClientPeriodPhotos(cid, fromKey, toKey){
       if(!photos) return;
       Object.keys(photos).forEach(iid => {
         const b64 = photos[iid];
-        if(typeof b64 === 'string' && b64.indexOf('data:') === 0){
+        if(typeof b64 === 'string' && (b64.indexOf('data:') === 0 || b64.indexOf('https://') === 0)){
           out.push({ dateKey: dk, iid, b64 });
         }
       });
@@ -12436,13 +12916,20 @@ async function downloadClientReportPhotos(){
     const periodTag = _safeFile(period.label);
     const folder = zip.folder(`${_safeFile(c.name)}_${periodTag}`);
     const counts = {};
-    photos.forEach(p => {
-      const ext = _dataUrlExt(p.b64);
+    for(const p of photos){
+      const isUrl = p.b64.indexOf('https://') === 0;
+      const ext = isUrl ? 'jpg' : _dataUrlExt(p.b64);
       const base = `${p.dateKey}_${_photoLabel(p.iid)}`;
       counts[base] = (counts[base] || 0) + 1;
       const fname = counts[base] > 1 ? `${base}_${counts[base]}.${ext}` : `${base}.${ext}`;
-      folder.file(fname, _dataUrlToUint8(p.b64));
-    });
+      if(isUrl){
+        // FEATURE #2 — Storage-hosted photo: fetch the bytes for the ZIP
+        try{ const resp = await fetch(p.b64); folder.file(fname, await resp.arrayBuffer()); }
+        catch(e){ dbgWarn('zip: could not fetch photo', e); }
+      } else {
+        folder.file(fname, _dataUrlToUint8(p.b64));
+      }
+    }
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -13191,6 +13678,9 @@ function _commitTechVisit(cid, dateKey, visitRecord){
   // Clear the in-progress localStorage cache for this client/day — it's now stored in the visit
   _clearChkState(cid, dateKey);
   saveData();
+  // FEATURE #10 — audit; FEATURE #7 — refresh the client portal if enabled
+  try{ logAudit('visit', ((C.find(x=>x.id===cid)||{}).name||('#'+cid))+' · '+dateKey); }catch(e){ dbgWarn('caught:',e); }
+  try{ const _pc=C.find(x=>x.id===cid); if(_pc&&_pc.portalToken) _publishClientPortal(_pc); }catch(e){ dbgWarn('caught:',e); }
   if(!visitRecord._location){
     showToast(LANG==='es'?'⚠ Sin GPS — registrado igualmente':'⚠ No GPS — saved anyway','warn');
   } else {
@@ -13993,7 +14483,8 @@ function loadFirebaseOnStartup(){
   const hardcoded={
     apiKey:'AIzaSyD1fs7dibOcdE_FQ9WWpDuHZapNg01eCOw',
     projectId:'chemical-maintence',
-    databaseURL:'https://chemical-maintence-default-rtdb.firebaseio.com'
+    databaseURL:'https://chemical-maintence-default-rtdb.firebaseio.com',
+    storageBucket:'chemical-maintence.firebasestorage.app'
   };
   const config=getFirebaseConfig()||hardcoded;
   if(!localStorage.getItem(FB_CONFIG_KEY)){
@@ -14003,13 +14494,13 @@ function loadFirebaseOnStartup(){
 }
 
 // Wrap all data-mutating functions to auto-save
-function wrapSave(fn){return function(){const r=fn.apply(this,arguments);saveData();return r;};}
+function wrapSave(fn,name){return function(){const r=fn.apply(this,arguments);saveData();try{logAudit(name||'change','');}catch(e){dbgWarn('caught:',e);}return r;};}
 // These will be wrapped after definition
 window.addEventListener('DOMContentLoaded',()=>{
   ['swc','stc','sinv','ac','saveEdit','saveVisit','activateClient',
    'tp','saveTechApptAndExport','saveTechApptAndSendToSL','changeClientWeek','changeClientDay',
    'dropClientBefore','dropClientToDay','deleteTechAppt','deleteTechApptFromDetail','completeTechAppt','completeTechApptFromDetail'].forEach(name=>{
-    if(typeof window[name]==='function')window[name]=wrapSave(window[name]);
+    if(typeof window[name]==='function')window[name]=wrapSave(window[name],name);
   });
 });
 
@@ -14048,6 +14539,10 @@ setTimeout(()=>{ try{ _showDataIntegrityBanner(_DQ_WARNINGS); }catch(e){ dbgWarn
 updateBackupIndicator();
 loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
+// FEATURE #8 — async re-hydrate from IndexedDB if localStorage was pruned/lost
+_idbHydrateIfNeeded();
+// FEATURE #7 — client portal mode (read-only overlay driven by ?portal=token)
+if(PORTAL_TOKEN) _renderClientPortal(PORTAL_TOKEN);
 
 // ─── Apply saved role (or prompt for one if first-time visit) ──────────────
 applyRole();
