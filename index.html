@@ -10039,29 +10039,32 @@ function _rowCid(tr,sel,attr){
    del elemento DIRECTAMENTE (invocación que nada puede bloquear).
    En navegadores sanos el click nativo llega primero y esto NO hace nada. */
 (function(){
-  let pd=null;
+  let pd=null, lastNativeClick=0;
   document.addEventListener('pointerdown',e=>{
-    if(e.button===0) pd={x:e.clientX,y:e.clientY,ts:Date.now(),clicked:false};
-    else pd=null;
+    pd=(e.button===0)?{x:e.clientX,y:e.clientY,ts:Date.now()}:null;
   },true);
-  document.addEventListener('click',()=>{ if(pd) pd.clicked=true; },true);
+  // El click NATIVO llega DESPUÉS del pointerup: registrarlo en una marca
+  // de tiempo independiente (v1.6.1 lo anulaba antes de tiempo y ejecutaba
+  // el handler dos veces — los toggles se expandían y colapsaban solos).
+  document.addEventListener('click',()=>{ lastNativeClick=Date.now(); },true);
   document.addEventListener('pointerup',e=>{
     const p=pd; pd=null;
     if(!p||e.button!==0) return;
     if(Math.abs(e.clientX-p.x)>8||Math.abs(e.clientY-p.y)>8||(Date.now()-p.ts)>700) return;
-    if(e.target.closest('select,input,textarea,option')) return; // controles nativos: no interferir
+    if(e.target.closest('select,input,textarea,option,label')) return; // controles nativos: no interferir
     const el=e.target.closest('[onclick],button');
     if(!el||typeof el.onclick!=='function') return;
+    const upTs=Date.now();
     setTimeout(()=>{
       try{
-        if(p.clicked) return; // el click nativo llegó — navegador sano, cero efecto
+        if(lastNativeClick>=upTs-50) return; // llegó el click nativo — navegador sano, cero efecto
         const ev2=new MouseEvent('click',{bubbles:false,cancelable:true,clientX:e.clientX,clientY:e.clientY,view:window});
         try{ Object.defineProperty(ev2,'target',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
         try{ Object.defineProperty(ev2,'currentTarget',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
         dbgWarn('click rescatado en',el.id||el.className||el.tagName);
         el.onclick.call(el,ev2);
       }catch(err){ dbgWarn('rescate click',err); }
-    },120);
+    },160);
   },true);
 })();
 /* Immune row-open: some Chrome extensions swallow the 'click' event on
@@ -11231,7 +11234,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.1';
+const UI_VERSION='1.6.2';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
