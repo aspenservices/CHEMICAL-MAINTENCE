@@ -7077,7 +7077,7 @@ function rwc(){
       : `<span style="font-weight:600;color:${isVeryOverdue?'#7F1D1D':isOverdue?'#DC2626':isClose?'#F59E0B':'#16A34A'}">${daysLeft}d</span>`;
     return`<tr style="cursor:pointer${isVeryOverdue?';background:#FEF2F2':''}" title="${LANG==='es'?'Clic: perfil · Clic derecho: acciones':'Click: profile · Right-click: actions'}">
       <td style="text-align:center"><input type="checkbox" class="wc-bulk-chk" data-cid="${c.id}" ${isChecked?'checked':''} onchange="wcBulkToggle(${c.id},this)"></td>
-      <td><strong style="font-weight:600;color:var(--brand);cursor:pointer" onclick="vc(${c.id})">${esc(c.name)}</strong></td>
+      <td><strong style="font-weight:600;color:var(--brand);cursor:pointer" onclick="vc(${c.id})">${esc(c.name)}</strong>${_wcApptBadge(c)}</td>
       <td>${fb(c.freq)}</td>
       <td style="font-size:13.2px">${c.lwc||'—'}</td>
       <td style="font-size:13.2px;${isOverdue?'color:#DC2626;font-weight:600':noDate?'color:var(--muted);font-style:italic':''}">${c.nwc||(LANG==='es'?'(falta)':'(missing)')}</td>
@@ -10175,6 +10175,24 @@ function _rowOpenWire(tb,sel,attr){
     }catch(err){ dbgWarn('rowopen',err); }
   },true);
 }
+/* WC — visible record that a tech visit was already requested for this
+   client, so overdue rows don't get double-ticketed by mistake. */
+function _wcApptBadge(c){
+  try{
+    const arr=TAPPTS[c.id]; if(!arr||!arr.length) return '';
+    const es=LANG==='es';
+    const act=arr.filter(a=>a&&a.status!=='done'&&a.status!=='completed'&&a.status!=='cancelled');
+    if(!act.length) return '';
+    act.sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
+    const a=act[0];
+    const dt=a.date?esc(String(a.date).slice(5)):'';
+    const who=a.tech?' \u00b7 '+esc(a.tech):'';
+    if(a.slTicketId){
+      return '<br><small style="display:inline-block;margin-top:3px;background:#E0F2FE;color:#075985;border:1px solid #BAE6FD;border-radius:9px;padding:1px 8px;font-size:10.3px;font-weight:700">\uD83C\uDFAB '+(es?'Enviado a Service Log':'Sent to Service Log')+(dt?' \u00b7 '+dt:'')+who+'</small>';
+    }
+    return '<br><small style="display:inline-block;margin-top:3px;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:9px;padding:1px 8px;font-size:10.3px;font-weight:700">\uD83D\uDD27 '+(es?'Cita programada':'Appt scheduled')+(dt?' \u00b7 '+dt:'')+who+'</small>';
+  }catch(e){ dbgWarn('wcbadge',e); return ''; }
+}
 function _wireClientTables(){
   const tb=document.getElementById('ctbody');
   if(tb&&!tb._wired){
@@ -11322,7 +11340,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.6';
+const UI_VERSION='1.6.7';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
