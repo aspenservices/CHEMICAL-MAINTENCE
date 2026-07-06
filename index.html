@@ -1873,6 +1873,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
       <button id="tech-prev-day" onclick="techNavigateDay(-1)" title="Ver día anterior">◀ Día anterior</button>
       <button id="tech-next-day" onclick="techNavigateDay(1)" title="Ver día siguiente" disabled>Día siguiente ▶</button>
       <button id="tech-today-btn" class="today-btn" onclick="techGoToToday()" style="display:none">↺ Volver a hoy</button>
+      <button id="tech-lang-btn" onclick="toggleLang()" title="Español / English">🌐 EN</button>
     </div>
   </div>
   <div id="tech-past-banner-wrap"></div>
@@ -3151,6 +3152,21 @@ function toggleLang(){
   LANG=LANG==='es'?'en':'es';
   localStorage.setItem('aspen_lang',LANG);
   rebuildUI();
+  // The tech view is its own world — refresh it too so every label flips
+  try{ _applyTechLang(); if(CURRENT_ROLE==='tech'&&typeof renderTechView==='function') renderTechView(); }catch(e){ dbgWarn('caught:',e); }
+}
+function _applyTechLang(){
+  const es=LANG==='es';
+  const g=document.querySelector('.tech-greet');
+  if(g) g.textContent='\uD83D\uDC4B '+(es?'Hola,':'Hi,');
+  const prev=document.getElementById('tech-prev-day');
+  if(prev){ prev.textContent='\u25C0 '+(es?'D\u00eda anterior':'Previous day'); prev.title=es?'Ver d\u00eda anterior':'View previous day'; }
+  const next=document.getElementById('tech-next-day');
+  if(next){ next.textContent=(es?'D\u00eda siguiente':'Next day')+' \u25B6'; next.title=es?'Ver d\u00eda siguiente':'View next day'; }
+  const tod=document.getElementById('tech-today-btn');
+  if(tod) tod.textContent='\u21BA '+(es?'Volver a hoy':'Back to today');
+  const lb=document.getElementById('tech-lang-btn');
+  if(lb){ lb.textContent='\uD83C\uDF10 '+(es?'EN':'ES'); lb.title=es?'Switch to English':'Cambiar a espa\u00f1ol'; }
 }
 function rebuildUI(){
   // Update header
@@ -3558,7 +3574,10 @@ function showToast(msg,type){
 }
 // Promise-based confirmation modal (replaces blocking confirm())
 function showConfirm(message,opts){
-  return new Promise(resolve=>{
+  // Reentrancy guard: a double-fired click (or any duplicate caller) must
+  // NOT stack a second dialog on top — fold into the pending one.
+  if(window._confirmPending) return window._confirmPending;
+  window._confirmPending = new Promise(resolve=>{
     const o=opts||{};
     const okText=o.okText||(LANG==='es'?'Aceptar':'OK');
     const cancelText=o.cancelText||(LANG==='es'?'Cancelar':'Cancel');
@@ -3574,12 +3593,13 @@ function showConfirm(message,opts){
       </div>`;
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-    const close=v=>{overlay.remove();resolve(v);};
+    const close=v=>{overlay.remove();window._confirmPending=null;resolve(v);};
     box.querySelector('#cf-ok').onclick=()=>close(true);
     box.querySelector('#cf-cancel').onclick=()=>close(false);
     overlay.onclick=e=>{if(e.target===overlay)close(false);};
     setTimeout(()=>box.querySelector('#cf-ok').focus(),50);
   });
+  return window._confirmPending;
 }
 // Promise-based prompt (replaces blocking prompt())
 function showPrompt(message,defaultValue,opts){
@@ -7066,6 +7086,7 @@ function rwc(){
       <td><div class="arow">
         <button class="btn btn-amber" style="font-size:12.1px" onclick="owc(${c.id})">💧 ${LANG==='es'?'Registrar':'Register'}</button>
         <button class="btn" style="font-size:12.1px" onclick="editWCDate(${c.id})">📅 ${LANG==='es'?'Cambiar fecha':'Change date'}</button>
+        <button class="btn" style="font-size:12.1px;background:#0EA5E9;border-color:#0EA5E9;color:#FFF" onclick="event.stopPropagation();oTechAppt(${c.id})" title="${LANG==='es'?'Agendar visita t\u00e9cnica \u2014 se env\u00eda a Service Log':'Schedule tech visit \u2014 sent to Service Log'}">🔧 ${LANG==='es'?'T\u00e9cnico':'Tech'}</button>
       </div></td></tr>`;
   }).join('')||_emptyRowHtml(8,'wc');
   _wcBulkRefreshBar();
@@ -10100,29 +10121,32 @@ function _rowCid(tr,sel,attr){
    del elemento DIRECTAMENTE (invocación que nada puede bloquear).
    En navegadores sanos el click nativo llega primero y esto NO hace nada. */
 (function(){
-  let pd=null;
+  let pd=null, lastNativeClick=0;
   document.addEventListener('pointerdown',e=>{
-    if(e.button===0) pd={x:e.clientX,y:e.clientY,ts:Date.now(),clicked:false};
-    else pd=null;
+    pd=(e.button===0)?{x:e.clientX,y:e.clientY,ts:Date.now()}:null;
   },true);
-  document.addEventListener('click',()=>{ if(pd) pd.clicked=true; },true);
+  // El click NATIVO llega DESPUÉS del pointerup: registrarlo en una marca
+  // de tiempo independiente (v1.6.1 lo anulaba antes de tiempo y ejecutaba
+  // el handler dos veces — los toggles se expandían y colapsaban solos).
+  document.addEventListener('click',()=>{ lastNativeClick=Date.now(); },true);
   document.addEventListener('pointerup',e=>{
     const p=pd; pd=null;
     if(!p||e.button!==0) return;
     if(Math.abs(e.clientX-p.x)>8||Math.abs(e.clientY-p.y)>8||(Date.now()-p.ts)>700) return;
-    if(e.target.closest('select,input,textarea,option')) return; // controles nativos: no interferir
+    if(e.target.closest('select,input,textarea,option,label')) return; // controles nativos: no interferir
     const el=e.target.closest('[onclick],button');
     if(!el||typeof el.onclick!=='function') return;
+    const upTs=Date.now();
     setTimeout(()=>{
       try{
-        if(p.clicked) return; // el click nativo llegó — navegador sano, cero efecto
+        if(lastNativeClick>=upTs-50) return; // llegó el click nativo — navegador sano, cero efecto
         const ev2=new MouseEvent('click',{bubbles:false,cancelable:true,clientX:e.clientX,clientY:e.clientY,view:window});
         try{ Object.defineProperty(ev2,'target',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
         try{ Object.defineProperty(ev2,'currentTarget',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
         dbgWarn('click rescatado en',el.id||el.className||el.tagName);
         el.onclick.call(el,ev2);
       }catch(err){ dbgWarn('rescate click',err); }
-    },120);
+    },160);
   },true);
 })();
 /* Immune row-open: some Chrome extensions swallow the 'click' event on
@@ -10358,7 +10382,13 @@ function _tidyHeader(){
 function hdMoreToggle(ev){
   let m=document.getElementById('hd-more-menu');
   if(!m){ m=document.createElement('div'); m.id='hd-more-menu'; document.body.appendChild(m); }
-  if(m.classList.contains('open')){ m.classList.remove('open'); return; }
+  if(m.classList.contains('open')){
+    // Self-healing: a double-fired toggle within 300ms must NOT close the
+    // menu the user just opened — ignore the echo.
+    if(Date.now()-(m._openedAt||0)<300) return;
+    m.classList.remove('open'); return;
+  }
+  m._openedAt=Date.now();
   m.innerHTML='';
   _HD_MORE_IDS.forEach(id=>{
     const orig=document.getElementById(id);
@@ -11292,7 +11322,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.2';
+const UI_VERSION='1.6.6';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -13507,6 +13537,8 @@ function loginAsOrganizer(name){
 
 // Switch user button — confirm then show role selection again
 async function switchUser(){
+  const rs=document.getElementById('role-pick-overlay');
+  if(rs&&rs.style.display!=='none') return; // ya estamos eligiendo rol
   const ok = await showConfirm(LANG==='es'?'¿Cambiar de usuario?':'Switch user?');
   if(!ok) return;
   CURRENT_ROLE=null; CURRENT_TECH=null;
@@ -17402,6 +17434,7 @@ try{ _wireClientTables(); }catch(e){ dbgWarn('caught:',e); }
 try{ _applyCols(); }catch(e){ dbgWarn('caught:',e); }
 try{ _darkApply(localStorage.getItem('aspen_cm_dark')||'0'); }catch(e){ dbgWarn('caught:',e); }
 try{ _buildRail(); _tidyHeader(); }catch(e){ dbgWarn('caught:',e); }
+try{ _applyTechLang(); }catch(e){ dbgWarn('caught:',e); }
 try{ _updFab('dash'); }catch(e){ dbgWarn('caught:',e); }
 // #32 — capture deleted clients into the recovery trash (wraps the wrapped fn)
 try{
