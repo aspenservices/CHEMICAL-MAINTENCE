@@ -189,6 +189,167 @@ body.dark #bnav,body.dark #bnav-more-sheet{background:#241C15}
 #bnav-more-sheet button:active{background:var(--warm)}
 body.no-billing #bnav-billing{display:none}
 /* ═══ PRO PACK v1.3 ═══════════════════════════════════════════ */
+/* ═══ NIVEL PRO 4 — re-arquitectura ═══ */
+/* #31 data quality + #32 trash overlays */
+.dq-ov{display:none;position:fixed;inset:0;background:rgba(42,28,15,.45);z-index:99984;align-items:center;justify-content:center;padding:18px}
+.dq-ov.open{display:flex}
+.dq-card{background:var(--light);border-radius:14px;padding:18px 20px;max-width:560px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.28);max-height:86vh;overflow:auto;color:var(--text)}
+.dq-card h3{font-family:'Poppins',sans-serif;font-size:16px;color:var(--brand);margin-bottom:10px}
+.dq-row{display:flex;gap:10px;align-items:flex-start;background:var(--warm2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12.7px;margin-bottom:8px}
+.dq-row small{color:var(--muted);display:block;margin-top:2px}
+.dq-n{background:#FEE2E2;color:#991B1B;font-weight:700;border-radius:8px;padding:1px 8px;font-size:11px;flex-shrink:0}
+/* #40 saving indicator */
+#save-live{display:none;align-self:center;font:600 11.3px 'Source Sans 3',sans-serif;color:#C9B99F;background:rgba(255,255,255,.07);border:1px solid rgba(233,198,167,.22);border-radius:14px;padding:3px 11px;white-space:nowrap}
+@media(min-width:760px){#save-live{display:inline-block}}
+/* #33 presence */
+.pres-row{display:flex;gap:9px;align-items:center;font-size:12.6px;padding:7px 0;border-bottom:1px dashed var(--border)}
+.pres-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+/* #24 mobile client cards */
+#ccards{display:none}
+@media(max-width:700px){
+  #pclients .tw{display:none}
+  #ccards{display:block;padding:0 12px 12px}
+}
+.mcc{background:var(--light);border:1px solid var(--border);border-radius:13px;margin-bottom:9px;padding:11px 13px;display:flex;gap:11px;align-items:center;box-shadow:0 1px 3px rgba(44,36,24,.06)}
+.mcc:active{background:var(--warm2)}
+.mcc .mav{width:38px;height:38px;border-radius:50%;font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand-light);color:var(--brand-dark)}
+.mcc b{font-size:13.6px;display:block;color:var(--text)}
+.mcc small{color:var(--muted);font-size:11.3px}
+.mcc .mpill{font-size:9.8px;font-weight:700;border-radius:8px;padding:2px 7px;white-space:nowrap}
+.mcc .mchev{margin-left:auto;color:#C9B99F;font-size:19px;flex-shrink:0}
+/* #25 contextual FAB */
+#fab{display:none;position:fixed;right:16px;bottom:86px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#CF8341,#B5733A);color:#FFF;font-size:27px;border:none;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(181,115,58,.45);z-index:950;cursor:pointer}
+@media(max-width:820px){body.fab-on #fab{display:flex}}
+/* #26 context menu */
+#ctx-menu{display:none;position:fixed;z-index:99978;background:var(--light);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px rgba(44,36,24,.22);min-width:200px;overflow:hidden}
+#ctx-menu.open{display:block}
+#ctx-menu button{display:flex;gap:9px;align-items:center;width:100%;padding:9px 14px;font:600 12.8px 'Source Sans 3',sans-serif;color:var(--text);background:none;border:none;cursor:pointer;text-align:left}
+#ctx-menu button:hover{background:var(--brand-light)}
+#ctx-menu .cx-sep{border-top:1px solid var(--border)}
+#ctx-menu button.cx-danger{color:#DC2626}
+/* #28 skeletons */
+.sk{background:linear-gradient(90deg,#EDE4D6 25%,#F7F1E7 50%,#EDE4D6 75%);background-size:200% 100%;animation:skm 1.25s infinite;border-radius:8px}
+body.dark .sk{background:linear-gradient(90deg,#2A2014 25%,#382A18 50%,#2A2014 75%);background-size:200% 100%}
+@keyframes skm{from{background-position:200% 0}to{background-position:-200% 0}}
+/* #29 filter chips */
+.fch{background:var(--brand-light);color:var(--brand-dark);border:none;border-radius:14px;padding:4px 11px;font:700 11.3px 'Source Sans 3',sans-serif;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.fch:hover{background:#EBD6BE}
+
+/* #21 sidebar rail — opción C: claro, flotante, con grupos */
+#rail{display:none}
+@media(min-width:900px){
+  body.rail-on #rail{display:flex;position:fixed;left:10px;top:10px;bottom:10px;width:184px;background:var(--light);border:1px solid var(--border);border-radius:16px;flex-direction:column;z-index:900;padding:14px 0 10px;box-shadow:0 6px 22px rgba(44,36,24,.10);overflow-y:auto}
+  body.rail-on{padding-left:204px}
+  body.rail-on .tabs-bar{display:none}
+  body.rail-on #bnav{display:none!important}
+}
+#rail .r-logo{padding:0 16px 12px;color:var(--text);font-family:'Poppins',sans-serif;font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:7px}
+#rail .r-sec{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#B5A78F;padding:11px 16px 5px}
+#rail button{display:flex;align-items:center;gap:9px;margin:1px 9px;padding:7.5px 10px;font:600 12.7px 'Source Sans 3',sans-serif;color:var(--muted);background:none;border:none;cursor:pointer;text-align:left;width:calc(100% - 18px);border-radius:10px;transition:background .12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rail button:hover{background:var(--warm2);color:var(--text)}
+#rail button.on{background:var(--brand-light);color:var(--brand-dark)}
+#rail .r-foot{margin:auto 9px 0;display:flex;gap:8px;align-items:center;background:var(--warm2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;cursor:pointer}
+#rail .r-foot:hover{background:var(--brand-light)}
+#rail .r-foot .r-av{width:26px;height:26px;border-radius:50%;background:var(--brand);color:#FFF;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#rail .r-foot b{font-size:11.3px;display:block;color:var(--text);line-height:1.2}
+#rail .r-foot small{font-size:9.3px;color:var(--muted)}
+body.dark #rail{background:#221A10;border-color:#3A2C1C}
+body.dark #rail .r-foot{background:#1C150C;border-color:#3A2C1C}
+body.no-billing #rail button[data-tab="billing"]{display:none}
+/* El botón flotante "Cambiar usuario" es legado para admin/organizer: el chip
+   del header y la tarjeta del riel ya cumplen esa función y el flotante se
+   encimaba sobre el título. El técnico lo conserva (su vista lo necesita). */
+body.role-admin .switch-user-btn,body.role-organizer .switch-user-btn{display:none!important}
+/* Header pro bajo el riel: barra delgada de una sola línea.
+   El logo vive en el riel; +Nuevo vive en las acciones contextuales;
+   las utilidades (idioma, backup, nube, tickets, print…) se recogen
+   en el menú ⋯ para acabar con el amontonamiento. */
+@media(min-width:900px){
+  body.rail-on .header{display:flex;align-items:center;gap:10px;padding:10px 18px;flex-wrap:nowrap}
+  body.rail-on .logo-area{display:none}
+  body.rail-on #btn-new-client,body.rail-on #btn-techs,body.rail-on #btn-print,
+  body.rail-on #lang-btn,body.rail-on #btn-backup,body.rail-on #btn-restore,
+  body.rail-on #btn-cloud,body.rail-on #btn-servicelog,body.rail-on #btn-checklist,
+  body.rail-on #btn-ttsync,body.rail-on #last-backup,body.rail-on #save-ind{display:none!important}
+  body.rail-on .header-primary{margin:0;display:flex;align-items:center;gap:8px;order:2}
+  body.rail-on .header-secondary{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;order:3}
+  body.rail-on #crumb{order:1;display:inline-block;font-size:15.5px;color:#C9B99F}
+  body.rail-on #crumb b{font-family:'Poppins',sans-serif;font-weight:600;font-size:16.5px}
+  body.rail-on #hd-more-btn{display:inline-block}
+}
+#hd-more-btn{display:none;background:none;border:1px solid rgba(233,198,167,.35);border-radius:8px;color:#E9C6A7;font-size:15px;padding:2px 10px;cursor:pointer;align-self:center;line-height:1.4}
+#hd-more-menu{display:none;position:fixed;z-index:99977;background:var(--light);border:1px solid var(--border);border-radius:13px;box-shadow:0 14px 40px rgba(44,36,24,.22);min-width:230px;overflow:hidden;padding:5px}
+#hd-more-menu.open{display:block}
+#hd-more-menu button{display:flex;gap:10px;align-items:center;width:100%;padding:9px 12px;font:600 12.8px 'Source Sans 3',sans-serif;color:var(--text);background:none;border:none;cursor:pointer;text-align:left;border-radius:9px}
+#hd-more-menu button:hover{background:var(--brand-light)}
+/* #22 contextual topbar actions */
+#ctx-actions{display:none;gap:7px;align-self:center}
+@media(min-width:900px){#ctx-actions{display:inline-flex}}
+#ctx-actions button{background:rgba(255,255,255,.10);border:1px solid rgba(233,198,167,.3);color:#F5EFE6;border-radius:8px;padding:4px 11px;font:700 11.5px 'Source Sans 3',sans-serif;cursor:pointer}
+#ctx-actions button.primary{background:#B5733A;border-color:#B5733A}
+/* #23 dashboard 2-column grid (desktop) */
+@media(min-width:1100px){
+  /* :not(.hidden) — an id selector alone out-ranked .hidden{display:none},
+     so the Dashboard stayed visible under every other tab. */
+  #pdash:not(.hidden){display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  #pdash>*{margin-top:0!important;min-width:0}
+  #pdash>.dash-span{grid-column:1/-1}
+}
+/* #27 design tokens: unified elevation + radius */
+.card{border-radius:14px!important;box-shadow:0 1px 3px rgba(44,36,24,.06);transition:box-shadow .18s ease}
+.card:hover{box-shadow:0 5px 16px rgba(44,36,24,.10)}
+body.dark .card{box-shadow:0 1px 3px rgba(0,0,0,.3)}
+body.dark .card:hover{box-shadow:0 5px 16px rgba(0,0,0,.4)}
+/* #30 dark mode 2.0 — deep warm black, layered surfaces, AA gold */
+body.dark{--warm:#141008;--warm2:#1C150C;--light:#221A10;--text:#F0E8DA;--muted:#B39D80;--dim:#93805F;--border:#3A2C1C;--border-dark:#4E3D28;--brand-light:#36271676;--mid:#4E3D28;background:#141008;color:#F0E8DA}
+body.dark .card,body.dark .metric,body.dark .modal{background:#221A10}
+body.dark #cmdk,body.dark #bell-panel,body.dark #col-pop,body.dark #cdrawer,body.dark #sys-card,body.dark #kbd-card{background:#221A10;color:#F0E8DA}
+body.dark .prohdr,body.dark .header{background:#0E0A05}
+/* NIVEL PRO 2 — tanda C+D */
+#ctbody td{padding:7px 10px;vertical-align:middle}
+#ctbody .cav{width:28px;height:28px;font-size:10.5px}
+#ctbody .tcell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctbody tr.crow{cursor:pointer}
+#ctbody tr.crow:nth-child(even){background:#FCFAF6}
+#ctbody tr.crow:hover{background:#FBF3E7}
+body.dark #ctbody tr.crow:nth-child(even){background:#1E1710}
+body.dark #ctbody tr.crow:hover{background:#2A2114}
+.sv-chip{background:var(--light);border:1.5px solid var(--border);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;gap:6px;align-items:center;font-family:inherit}
+.sv-chip.on{background:var(--brand);border-color:var(--brand);color:#FFF}
+.sv-chip .sv-x{opacity:.5;font-size:11px;margin-left:2px}
+.sv-chip .sv-x:hover{opacity:1;color:#DC2626}
+#col-pop{display:none;position:fixed;z-index:99975;background:var(--light);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 12px 34px rgba(44,36,24,.18);min-width:190px}
+#col-pop.open{display:block}
+#col-pop label{display:flex;gap:8px;align-items:center;font-size:12.8px;padding:4px 0;cursor:pointer;color:var(--text)}
+#pdash,#pclients,#pcalendar,#pbilling,#pvisits,#psummary,#pwctab{animation:tabfade .16s ease}
+@keyframes tabfade{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+.role-pick-card{max-width:470px}
+.role-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(181,115,58,.18);border-color:#B5733A!important;transition:all .15s}
+#tv-ov{display:none;position:fixed;inset:0;background:#171208;z-index:999995;color:#EDE6DB;text-align:center;cursor:pointer}
+#tv-ov.open{display:flex;flex-direction:column;align-items:center;justify-content:center}
+#tv-clock{position:fixed;top:22px;right:28px;font:600 17px 'Source Sans 3',sans-serif;color:#A08B72}
+#tv-brand{position:fixed;top:22px;left:28px;font:300 17px 'Poppins',sans-serif;letter-spacing:2px;color:#8A7A64}
+#tv-num{font-family:'Poppins',sans-serif;font-size:clamp(64px,15vw,230px);font-weight:700;color:#F3C88A;line-height:1}
+#tv-lbl{font-size:2.2vw;text-transform:uppercase;letter-spacing:.4vw;color:#A08B72;margin-top:2vh;font-weight:700}
+#tv-dots{margin-top:5vh}
+#tv-dots span{display:inline-block;width:9px;height:9px;border-radius:50%;background:#3A2E22;margin:0 4px}
+#tv-dots span.on{background:#B5733A}
+#sig-ov{display:none;position:fixed;inset:0;background:rgba(42,28,15,.55);z-index:999994;align-items:center;justify-content:center;padding:16px}
+#sig-ov.open{display:flex}
+#sig-card{background:#FFF;border-radius:16px;padding:16px 18px;max-width:640px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+#sig-canvas{width:100%;height:220px;background:#FFF;border:2px dashed #D6CDB8;border-radius:12px;touch-action:none;cursor:crosshair}
+#exec-report{display:none}
+body.printing-exec #exec-report{display:block}
+#route-sheets{display:none}
+body.printing-routes #route-sheets{display:block}
+@media print{
+  body.printing-routes > *:not(#route-sheets){display:none!important}
+  body.printing-routes #route-sheets{display:block!important;font-family:'Source Sans 3',sans-serif;color:#2C2418}
+}
+@media print{
+  body.printing-exec > *:not(#exec-report){display:none!important}
+  body.printing-exec #exec-report{display:block!important;font-family:'Source Sans 3',sans-serif;color:#2C2418}
+}
 /* F3 — photo lightbox */
 #lb-ov{display:none;position:fixed;inset:0;background:rgba(18,12,6,.93);z-index:999996;align-items:center;justify-content:center}
 #lb-ov.open{display:flex}
@@ -197,7 +358,7 @@ body.no-billing #bnav-billing{display:none}
 .lb-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.13);border:none;color:#FFF;font-size:30px;border-radius:12px;padding:6px 15px;cursor:pointer;z-index:2}
 .lb-prev{left:12px}.lb-next{right:12px}
 #lb-open{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:#F3C88A;font-size:13px;text-decoration:none;background:rgba(255,255,255,.1);padding:6px 14px;border-radius:10px}
-#lb-count{position:fixed;top:18px;left:50%;transform:translateX(-50%);color:#C9B99F;font-size:13px;font-weight:600}
+#lb-count{position:fixed;top:20px;left:18px;color:#C9B99F;font-size:13px;font-weight:600}
 /* F1 — visit details toggle */
 .tcc-ro-toggle{background:none;border:none;color:#CF8341;font:600 12.5px 'Source Sans 3',sans-serif;cursor:pointer;padding:2px 0}
 .tcc-ro-more{margin-top:6px}
@@ -267,6 +428,7 @@ body.dense #ctbody .cav{width:24px;height:24px;font-size:10px}
 /* P7 — notification bell */
 #bell-btn{background:none;border:1px solid rgba(233,198,167,.35);border-radius:8px;color:#E9C6A7;font-size:13px;padding:3px 9px;cursor:pointer;align-self:center;position:relative}
 #bell-badge{position:absolute;top:-6px;right:-6px;background:#DC2626;color:#FFF;border-radius:10px;font-size:9.5px;font-weight:700;padding:1px 5px;display:none}
+body:has(#off-bar) #bell-panel{top:104px!important}
 #bell-panel{display:none;position:fixed;top:64px;right:14px;width:320px;max-width:calc(100vw - 20px);background:var(--light);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 44px rgba(44,36,24,.22);z-index:99980;overflow:hidden}
 #bell-panel.open{display:block}
 #bell-panel .bn-it{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;align-items:flex-start}
@@ -1798,17 +1960,17 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <button class="hbtn hbtn-accent" id="btn-new-client" onclick="om('madd')">+ <span id="newclient-label">Nuevo cliente</span></button>
     <button class="hbtn" id="btn-techs" onclick="om('mtechs')" style="background:#D48F53;border-color:#E7C09E;color:#FFFFFF">👷 <span id="techs-btn-label">Techs</span></button>
     <select class="hbtn" id="qsel" onchange="ra();renderQDropdown()" style="cursor:pointer;min-width:90px"></select>
-    <button class="hbtn" onclick="openPrintDialog()" style="background:#059669;border-color:#059669;font-weight:600" title="Print current week">🖨️ <span id="print-btn-label">Print</span></button>
+    <button class="hbtn" id="btn-print" onclick="openPrintDialog()" style="background:#059669;border-color:#059669;font-weight:600" title="Print current week">🖨️ <span id="print-btn-label">Print</span></button>
   </div>
   <!-- Secondary / utility / status: lang, backup, cloud, service log, indicators -->
   <div class="header-secondary">
     <button class="hbtn hbtn-sm" id="lang-btn" onclick="toggleLang()" style="background:#F59E0B;border-color:#F59E0B;font-weight:600" title="Language">EN 🌐</button>
     <button class="hbtn hbtn-sm" id="btn-backup" onclick="downloadBackup()" style="background:#16A34A;border-color:#16A34A;font-weight:600" title="Download backup">💾</button>
-    <label class="hbtn hbtn-sm" style="cursor:pointer;margin:0" title="Restore backup">📂<input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none"></label>
+    <label class="hbtn hbtn-sm" id="btn-restore" style="cursor:pointer;margin:0" title="Restore backup">📂<input type="file" accept=".json" onchange="restoreBackup(this)" style="display:none"></label>
     <button class="hbtn hbtn-sm" id="btn-cloud" onclick="om('mfirebase')" style="background:#CD7C35;border-color:#CD7C35;font-weight:600" title="Cloud Sync">☁️</button>
     <button class="hbtn hbtn-sm" id="btn-servicelog" onclick="openSLConfig()" style="background:#D48F53;border-color:#D48F53;font-weight:600" title="Service Log Ticket Routing">🎫</button>
-    <button class="hbtn hbtn-sm" onclick="openWeeklyChecklist()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Weekly Close Checklist">📋</button>
-    <button class="hbtn hbtn-sm" onclick="syncCompletedFromTechTickets()" style="background:#0EA5E9;border-color:#0EA5E9;font-weight:600" title="Sync completed tickets from TECH-TICKETS">🔄</button>
+    <button class="hbtn hbtn-sm" id="btn-checklist" onclick="openWeeklyChecklist()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Weekly Close Checklist">📋</button>
+    <button class="hbtn hbtn-sm" id="btn-ttsync" onclick="syncCompletedFromTechTickets()" style="background:#0EA5E9;border-color:#0EA5E9;font-weight:600" title="Sync completed tickets from TECH-TICKETS">🔄</button>
     <div id="offline-sync-banner" class="offline-sync-banner hidden">
   <span class="offline-sync-dot"></span>
   <span id="offline-status-text" style="flex:1">Offline</span>
@@ -1848,11 +2010,28 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
   <button onclick="_bnavGo('visits')">📝 Visitas</button>
   <button onclick="_bnavGo('summary')">📋 Summary</button>
   <button onclick="openSystemStatus();document.getElementById('bnav-more-sheet').classList.remove('open')">🩺 Estado del sistema</button>
+  <button onclick="openTvMode();document.getElementById('bnav-more-sheet').classList.remove('open')">📺 Modo TV</button>
 </div>
 
 <!-- P2 — Client drawer -->
 <div id="cdrawer-bg" onclick="closeClientDrawer()"></div>
 <aside id="cdrawer"><div id="cdrawer-in"></div></aside>
+<!-- #9 — Executive quarterly report (print-only) -->
+<div id="exec-report"></div>
+<!-- #10 — TV mode -->
+<div id="tv-ov" onclick="closeTvMode()"></div>
+<!-- #12 — Signature pad -->
+<div id="sig-ov">
+  <div id="sig-card">
+    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:15px;color:#2C2418;margin-bottom:8px">✍️ <span id="sig-title">Firma del cliente</span></div>
+    <canvas id="sig-canvas" width="600" height="220"></canvas>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button class="btn" onclick="sigClear()">↺ Borrar</button>
+      <button class="btn" onclick="sigClose()">Cancelar</button>
+      <button class="btn btn-brand" onclick="sigSave()">✓ Guardar firma</button>
+    </div>
+  </div>
+</div>
 <!-- F3 — Photo lightbox -->
 <div id="lb-ov" onclick="if(event.target===this)lbClose()">
   <div id="lb-count"></div>
@@ -1867,7 +2046,10 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 <!-- P1 — Command palette -->
 <div id="cmdk-ov" onclick="if(event.target===this)ckClose()">
   <div id="cmdk">
-    <input id="cmdk-in" placeholder="Buscar cliente, pestaña o acción…" oninput="ckRender()" autocomplete="off">
+    <div style="display:flex;align-items:center;border-bottom:1px solid var(--border)">
+      <input id="cmdk-in" placeholder="Buscar cliente, pestaña o acción…" oninput="ckRender()" autocomplete="off" style="border-bottom:none;flex:1">
+      <button id="cmdk-mic" onclick="ckVoice()" title="Buscar por voz" style="background:none;border:none;font-size:17px;cursor:pointer;padding:0 14px">🎙</button>
+    </div>
     <div id="cmdk-res"></div>
   </div>
 </div>
@@ -1929,6 +2111,11 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <div id="today-list" style="padding:8px 12px"></div>
   </div>
   <!-- FEATURE #10 — Audit trail: who changed what, live from aspen_spas/audit (admin only) -->
+  <!-- #2 + #19 — Team insights + month comparison -->
+  <div class="card" id="insights-card">
+    <div class="card-head"><div><span class="eyebrow">Equipo · 30 días</span><span class="card-title">📈 <span id="insights-title">Rendimiento por técnico</span></span></div></div>
+    <div style="padding:12px 16px"><div id="insights-cmp"></div><div id="insights-body"></div></div>
+  </div>
   <div class="card role-admin-only" id="audit-card" style="display:none">
     <div class="card-head"><div><span class="eyebrow">Admin</span><span class="card-title">📜 <span id="audit-title">Actividad reciente</span></span></div></div>
     <div id="audit-list" style="padding:8px 14px;font-size:13px;max-height:260px;overflow:auto"></div>
@@ -1955,12 +2142,17 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
         <select id="ffreq" onchange="rc()"><option value="">Frecuencia</option><option value="weekly">Semanal</option><option value="biweekly">Bi-semanal</option></select>
         <select id="fstat" onchange="rc()"><option value="">Estado</option><option value="active">Activo</option><option value="paused">Pausado</option><option value="cancelled">Cancelado</option></select>
         <select id="fday" onchange="rc()"><option value="">Día</option><option value="Mon">Lunes</option><option value="Tue">Martes</option><option value="Wed">Miércoles</option><option value="Thu">Jueves</option><option value="Fri">Viernes</option></select>
+        <button class="btn" id="cols-btn" onclick="toggleColPicker(event)" title="Columnas visibles">⚙ <span id="cols-lbl">Columnas</span></button>
         <button class="btn" id="dens-btn" onclick="toggleDensity()" title="Densidad de la tabla">▤ <span id="dens-lbl">Compacto</span></button>
         <button class="btn" onclick="exportClientsCSV()" title="Export to CSV">📊 CSV</button>
         <button class="btn btn-amber" onclick="findDuplicates()" id="find-dupes-btn" title="Detectar clientes duplicados">🔍 <span id="find-dupes-label">Buscar duplicados</span></button>
         <button class="btn" onclick="openPricingConfig()" title="Pricing config">💲 <span id="pricing-btn-label">Precios</span></button>
       </div>
     </div>
+    <!-- #29 — active filter chips -->
+    <div id="fchips" style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:0 16px 6px"></div>
+    <!-- #3 — saved views -->
+    <div id="sv-row" style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:0 16px 10px"></div>
     <!-- Bulk-action toolbar (shown when rows are selected) -->
     <div id="bulk-bar" style="display:none;background:#FCF7F2;border:1px solid #F2DDCB;border-radius:8px;padding:8px 12px;margin:0 16px 10px;display:none;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-weight:600;color:var(--brand)"><span id="bulk-count">0</span> <span id="bulk-label">seleccionados</span></span>
@@ -1976,7 +2168,10 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
         <tbody id="ctbody"></tbody>
       </table>
     </div>
-    <div class="pager"><span class="pinfo" id="cpinfo"></span><button class="btn" onclick="pp()" style="margin-right:4px">&#8592; Ant</button><button class="btn" onclick="np()">Sig &#8594;</button></div>
+    <div class="pager"><span class="pinfo" id="cpinfo"></span><button class="btn" onclick="pp()" style="margin-right:4px">&#8592;</button><button class="btn" onclick="np()">&#8594;</button>
+      <select onchange="setPS(this.value)" id="ps-sel" style="font-family:inherit;font-size:11.5px;border:1px solid var(--border);border-radius:7px;padding:4px 6px;background:var(--light);color:var(--text)">
+        <option value="20">20 / pág</option><option value="50">50 / pág</option><option value="100">100 / pág</option><option value="9999">Todos</option>
+      </select></div>
   </div>
 </div>
 
@@ -2015,7 +2210,8 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 <div id="pbilling" class="hidden">
 <!-- P9 — Billing visual report -->
 <div class="card">
-  <div class="card-head"><div><span class="eyebrow">Facturación</span><span class="card-title" id="bch-title">📈 Reporte visual</span></div></div>
+  <div class="card-head"><div><span class="eyebrow">Facturación</span><span class="card-title" id="bch-title">📈 Reporte visual</span></div>
+  <button class="btn btn-brand" onclick="printExecReport()" style="font-size:12px">📄 <span id="exec-btn-lbl">Reporte del trimestre</span></button></div>
   <div id="bill-charts" style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px;padding:12px 14px"></div>
 </div>
   <div class="card">
@@ -3233,7 +3429,8 @@ let TECHS=[{name:'Jarred',phone:''},{name:'Alberto',phone:''}];
 // Organizers: users with admin-level access EXCEPT deleting clients (delete-protected).
 // Stored as [{name, phone}]; managed from the Techs modal alongside the tech list.
 let ORGANIZERS=[];
-let pg=0;const PS=20;
+let pg=0;let PS=Number(localStorage.getItem('aspen_cm_ps'))||20;
+function setPS(v){ PS=Number(v)||20; try{ localStorage.setItem('aspen_cm_ps',String(PS)); }catch(e){ dbgWarn('caught:',e); } pg=0; rc(); }
 let vf='all',ctab='dash',calWeek='AB',allExp=false;
 
 /* ── PRICING (configurable via localStorage; defaults to original values) ── */
@@ -3466,6 +3663,7 @@ const _stCore=st;
 st=function(tab,el){
   _stCore(tab,el);
   try{ _updCrumb(tab); }catch(e){ dbgWarn('caught:',e); }
+  try{ _updRail(tab); _updCtxActions(tab); _updFab(tab); }catch(e){ dbgWarn('caught:',e); }
   try{ _updUserChip(); }catch(e){ dbgWarn('caught:',e); }
   try{
     document.querySelectorAll('#bnav .bnav-item').forEach(b=>{
@@ -3736,9 +3934,11 @@ function rd(){
     {t2:"tech",l:t("techVisits"),v:tn,c:"mv-gold"},
   ];
   document.getElementById("mets").innerHTML=md.map(m=>`<div class="metric" onclick="showMetricPopup('${m.t2}')" title="Click"><div class="mlabel">${m.l}</div><div class="mval ${m.c}">${m.v}</div><div style="font-size:10.9px;color:var(--muted);margin-top:3px">${t('seeList')}</div></div>`).join("")+_visitsSparkHtml();
+  try{ _animateMetrics(); }catch(e){ dbgWarn('caught:',e); }
   const acCl=C.filter(x=>x.status==="active");
   const totQRev=acCl.reduce((s,x)=>s+clientQRate(x),0);
   const totAnn=acCl.reduce((s,x)=>s+clientAnnualRate(x),0);
+  try{ _renderTechInsights(); }catch(e){ dbgWarn('caught:',e); }
   const revEl=document.getElementById("rev-metrics");
   if(revEl){
     // Calculate unpaid for current quarter
@@ -4298,7 +4498,10 @@ function renderQDropdown(){renderUnpaidList();}
 
 /* ─── CLIENTES (full info) ─── */
 function rc(){
-  const s=document.getElementById('srch').value.toLowerCase();
+  // #38 — search operators: week:A day:tue status:overdue san:bromo freq:weekly
+  let s=document.getElementById('srch').value.toLowerCase();
+  const _ops={};
+  s=s.replace(/\b(week|day|status|san|freq):(\S+)/g,(m,k,v)=>{ _ops[k]=v; return ''; }).trim();
   const ff=document.getElementById('ffreq').value;
   const fs=document.getElementById('fstat').value;
   const fd=document.getElementById('fday').value;
@@ -4320,16 +4523,33 @@ function rc(){
     return true;
   });
   // P4 — column sorting (click any sortable header)
+  if(Object.keys(_ops).length){
+    const now2=todayLocal();
+    f=f.filter(c=>{
+      if(_ops.week&&String(c.week||'').toLowerCase().replace('&','')!==_ops.week.replace('&','')&&String(c.week||'').toLowerCase()!==_ops.week) return false;
+      if(_ops.day&&!String(c.day||'').toLowerCase().startsWith(_ops.day.slice(0,3))) return false;
+      if(_ops.freq&&!String(c.freq||'').toLowerCase().includes(_ops.freq)) return false;
+      if(_ops.san&&!String(c.san||'').toLowerCase().includes(_ops.san)) return false;
+      if(_ops.status){
+        if(_ops.status==='overdue'){ const d2=parseLocalDate(c.nwc); if(!(c.status==='active'&&d2&&d2<now2&&!c.wcN)) return false; }
+        else if(!String(c.status||'').toLowerCase().startsWith(_ops.status.slice(0,4))) return false;
+      }
+      return true;
+    });
+  }
   if(window._cSort&&window._cSort.key){
     const _k=window._cSort.key,_dir=window._cSort.dir;
     f.sort((a,b)=>{const av=String(a[_k]||'').toLowerCase(),bv=String(b[_k]||'').toLowerCase();return av<bv?-_dir:av>bv?_dir:0;});
   }
   try{ document.querySelectorAll('#clients-thead th[data-sort]').forEach(el=>el.classList.toggle('on',window._cSort&&el.dataset.sort===window._cSort.key)); }catch(e){ dbgWarn('caught:',e); }
+  try{ _renderSavedViews(); }catch(e){ dbgWarn('caught:',e); }
   document.getElementById('ccount').textContent=f.length;
   const tot=f.length,st2=pg*PS;
   if(st2>=tot&&pg>0)pg=Math.max(0,Math.ceil(tot/PS)-1);
   const page=f.slice(st2,st2+PS);
   document.getElementById('cpinfo').textContent=tot===0?t('noResults'):`${st2+1}–${Math.min(st2+PS,tot)} ${t('of')} ${tot}`;
+  try{ _renderClientCards(page); }catch(e){ dbgWarn('caught:',e); }
+  try{ _renderFilterChips(f.length); }catch(e){ dbgWarn('caught:',e); }
   document.getElementById('ctbody').innerHTML=page.map((c,i)=>{
     const isAB=c.week==='A&B';
     const nameStyle=isAB?'font-weight:600;color:#D6945B;font-style:italic':'font-weight:600;color:var(--brand)';
@@ -4343,7 +4563,7 @@ function rc(){
     else if(!_d) strip='#D6CDB8';
     const _p=String(c.name||'').replace(',',' ').split(/\s+/).filter(Boolean);
     const _ini=((_p[0]||' ')[0]+((_p[1]||' ')[0]||'')).toUpperCase();
-    return`<tr style="box-shadow:inset 4px 0 0 ${strip}">
+    return`<tr class="crow" onclick="if(event.target.closest('button,input,a,select'))return;vc(${c.id})" oncontextmenu="ctxMenu(event,${c.id})" style="box-shadow:inset 4px 0 0 ${strip}">
       <td style="text-align:center"><input type="checkbox" class="bulk-cb" data-id="${c.id}" onchange="bulkUpdate()" ${_bulkSel.has(c.id)?'checked':''}></td>
       <td style="font-size:12.6px;color:var(--muted);text-align:center">${st2+i+1}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><span class="cav">${_ini}</span><div><div style="${nameStyle}">${esc(c.name)}</div>${noteSub}</div></div></td>
@@ -4351,19 +4571,14 @@ function rc(){
       <td class="tcell" style="font-size:12.6px;color:var(--muted);max-width:140px" title="${esc(c.email)}">${esc(c.email)||'—'}</td>
       <td class="tcell" style="font-size:12.6px;max-width:170px" title="${esc(c.addr)}">${esc(c.addr)}</td>
       <td>${fb(c.freq)}</td>
-      <td style="font-size:13.2px;white-space:nowrap">${dln(c.day)}</td>
-      <td style="text-align:center">${c.week==='A&B'?'<span class="wb-ab">A+B</span>':c.week==='A'?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>'}</td>
+      <td style="font-size:13.2px;white-space:nowrap;cursor:cell" ondblclick="inlineEdit(this,${c.id},'day')" title="${LANG==='es'?'Doble clic para editar':'Double-click to edit'}">${dln(c.day)}</td>
+      <td style="text-align:center;cursor:cell" ondblclick="inlineEdit(this,${c.id},'week')" title="${LANG==='es'?'Doble clic para editar':'Double-click to edit'}">${c.week==='A&B'?'<span class="wb-ab">A+B</span>':c.week==='A'?'<span class="wb-a">A</span>':'<span class="wb-b">B</span>'}</td>
       <td class="tcell" style="font-size:12.6px;max-width:110px" title="${esc(c.san)}">${esc(c.san)||'—'}</td>
       <td style="font-size:12.6px;white-space:nowrap">${esc(c.lwc)||'—'}</td>
       <td style="font-size:12.6px;white-space:nowrap;${od(c.nwc)&&!c.wcN?'color:#DC2626;font-weight:600':''}">${esc(c.nwc)||'—'}</td>
       <td class="tcell" style="font-size:12.6px;max-width:140px" title="${esc(c.notes)}">${esc(c.notes)||'—'}</td>
-      <td>${sb(c.status)}</td>
-      <td class="cact"><div class="arow-v">
-        <button class="btn" onclick="vc(${c.id})">${t('view')}</button>
-        <button class="btn btn-amber" onclick="openEdit(${c.id})">${t('edit')}</button>
-        <button class="btn ${c.status==='active'?'btn-amber':'btn-green'}" onclick="${c.status==='cancelled'?`activateClient(${c.id})`:`tp(${c.id})`}">${c.status==='active'?t('pause'):t('activate')}</button>
-        <button class="btn btn-red role-admin-only" onclick="deleteClient(${c.id})" title="${LANG==='es'?'Eliminar permanentemente':'Delete permanently'}">${t('delete')}</button>
-      </div></td></tr>`;
+      <td style="cursor:cell" ondblclick="inlineEdit(this,${c.id},'status')" title="${LANG==='es'?'Doble clic para editar':'Double-click to edit'}">${sb(c.status)}</td>
+      <td class="cact" style="text-align:center"><button class="btn" style="font-weight:700;padding:3px 13px;letter-spacing:1px" onclick="event.stopPropagation();ctxMenu(event,${c.id})" title="${LANG==='es'?'Acciones — también con clic derecho':'Actions — also right-click'}">⋯</button></td></tr>`;
   }).join('')||_emptyRowHtml(15,'clients');
   bulkUpdate();
 }
@@ -8646,6 +8861,7 @@ function getBackupPayload(){
       // FIX — these fields were silently dropped from the sync payload, so
       // portal links, "notified" marks and tags vanished on the next merge.
       wcNoti:cl.wcNoti||'',portalToken:cl.portalToken||'',tags:cl.tags||'',
+      reminders:cl.reminders||[],tapptTs:cl.tapptTs||0,
       lastModified:cl.lastModified||0
     }))
   };
@@ -9505,6 +9721,963 @@ function _portalHtml(d){
    {uid} (who, role, platform, last seen). Admin devices see the list in
    the ☁️ Cloud modal and can promote/demote admins with one tap — no one
    ever needs to open the Firebase console or copy UIDs by hand. */
+/* ══════════ NIVEL PRO 4 — helpers (equipo + oficina) ══════════ */
+/* #35 — chemistry trends per client (real readings from visits) */
+const _CHEM_ALIAS={'free cl':'cl','cl libre':'cl','cloro libre':'cl','free chlorine':'cl','fc':'cl','cloro':'cl','ta':'alk','t.a.':'alk','total alk':'alk','alcalinidad':'alk','ph-':'ph','ph+':'ph','bromo libre':'br','free br':'br'};
+const _CHEM_BANDS={ph:[7.2,7.8,6.6,8.6],cl:[1,3,0,6],chlorine:[1,3,0,6],cloro:[1,3,0,6],br:[3,5,0,10],bromine:[3,5,0,10],bromo:[3,5,0,10],alk:[80,120,0,240],alkalinity:[80,120,0,240],salt:[2500,3500,0,5000],sal:[2500,3500,0,5000]};
+function _cdChemistry(c){
+  const es=LANG==='es';
+  const vl=VL[c.id]||{};
+  const keys=Object.keys(vl).filter(k=>{ const v=vl[k]; return v&&!v._deleted&&v.status==='done'&&v.checklist&&v.checklist.readings; }).sort();
+  const series={};
+  keys.slice(-8).forEach(dk=>{
+    const rd2=vl[dk].checklist.readings||{};
+    const flat={};
+    Object.values(rd2).forEach(obj=>{ if(obj&&typeof obj==='object') Object.entries(obj).forEach(([k2,v2])=>{ const n=parseFloat(String(v2).replace(',','.')); if(isFinite(n)){ let k3=k2.toLowerCase().trim(); k3=_CHEM_ALIAS[k3]||k3; flat[k3]=n; } }); });
+    Object.entries(flat).forEach(([p,n])=>{ (series[p]=series[p]||[]).push({d:dk,n:n}); });
+  });
+  const params=Object.entries(series).filter(([,arr])=>arr.length>=2).sort((a,b)=>b[1].length-a[1].length).slice(0,6);
+  if(!params.length) return '<div class="empty-state"><div class="es-ico">\uD83E\uDDEA</div><h4>'+(es?'Sin lecturas suficientes':'Not enough readings yet')+'</h4><p style="font-size:11.8px">'+(es?'Se necesitan 2+ visitas con lecturas de qu\u00edmica':'Needs 2+ visits with chemistry readings')+'</p></div>';
+  return params.map(([p,arr])=>{
+    const band=_CHEM_BANDS[p];
+    const vals=arr.map(x=>x.n);
+    const min=band?band[2]:Math.min.apply(null,vals), max=band?band[3]:Math.max.apply(null,vals);
+    const rng=(max-min)||1;
+    const W=170,H=36;
+    const pts=vals.map((v2,i)=>((i/(vals.length-1))*W).toFixed(1)+','+((H-4)-((v2-min)/rng*(H-8))).toFixed(1)).join(' ');
+    let bandRect='';
+    if(band){
+      const y1=(H-4)-((band[1]-min)/rng*(H-8)), y2=(H-4)-((band[0]-min)/rng*(H-8));
+      bandRect='<rect x="0" y="'+y1.toFixed(1)+'" width="'+W+'" height="'+Math.max(2,(y2-y1)).toFixed(1)+'" fill="#DCFCE7"></rect>';
+    }
+    const last=vals[vals.length-1];
+    const prevAvg=vals.slice(0,-1).reduce((a2,b2)=>a2+b2,0)/(vals.length-1);
+    const inBand=band?last>=band[0]&&last<=band[1]:true;
+    const trend=Math.abs(last-prevAvg)<rng*0.03?'\u2192':last>prevAvg?'\u2197':'\u2198';
+    const stTxt=inBand?(es?'\u2713 en rango':'\u2713 in range'):(trend==='\u2197'?(es?'subiendo':'rising'):trend==='\u2198'?(es?'bajando':'dropping'):(es?'fuera de rango':'out of range'));
+    return '<div style="display:flex;align-items:center;gap:10px;background:var(--warm2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12.5px">'
+      +'<b style="min-width:52px;text-transform:uppercase;font-size:11.5px">'+esc(p)+'</b>'
+      +'<svg width="'+W+'" height="'+H+'" style="flex-shrink:0">'+bandRect+'<polyline points="'+pts+'" fill="none" stroke="'+(inBand?'#1C8FA8':'#B5733A')+'" stroke-width="2" stroke-linejoin="round"></polyline></svg>'
+      +'<small style="font-weight:700;color:'+(inBand?'#16A34A':'#B45309')+';white-space:nowrap">'+last+' '+trend+'<br><span style="font-weight:600">'+stTxt+'</span></small></div>';
+  }).join('')+'<div style="font-size:11px;color:var(--muted)">'+(es?'\u00daltimas ':'Last ')+Math.min(keys.length,8)+(es?' visitas con lecturas \u00b7 banda verde = rango ideal':' visits with readings \u00b7 green band = ideal range')+'</div>';
+}
+/* #36 — printable route sheets (one page per weekday of the current week) */
+async function printRouteSheets(){
+  try{
+    const es=LANG==='es';
+    const today=todayLocal();
+    const isoWk=getISOWeek(today);
+    const det=(isoWk%2===1)?'A':'B';
+    // M5 — let the admin pick the week instead of assuming the ISO one
+    const useDet=await showConfirm(es?'Imprimir hojas de ruta.\n\nAceptar = Semana '+det+' (actual)\nCancelar = Semana '+(det==='A'?'B':'A'):'Print route sheets.\n\nOK = Week '+det+' (current)\nCancel = Week '+(det==='A'?'B':'A'));
+    const wt=useDet?det:(det==='A'?'B':'A');
+    const monday=new Date(today);
+    monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+    const days=['Mon','Tue','Wed','Thu','Fri'];
+    const dayEs={Mon:'Lunes',Tue:'Martes',Wed:'Mi\u00e9rcoles',Thu:'Jueves',Fri:'Viernes'};
+    let html='';
+    days.forEach((dayKey,i)=>{
+      const d2=new Date(monday); d2.setDate(monday.getDate()+i);
+      const dayClients=C.filter(c=>c.status==='active'&&_dayForWeek(c,wt)===dayKey&&(c.week===wt||c.week==='A&B'));
+      const ordered=(typeof getOrderedClients==='function')?getOrderedClients(dayClients,dayKey,wt):dayClients;
+      if(!ordered.length) return;
+      html+='<div style="page-break-after:always;max-width:700px;margin:0 auto;padding:26px 12px;font-size:12px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #B5733A;padding-bottom:8px;margin-bottom:12px">'
+        +'<b style="font-family:Poppins,sans-serif;font-size:16px">\uD83C\uDF42 '+(es?'Ruta \u2014 ':'Route \u2014 ')+(es?dayEs[dayKey]:dayKey)+'</b>'
+        +'<span>'+d2.toLocaleDateString(es?'es-US':'en-US',{month:'short',day:'numeric'})+' \u00b7 '+(es?'Semana ':'Week ')+wt+'</span></div>'
+        +ordered.map((c,j)=>'<div style="display:flex;gap:9px;padding:8px 0;border-bottom:1px dashed #D6CDB8">'
+          +'<span style="width:20px;height:20px;border-radius:50%;background:#2A211A;color:#FFF;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">'+(j+1)+'</span>'
+          +'<div><b>'+esc(c.name)+'</b>'+(c.addr?' \u00b7 '+esc(c.addr):'')+'<br>'
+          +(c.phone?'\uD83D\uDCDE '+esc(c.phone)+' \u00b7 ':'')+(c.san?'\uD83E\uDDEA '+esc(c.san):'')
+          +(c.notes?'<br><i style="color:#7A7060">'+esc(c.notes)+'</i>':'')+'</div></div>').join('')
+        +'<div style="color:#7A7060;margin-top:12px">'+(es?'Notas':'Notes')+': ______________________________________________</div></div>';
+    });
+    if(!html){ showToast(es?'Sin paradas esta semana':'No stops this week','warn'); return; }
+    let box=document.getElementById('route-sheets');
+    if(!box){ box=document.createElement('div'); box.id='route-sheets'; document.body.appendChild(box); }
+    box.innerHTML=html;
+    document.body.classList.add('printing-routes');
+    setTimeout(()=>{ window.print(); setTimeout(()=>document.body.classList.remove('printing-routes'),500); },120);
+  }catch(e){ dbgWarn('routes',e); }
+}
+/* #37 — configurable dashboard (hide + reorder) */
+function _dashCards(){
+  return Array.from(document.querySelectorAll('#pdash > .card')).map((el,i)=>{
+    const t2=el.querySelector('.card-title');
+    return {el:el,key:el.id||'c'+i,title:t2?t2.textContent.trim().slice(0,34):'Card '+(i+1)};
+  });
+}
+function _dashCfg(){ try{ return JSON.parse(localStorage.getItem('aspen_cm_dash')||'{"hide":[],"order":[]}'); }catch(e){ return {hide:[],order:[]}; } }
+function _applyDashCfg(){
+  try{
+    // C7 — the metrics card keeps full width no matter the custom order
+    const _m=document.getElementById('mets'); const _mc=_m&&_m.closest('.card'); if(_mc) _mc.classList.add('dash-span');
+    const cfg=_dashCfg();
+    const cards=_dashCards();
+    const parent=document.getElementById('pdash'); if(!parent) return;
+    const byKey={}; cards.forEach(cd=>byKey[cd.key]=cd);
+    (cfg.order||[]).forEach(k=>{ if(byKey[k]) parent.appendChild(byKey[k].el); });
+    cards.forEach(cd=>{ cd.el.style.display=(cfg.hide||[]).includes(cd.key)?'none':''; });
+  }catch(e){ dbgWarn('dashCfg',e); }
+}
+function openDashCfg(){
+  const es=LANG==='es';
+  let ov=document.getElementById('dc-ov');
+  if(!ov){ ov=document.createElement('div'); ov.id='dc-ov'; ov.className='dq-ov'; ov.onclick=e2=>{ if(e2.target===ov) ov.classList.remove('open'); }; ov.innerHTML='<div class="dq-card" id="dc-card"></div>'; document.body.appendChild(ov); }
+  const cfg=_dashCfg();
+  const cards=_dashCards();
+  document.getElementById('dc-card').innerHTML='<h3>\u2699 '+(es?'Personalizar Dashboard':'Customize Dashboard')+'</h3>'
+    +cards.map((cd,i)=>{
+      const hidden=(cfg.hide||[]).includes(cd.key);
+      return '<div class="dq-row" style="align-items:center"><span style="color:var(--muted)">\u22EE\u22EE</span><b style="flex:1;font-size:12.6px">'+esc(cd.title)+'</b>'
+        +'<button class="btn" style="font-size:11px" onclick="dashMove(\''+cd.key+'\',-1)">\u2191</button>'
+        +'<button class="btn" style="font-size:11px" onclick="dashMove(\''+cd.key+'\',1)">\u2193</button>'
+        +'<button class="btn" style="font-size:11px;'+(hidden?'opacity:.5':'')+'" onclick="dashToggle(\''+cd.key+'\')">'+(hidden?'\uD83D\uDC41\u200D\uD83D\uDDE8':'\uD83D\uDC41')+'</button></div>';
+    }).join('')
+    +'<div style="text-align:right;margin-top:10px"><button class="btn" onclick="localStorage.removeItem(\'aspen_cm_dash\');location.reload()">'+(es?'Restablecer':'Reset')+'</button> <button class="btn btn-brand" onclick="document.getElementById(\'dc-ov\').classList.remove(\'open\')">'+(es?'Listo':'Done')+'</button></div>';
+  ov.classList.add('open');
+}
+function dashToggle(key){
+  const cfg=_dashCfg();
+  cfg.hide=cfg.hide||[];
+  cfg.hide=cfg.hide.includes(key)?cfg.hide.filter(k=>k!==key):cfg.hide.concat([key]);
+  try{ localStorage.setItem('aspen_cm_dash',JSON.stringify(cfg)); }catch(e){ dbgWarn('caught:',e); }
+  _applyDashCfg(); openDashCfg();
+}
+function dashMove(key,dir){
+  const cfg=_dashCfg();
+  let order=cfg.order&&cfg.order.length?cfg.order:_dashCards().map(cd=>cd.key);
+  const i=order.indexOf(key);
+  if(i<0) return;
+  const j=i+dir;
+  if(j<0||j>=order.length) return;
+  order.splice(i,1); order.splice(j,0,key);
+  cfg.order=order;
+  try{ localStorage.setItem('aspen_cm_dash',JSON.stringify(cfg)); }catch(e){ dbgWarn('caught:',e); }
+  _applyDashCfg(); openDashCfg();
+}
+/* #39 — full Excel export (3 sheets, SheetJS lazy-loaded) */
+function _loadSheetJS(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX) return res();
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload=()=>res();
+    sc.onerror=()=>rej(new Error('cdn'));
+    document.head.appendChild(sc);
+  });
+}
+async function exportExcelAll(){
+  const es=LANG==='es';
+  try{
+    showToast('\u23F3 '+(es?'Preparando Excel\u2026':'Building Excel\u2026'),'ok');
+    await _loadSheetJS();
+    const wb=XLSX.utils.book_new();
+    const cRows=C.map(c=>({Name:c.name,Status:c.status,Phone:c.phone||'',Email:c.email||'',Address:c.addr||'',Frequency:c.freq||'',Day:c.day||'',Week:c.week||'',Sanitizer:c.san||'','Last WC':c.lwc||'','Next WC':c.nwc||'','Quarterly Rate':clientQRate(c),Notes:c.notes||''}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cRows),'Clients');
+    const curQ=document.getElementById('qsel')?document.getElementById('qsel').value:'';
+    const qStartMonth={Q1:0,Q2:3,Q3:6,Q4:9}[curQ.split(' ')[0]]||0;
+    const yr=Number(curQ.split(' ')[1])||new Date().getFullYear();
+    const vRows=[];
+    Object.keys(VL).forEach(cid=>{
+      const c=C.find(x=>x.id===Number(cid)); if(!c) return;
+      Object.keys(VL[cid]||{}).forEach(dk=>{
+        const v=VL[cid][dk]; if(!v||v._deleted) return;
+        const d2=parseLocalDate(dk); if(!d2||d2.getFullYear()!==yr||d2.getMonth()<qStartMonth||d2.getMonth()>=qStartMonth+3) return;
+        const chk=v.checklist||{};
+        vRows.push({Date:dk,Client:c.name,Tech:v.tech||chk.tech||'',Status:v.status==='done'?'Visited':'Not done',Checklist:(chk.checked||0)+'/'+(chk.total||''),Photos:Object.values(chk.photos||{}).filter(p=>typeof p==='string').length+(chk._photosStripped||0)});
+      });
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(vRows.sort((a,b)=>a.Date.localeCompare(b.Date))),'Visits '+curQ.replace(' ','-'));
+    // C4 — devices without billing access must not export billing data
+    if(!document.body.classList.contains('no-billing')){
+      const bRows=[];
+      const qs=getCurrentYearQuarters();
+      C.filter(c=>c.status==='active').forEach(c=>{
+        qs.forEach(q=>{
+          const b=BL[c.id]&&BL[c.id][q];
+          bRows.push({Client:c.name,Quarter:q,'Invoice #':b&&b.i||'',Amount:b&&b.a?Number(b.a):'',Status:b&&b.i?(b.s==='paid'?'Paid':'Pending'):'Not invoiced'});
+        });
+      });
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(bRows),'Billing');
+    }
+    XLSX.writeFile(wb,'Aspen-ChemMaintenance-'+_localDateKey()+'.xlsx');
+    try{ logAudit('excelExport',curQ); }catch(e){ dbgWarn('caught:',e); }
+  }catch(e){
+    dbgWarn('excel',e);
+    showToast('\u26A0 '+(es?'No se pudo generar (\u00bfsin internet?)':'Could not build (offline?)'),'warn');
+  }
+}
+/* ══════════ NIVEL PRO 4 — helpers (confiabilidad) ══════════ */
+/* #31 — data quality scanner */
+function _dqIssues(){
+  const es=LANG==='es', ac=C.filter(c=>c.status==='active'), out=[];
+  const noPhone=ac.filter(c=>!(c.phone||'').trim());
+  if(noPhone.length) out.push({ic:'\uD83D\uDCF5',t:noPhone.length+(es?' cliente(s) sin tel\u00e9fono':' client(s) without phone'),s:noPhone.slice(0,4).map(c=>c.name).join(', '),list:noPhone});
+  const noAddr=ac.filter(c=>!(c.addr||'').trim());
+  if(noAddr.length) out.push({ic:'\uD83D\uDCCD',t:noAddr.length+(es?' sin direcci\u00f3n':' without address'),s:noAddr.slice(0,4).map(c=>c.name).join(', '),list:noAddr});
+  const byPhone={};
+  ac.forEach(c=>{ const p=(c.phone||'').replace(/\D/g,''); if(p.length>=7){ (byPhone[p]=byPhone[p]||[]).push(c); } });
+  Object.values(byPhone).filter(g=>g.length>1).slice(0,4).forEach(g=>out.push({ic:'\uD83D\uDC65',t:es?'Posible duplicado (mismo tel\u00e9fono)':'Possible duplicate (same phone)',s:g.map(c=>c.name).join(' \u2194 '),list:g}));
+  const byName={};
+  C.forEach(c=>{ const n=String(c.name||'').toLowerCase().replace(/[^a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1]/g,''); if(n.length>5){ (byName[n]=byName[n]||[]).push(c); } });
+  Object.values(byName).filter(g=>g.length>1).slice(0,3).forEach(g=>out.push({ic:'\uD83D\uDC65',t:es?'Posible duplicado (mismo nombre)':'Possible duplicate (same name)',s:g.map(c=>c.name).join(' \u2194 '),list:g}));
+  const badDate=ac.filter(c=>c.nwc&&c.lwc&&c.nwc<c.lwc);
+  if(badDate.length) out.push({ic:'\uD83D\uDCC5',t:badDate.length+(es?' fecha(s) il\u00f3gica(s) de C.A.':' illogical W.C. date(s)'),s:(es?'Pr\u00f3ximo anterior al \u00faltimo: ':'Next before last: ')+badDate.slice(0,3).map(c=>c.name).join(', '),list:badDate});
+  const noDay=ac.filter(c=>!c.day||!c.week);
+  if(noDay.length) out.push({ic:'\uD83D\uDDD3',t:noDay.length+(es?' activo(s) sin d\u00eda/semana':' active without day/week'),s:noDay.slice(0,4).map(c=>c.name).join(', '),list:noDay});
+  return out;
+}
+function openDataQuality(){
+  const es=LANG==='es';
+  let ov=document.getElementById('dq-ov');
+  if(!ov){ ov=document.createElement('div'); ov.id='dq-ov'; ov.className='dq-ov'; ov.onclick=e2=>{ if(e2.target===ov) ov.classList.remove('open'); }; ov.innerHTML='<div class="dq-card" id="dq-card"></div>'; document.body.appendChild(ov); }
+  const issues=_dqIssues();
+  const card=document.getElementById('dq-card');
+  card.innerHTML='<h3>\uD83E\uDDF9 '+(es?'Calidad de datos':'Data quality')+'</h3>'
+    +(issues.length?issues.map((iss,i)=>'<div class="dq-row">'+iss.ic+' <div style="flex:1"><b>'+iss.t+'</b><small>'+esc(iss.s)+'</small></div>'
+      +'<button class="btn" onclick="_dqFix('+i+')">'+(es?'Arreglar':'Fix')+'</button></div>').join('')
+      :'<div style="text-align:center;padding:26px 0;color:#16A34A;font-weight:700">\u2705 '+(es?'Base de datos limpia \u2014 sin problemas detectados':'Database clean \u2014 no issues found')+'</div>')
+    +'<div style="text-align:right;margin-top:10px"><button class="btn" onclick="document.getElementById(\'dq-ov\').classList.remove(\'open\')">'+(es?'Cerrar':'Close')+'</button></div>';
+  window._dqCache=issues;
+  ov.classList.add('open');
+}
+function _dqFix(i){
+  const iss=window._dqCache&&window._dqCache[i]; if(!iss||!iss.list.length) return;
+  document.getElementById('dq-ov').classList.remove('open');
+  openEdit(iss.list[0].id);
+}
+/* #32 — recovery trash */
+function _trashList(){ try{ return JSON.parse(localStorage.getItem('aspen_cm_trash')||'[]'); }catch(e){ return []; } }
+function _trashPush(entry){
+  try{
+    const t2=_trashList();
+    t2.unshift(entry);
+    localStorage.setItem('aspen_cm_trash',JSON.stringify(t2.slice(0,30)));
+  }catch(e){ dbgWarn('trash',e); }
+}
+function openTrash(){
+  const es=LANG==='es';
+  let ov=document.getElementById('tr-ov');
+  if(!ov){ ov=document.createElement('div'); ov.id='tr-ov'; ov.className='dq-ov'; ov.onclick=e2=>{ if(e2.target===ov) ov.classList.remove('open'); }; ov.innerHTML='<div class="dq-card" id="tr-card"></div>'; document.body.appendChild(ov); }
+  const cutoff=Date.now()-30*86400000;
+  const items=_trashList().filter(e2=>e2.at>cutoff);
+  const card=document.getElementById('tr-card');
+  card.innerHTML='<h3>\uD83D\uDDD1 '+(es?'Papelera (30 d\u00edas \u00b7 este dispositivo)':'Trash (30 days \u00b7 this device)')+'</h3>'
+    +(items.length?items.map((e2,i)=>{
+      const days=Math.floor((Date.now()-e2.at)/86400000);
+      return '<div class="dq-row">\uD83D\uDDD1 <div style="flex:1"><b>'+esc(e2.data&&e2.data.name||'?')+'</b><small>'+(es?'cliente \u00b7 borrado ':'client \u00b7 deleted ')+(days===0?(es?'hoy':'today'):(es?'hace ':'')+days+' d')+(e2.who?' \u00b7 '+esc(e2.who):'')+'</small></div>'
+        +'<button class="btn btn-brand" onclick="trashRestore('+i+')">\u21A9 '+(es?'Restaurar':'Restore')+'</button></div>';
+    }).join(''):'<div style="text-align:center;padding:26px 0;color:var(--muted)">'+(es?'Papelera vac\u00eda':'Trash is empty')+'</div>')
+    +'<div style="font-size:11px;color:var(--muted);margin-top:8px">'+(es?'Los clientes borrados se guardan aqu\u00ed autom\u00e1ticamente al eliminarlos.':'Deleted clients are captured here automatically.')+'</div>'
+    +'<div style="text-align:right;margin-top:10px"><button class="btn" onclick="document.getElementById(\'tr-ov\').classList.remove(\'open\')">'+(es?'Cerrar':'Close')+'</button></div>';
+  ov.classList.add('open');
+}
+function trashRestore(i){
+  const es=LANG==='es';
+  const t2=_trashList();
+  const entry=t2[i]; if(!entry||!entry.data) return;
+  const c=entry.data;
+  if(C.find(x=>x.id===c.id)){
+    // M3 — id collision (rare): restore under a fresh id instead of failing
+    c.id=Math.max(Date.now(),Math.max.apply(null,C.map(x=>x.id).concat([0]))+1);
+  }
+  c.lastModified=Date.now();
+  C.push(c);
+  t2.splice(i,1);
+  try{ localStorage.setItem('aspen_cm_trash',JSON.stringify(t2)); }catch(e){ dbgWarn('caught:',e); }
+  saveData();
+  try{ logAudit('restoreClient',c.name); }catch(e){ dbgWarn('caught:',e); }
+  showToast('\u21A9 '+esc(c.name)+(es?' restaurado':' restored'),'ok');
+  rc(); try{ ra(); }catch(e){ dbgWarn('caught:',e); }
+  openTrash();
+}
+/* #40 — live "Saving… / Saved" indicator */
+function _updSaveInd(){
+  try{
+    let el=document.getElementById('save-live');
+    if(!el){
+      el=document.createElement('span');
+      el.id='save-live';
+      const ci=document.getElementById('cloud-ind');
+      if(ci&&ci.parentNode) ci.parentNode.insertBefore(el,ci); else return;
+    }
+    if(!CURRENT_ROLE){ el.style.display='none'; return; }
+    const es=LANG==='es';
+    if(fbSyncing||(typeof _stfT!=='undefined'&&_stfT)){ el.textContent='\u23F3 '+(es?'Guardando\u2026':'Saving\u2026'); el.style.color='#F3C88A'; }
+    else if(!fbConnected||window._fbDirty){ el.textContent='\uD83D\uDCE1 '+(es?'Guardado local':'Saved locally'); el.style.color='#F59E0B'; }
+    else if(window._lastSyncAt){
+      const t2=new Date(window._lastSyncAt).toLocaleTimeString(es?'es-US':'en-US',{hour:'numeric',minute:'2-digit'});
+      el.textContent='\u2713 '+(es?'Guardado':'Saved')+' \u00b7 '+t2; el.style.color='#7BC98A';
+    } else { el.textContent=''; }
+  }catch(e){ dbgWarn('caught:',e); }
+}
+/* ══════════ NIVEL PRO 4 — helpers (móvil) ══════════ */
+/* #24 — native-style client cards for phones */
+function _renderClientCards(page){
+  let box=document.getElementById('ccards');
+  if(!box){
+    const tw=document.querySelector('#pclients .tw');
+    if(!tw) return;
+    box=document.createElement('div');
+    box.id='ccards';
+    tw.parentNode.insertBefore(box,tw.nextSibling);
+  }
+  const es=LANG==='es', now=todayLocal();
+  box.innerHTML=page.map(c=>{
+    const _p=String(c.name||'').replace(',',' ').split(/\s+/).filter(Boolean);
+    const ini=((_p[0]||' ')[0]+((_p[1]||' ')[0]||'')).toUpperCase();
+    const d=parseLocalDate(c.nwc);
+    let pill='',avs='';
+    if(c.status!=='active'){ pill='<span class="mpill" style="background:#EDE4D6;color:#7A7060">'+(c.status==='paused'?(es?'Pausado':'Paused'):(es?'Cancelado':'Cancelled'))+'</span>'; avs='background:#EDE4D6;color:#7A7060'; }
+    else if(d&&d<now&&!c.wcN){ const days=Math.floor((now-d)/86400000); pill='<span class="mpill" style="background:#FEE2E2;color:#991B1B">C.A. '+(es?'vencido':'overdue')+' '+days+'d</span>'; avs='background:#FEE2E2;color:#991B1B'; }
+    else if(d&&(d-now)/86400000<=30){ pill='<span class="mpill" style="background:#FEF3C7;color:#92400E">C.A. '+esc(c.nwc.slice(5))+'</span>'; }
+    else if(c.nwc){ pill='<span class="mpill" style="background:#DCFCE7;color:#15803D">C.A. '+esc(c.nwc.slice(5))+'</span>'; }
+    return '<div class="mcc" onclick="if(window._lpFired){window._lpFired=false;return}vc('+c.id+')" oncontextmenu="ctxMenu(event,'+c.id+')" data-cid="'+c.id+'">'
+      +'<span class="mav"'+(avs?' style="'+avs+'"':'')+'>'+esc(ini)+'</span>'
+      +'<div style="min-width:0"><b>'+esc(c.name)+'</b><small>'+esc(c.freq||'')+' \u00b7 '+(es?'Sem ':'Wk ')+esc(c.week||'')+(c.day?' \u00b7 '+esc(dln(c.day)):'')+' '+pill+'</small></div>'
+      +'<span class="mchev">\u203A</span></div>';
+  }).join('')||(!C.length&&!_fbGotFirstSnap
+    ?'<div class="sk" style="height:58px;margin-bottom:9px"></div><div class="sk" style="height:58px;margin-bottom:9px"></div><div class="sk" style="height:58px"></div>'
+    :'<div style="text-align:center;color:var(--muted);padding:26px 0;font-size:13px">'+(es?'Sin resultados':'No results')+'</div>');
+  // long-press = context menu (mobile)
+  if(!box._lpWired){
+    box._lpWired=true;
+    let lpT=null;
+    box.addEventListener('touchstart',e2=>{
+      const card=e2.target.closest('.mcc'); if(!card) return;
+      lpT=setTimeout(()=>{ window._lpFired=true; const t2=e2.touches[0]; _openCtx(Number(card.dataset.cid),t2.clientX,t2.clientY); },550);
+    },{passive:true});
+    ['touchend','touchmove','touchcancel'].forEach(ev=>box.addEventListener(ev,()=>clearTimeout(lpT),{passive:true}));
+  }
+}
+/* #29 — active filter chips */
+function _renderFilterChips(total){
+  const box=document.getElementById('fchips'); if(!box) return;
+  const es=LANG==='es';
+  const chips=[];
+  const srch=document.getElementById('srch');
+  const ffreq=document.getElementById('ffreq');
+  const fstat=document.getElementById('fstat');
+  const fday=document.getElementById('fday');
+  if(srch&&srch.value.trim()){
+    const hasOps=/\b(week|day|status|san|freq):/.test(srch.value);
+    chips.push([(hasOps?'\u26A1 ':'\uD83D\uDD0D "')+esc(srch.value.trim())+(hasOps?'':'"'),"document.getElementById('srch').value=''"]);
+  }
+  if(ffreq&&ffreq.value) chips.push([esc(ffreq.options[ffreq.selectedIndex].text),"document.getElementById('ffreq').value=''"]);
+  if(fstat&&fstat.value) chips.push([esc(fstat.options[fstat.selectedIndex].text),"document.getElementById('fstat').value=''"]);
+  if(fday&&fday.value) chips.push([esc(fday.options[fday.selectedIndex].text),"document.getElementById('fday').value=''"]);
+  if(!chips.length){ box.innerHTML=''; return; }
+  box.innerHTML=chips.map(ch=>'<button class="fch" onclick="'+ch[1]+';pg=0;rc()">'+ch[0]+' \u2715</button>').join('')
+    +'<small style="color:var(--muted);font-size:11.3px">'+total+' '+(es?'resultado(s)':'result(s)')+'</small>'
+    +'<button class="fch" style="background:none;border:1px dashed var(--border);color:var(--muted)" onclick="document.getElementById(\'srch\').value=\'\';document.getElementById(\'ffreq\').value=\'\';document.getElementById(\'fstat\').value=\'\';document.getElementById(\'fday\').value=\'\';pg=0;rc()">'+(es?'Limpiar todo':'Clear all')+'</button>';
+}
+/* #25 — contextual floating action button */
+function _updFab(tab){
+  let fab=document.getElementById('fab');
+  if(!fab){
+    fab=document.createElement('button');
+    fab.id='fab';
+    document.body.appendChild(fab);
+  }
+  const M={dash:['\uFF0B',"om('madd')"],clients:['\uFF0B',"om('madd')"],calendar:['\uFF0B',"om('madd')"],visits:['\uD83D\uDD0D','ckOpen()'],wctab:['\uD83D\uDD0D','ckOpen()']};
+  const cfg=M[tab];
+  const ok=cfg&&(CURRENT_ROLE==='admin'||CURRENT_ROLE==='organizer');
+  document.body.classList.toggle('fab-on',!!ok);
+  if(cfg){ fab.textContent=cfg[0]; fab.setAttribute('onclick',cfg[1]); fab.title=cfg[0]==='\uFF0B'?(LANG==='es'?'Nuevo cliente':'New client'):(LANG==='es'?'Buscar':'Search'); }
+}
+/* #26 — client context menu (right-click / long-press) */
+function ctxMenu(ev,cid){ ev.preventDefault(); ev.stopPropagation(); _openCtx(cid,ev.clientX,ev.clientY); }
+function _openCtx(cid,x,y){
+  const c=C.find(cl=>cl.id===cid); if(!c) return;
+  const es=LANG==='es';
+  let m=document.getElementById('ctx-menu');
+  if(!m){ m=document.createElement('div'); m.id='ctx-menu'; document.body.appendChild(m); }
+  const paused=c.status!=='active';
+  m.innerHTML='<button onclick="_ctxRun(()=>vc('+cid+'))">\uD83D\uDC64 '+(es?'Ver perfil':'View profile')+'</button>'
+    +'<button onclick="_ctxRun(()=>openEdit('+cid+'))">\u270E '+(es?'Editar':'Edit')+'</button>'
+    +'<button onclick="_ctxRun(()=>owc('+cid+'))">\uD83D\uDCA7 '+(es?'Registrar W.Change':'Register W.Change')+'</button>'
+    +'<button onclick="_ctxRun(()=>oTechAppt('+cid+'))">\uD83D\uDD27 '+(es?'Nueva cita t\u00e9cnica':'New tech appt')+'</button>'
+    +'<button onclick="_ctxRun(()=>copyClientPortalLink('+cid+'))">\uD83D\uDD17 '+(es?'Copiar portal':'Copy portal link')+'</button>'
+    +'<div class="cx-sep"></div>'
+    +(c.status==='cancelled'
+      ?'<button onclick="_ctxRun(()=>activateClient('+cid+'))">\u25B6 '+(es?'Reactivar cliente':'Reactivate client')+'</button>'
+      :'<button class="cx-danger" onclick="_ctxRun(()=>_ctxToggleStatus('+cid+'))">'+(paused?'\u25B6 '+(es?'Reactivar':'Reactivate'):'\u23F8 '+(es?'Pausar cliente':'Pause client'))+'</button>')
+    +(CURRENT_ROLE==='admin'
+      ?'<button class="cx-danger" onclick="_ctxRun(()=>deleteClient('+cid+'))">\uD83D\uDDD1 '+(es?'Eliminar':'Delete')+'</button>':'');
+  m.style.left=Math.min(x,window.innerWidth-214)+'px';
+  m.style.top=Math.min(y,window.innerHeight-260)+'px';
+  m.classList.add('open');
+  setTimeout(()=>{
+    const closer=e2=>{ if(!m.contains(e2.target)){ m.classList.remove('open'); document.removeEventListener('click',closer); document.removeEventListener('scroll',closer,true); } };
+    document.addEventListener('click',closer);
+    document.addEventListener('scroll',closer,true);
+  },60);
+}
+function _ctxRun(fn){ const m=document.getElementById('ctx-menu'); if(m) m.classList.remove('open'); try{ fn(); }catch(e){ dbgWarn('ctx',e); } }
+function _ctxToggleStatus(cid){
+  const c=C.find(cl=>cl.id===cid); if(!c) return;
+  const prev=c.status;
+  c.status=c.status==='active'?'paused':'active';
+  c.lastModified=Date.now();
+  pushUndo((LANG==='es'?'Estado: ':'Status: ')+c.name,()=>{ c.status=prev; c.lastModified=Date.now(); });
+  saveData(); rc(); try{ ra(); }catch(e){ dbgWarn('caught:',e); }
+}
+/* #28 — boot skeletons while the first snapshot arrives */
+function _bootSkeletons(){
+  try{
+    if(C.length) return;
+    const mets=document.getElementById('mets');
+    if(mets) mets.innerHTML='<div class="sk" style="height:64px;flex:1;min-width:88px"></div>'.repeat(4);
+    const tb=document.getElementById('ctbody');
+    if(tb) tb.innerHTML='<tr><td colspan="15"><div class="sk" style="height:15px;margin:7px 0"></div><div class="sk" style="height:15px;width:84%;margin:7px 0"></div><div class="sk" style="height:15px;width:68%;margin:7px 0"></div></td></tr>';
+    setTimeout(()=>{ try{ if(!C.length){ rd(); rc(); } }catch(e){ dbgWarn('caught:',e); } },6500);
+  }catch(e){ dbgWarn('caught:',e); }
+}
+/* ══════════ NIVEL PRO 4 — helpers (estructura) ══════════ */
+/* #21 — desktop sidebar rail (built once; mirrors the tabs) */
+const _RAIL_TABS=[['dash','\uD83D\uDCCA','Dashboard','Dashboard'],['clients','\uD83D\uDC65','Clientes','Clients'],['calendar','\uD83D\uDCC5','Agenda A/B','Schedule A/B'],['billing','\uD83D\uDCB5','Facturaci\u00f3n','Billing'],['visits','\uD83D\uDCDD','Visitas','Visits'],['summary','\uD83D\uDCCB','Summary','Summary'],['wctab','\uD83D\uDCA7','Water Change','Water Change']];
+function _buildRail(){
+  if(document.getElementById('rail')) return;
+  const es=LANG==='es';
+  const byId={}; _RAIL_TABS.forEach(t2=>byId[t2[0]]=t2);
+  const groups=[[es?'Operaci\u00f3n':'Operations',['dash','clients','calendar','wctab']],[es?'Administraci\u00f3n':'Admin',['billing','visits','summary']]];
+  const nav=document.createElement('nav');
+  nav.id='rail';
+  nav.innerHTML='<div class="r-logo">\uD83C\uDF42 Aspen Spas</div>'
+    +groups.map(g=>'<div class="r-sec">'+g[0]+'</div>'
+      +g[1].map(id=>{ const t2=byId[id]; return '<button data-tab="'+t2[0]+'" onclick="_bnavGo(\''+t2[0]+'\')">'+t2[1]+' '+(es?t2[2]:t2[3])+'</button>'; }).join('')).join('')
+    +'<div class="r-foot" id="rail-foot" onclick="switchUser()" title="'+(es?'Cambiar usuario':'Switch user')+'"></div>';
+  document.body.appendChild(nav);
+  _updRail('dash');
+  _updRailState();
+}
+function _updRail(tab){
+  document.querySelectorAll('#rail button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+}
+function _updRailState(){
+  const on=CURRENT_ROLE==='admin'||CURRENT_ROLE==='organizer';
+  document.body.classList.toggle('rail-on',!!on&&!(typeof PORTAL_TOKEN!=='undefined'&&PORTAL_TOKEN));
+  const f=document.getElementById('rail-foot');
+  if(f){
+    const who=CURRENT_ROLE==='organizer'?'Organizer':CURRENT_ROLE==='admin'?'Admin':'\u2014';
+    f.innerHTML='<span class="r-av">'+(who[0]||'?').toUpperCase()+'</span><span><b>'+who+'</b><small>'+(CURRENT_ROLE||'')+' \u00b7 v'+(typeof UI_VERSION!=='undefined'?UI_VERSION:'')+'</small></span>';
+  }
+}
+/* Header ⋯ overflow menu — reads the ORIGINAL buttons (single source of
+   truth for labels/handlers) and proxies the click. */
+const _HD_MORE_IDS=['btn-techs','btn-print','lang-btn','btn-backup','btn-restore','btn-cloud','btn-servicelog','btn-checklist','btn-ttsync'];
+function _tidyHeader(){
+  if(document.getElementById('hd-more-btn')) return;
+  const anchorBtn=document.getElementById('cmdk-btn');
+  if(!anchorBtn||!anchorBtn.parentNode) return;
+  const b=document.createElement('button');
+  b.id='hd-more-btn';
+  b.textContent='\u22EF';
+  b.title=LANG==='es'?'M\u00e1s herramientas':'More tools';
+  b.onclick=hdMoreToggle;
+  anchorBtn.parentNode.insertBefore(b,anchorBtn);
+}
+function hdMoreToggle(ev){
+  let m=document.getElementById('hd-more-menu');
+  if(!m){ m=document.createElement('div'); m.id='hd-more-menu'; document.body.appendChild(m); }
+  if(m.classList.contains('open')){ m.classList.remove('open'); return; }
+  m.innerHTML='';
+  _HD_MORE_IDS.forEach(id=>{
+    const orig=document.getElementById(id);
+    if(!orig) return;
+    const row=document.createElement('button');
+    const txt=(orig.textContent||'').trim();
+    const lbl=(orig.getAttribute('title')||'').trim();
+    row.innerHTML=esc(txt)+(lbl&&lbl!==txt?' <small style="color:var(--muted)">'+esc(lbl)+'</small>':'');
+    row.addEventListener('click',()=>{ m.classList.remove('open'); try{ orig.click(); }catch(e){ dbgWarn('caught:',e); } });
+    m.appendChild(row);
+  });
+  const r=(ev&&ev.target?ev.target:document.getElementById('hd-more-btn')).getBoundingClientRect();
+  m.style.top=(r.bottom+8)+'px';
+  m.style.left=Math.max(10,Math.min(r.left-120,window.innerWidth-250))+'px';
+  m.classList.add('open');
+  setTimeout(()=>{
+    const closer=e2=>{ if(!m.contains(e2.target)&&e2.target.id!=='hd-more-btn'){ m.classList.remove('open'); document.removeEventListener('click',closer); } };
+    document.addEventListener('click',closer);
+  },60);
+}
+/* #22 — contextual topbar actions per tab */
+function _updCtxActions(tab){
+  let box=document.getElementById('ctx-actions');
+  if(!box){
+    box=document.createElement('span');
+    box.id='ctx-actions';
+    const anchorBtn=document.getElementById('cmdk-btn');
+    if(anchorBtn&&anchorBtn.parentNode) anchorBtn.parentNode.insertBefore(box,anchorBtn); else return;
+  }
+  const es=LANG==='es';
+  const A={
+    dash:[['\u2699 '+(es?'Personalizar':'Customize'),'openDashCfg()','']],
+    clients:[['\uFF0B '+(es?'Nuevo':'New'),"om('madd')",'primary'],['\uD83D\uDCE5 Excel','exportExcelAll()','']],
+    calendar:[['\uD83D\uDDA8 '+(es?'Hojas de ruta':'Route sheets'),'printRouteSheets()','']],
+    billing:[['\uD83D\uDCC4 '+(es?'Reporte':'Report'),'printExecReport()','primary'],['\uD83D\uDCE5 Excel','exportExcelAll()','']],
+    visits:[],summary:[],wctab:[]
+  };
+  box.innerHTML=(A[tab]||[]).map(a=>'<button class="'+a[2]+'" onclick="'+a[1]+'">'+a[0]+'</button>').join('');
+}
+/* ══════════ NIVEL PRO 2 — helpers (tabla + presentación) ══════════ */
+/* #4 — inline cell editing */
+function inlineEdit(td,cid,field){
+  try{
+    if(td.querySelector('select')) return;
+    const c=C.find(x=>x.id===cid); if(!c) return;
+    const es=LANG==='es';
+    if(field==='day'&&c.week==='A&B'&&(c.dayA||c.dayB)){
+      // C8 — this client has DIFFERENT days per week; the quick editor would
+      // silently wipe that. Send the admin to the full editor instead.
+      showToast('\u26A0 '+(es?'Este cliente tiene d\u00edas distintos por semana \u2014 usa el editor':'This client has per-week days \u2014 use the editor'),'warn');
+      openEdit(cid);
+      return;
+    }
+    const opts=field==='day'?[['Mon',dln('Mon')],['Tue',dln('Tue')],['Wed',dln('Wed')],['Thu',dln('Thu')],['Fri',dln('Fri')]]
+      :field==='week'?[['A','A'],['B','B'],['A&B','A+B']]
+      :[['active',es?'Activo':'Active'],['paused',es?'Pausado':'Paused'],['cancelled',es?'Cancelado':'Cancelled']];
+    const cur=field==='day'?c.day:field==='week'?c.week:c.status;
+    const sel=document.createElement('select');
+    sel.style.cssText='font-family:inherit;font-size:12.5px;padding:3px 6px;border:2px solid var(--brand);border-radius:7px;background:var(--light);color:var(--text)';
+    opts.forEach(o=>{ const op=document.createElement('option'); op.value=o[0]; op.textContent=o[1]; if(o[0]===cur) op.selected=true; sel.appendChild(op); });
+    const prevHtml=td.innerHTML;
+    td.innerHTML=''; td.appendChild(sel); sel.focus();
+    let doneFlag=false;
+    const finish=apply=>{
+      if(doneFlag) return; doneFlag=true;
+      if(!apply){ td.innerHTML=prevHtml; return; }
+      const val=sel.value;
+      if(val===cur){ td.innerHTML=prevHtml; return; }
+      try{
+        if(field==='day') changeClientDay(cid,val);
+        else if(field==='week') changeClientWeek(cid,val);
+        else{
+          const prev=c.status;
+          c.status=val; c.lastModified=Date.now();
+          pushUndo((es?'Estado: ':'Status: ')+c.name+' \u2192 '+val,()=>{c.status=prev;c.lastModified=Date.now();});
+          saveData();
+        }
+      }catch(e){ dbgWarn('inline',e); }
+      rc(); try{ ra(); }catch(e){ dbgWarn('caught:',e); }
+    };
+    sel.addEventListener('change',()=>finish(true));
+    sel.addEventListener('blur',()=>finish(false));
+    sel.addEventListener('keydown',ev=>{ if(ev.key==='Escape'){ ev.stopPropagation(); finish(false); } });
+  }catch(e){ dbgWarn('inlineEdit',e); }
+}
+/* #7 — column picker (persisted) */
+const _COLPICK=[[3,'Tel\u00e9fono','Phone'],[4,'Email','Email'],[5,'Direcci\u00f3n','Address'],[9,'Sanitizador','Sanitizer'],[10,'\u00dalt. C.A.','Last W.C.'],[12,'Notas','Notes']];
+function _hiddenCols(){ try{ return JSON.parse(localStorage.getItem('aspen_cm_cols')||'[]'); }catch(e){ return []; } }
+function _applyCols(){
+  const hid=_hiddenCols();
+  let st2=document.getElementById('colstyle');
+  if(!st2){ st2=document.createElement('style'); st2.id='colstyle'; document.head.appendChild(st2); }
+  st2.textContent=hid.map(i=>'#pclients table th:nth-child('+(i+1)+'),#pclients table td:nth-child('+(i+1)+'){display:none}').join('');
+}
+function toggleColPicker(ev){
+  let pop=document.getElementById('col-pop');
+  if(!pop){
+    pop=document.createElement('div'); pop.id='col-pop'; document.body.appendChild(pop);
+  }
+  if(pop.classList.contains('open')){ pop.classList.remove('open'); return; }
+  const es=LANG==='es';
+  const hid=_hiddenCols();
+  pop.innerHTML='<b style="font-size:12px;color:var(--brand)">'+(es?'Columnas visibles':'Visible columns')+'</b>'
+    +_COLPICK.map(cdef=>'<label><input type="checkbox" '+(hid.includes(cdef[0])?'':'checked')+' onchange="colToggle('+cdef[0]+',this.checked)">'+(es?cdef[1]:cdef[2])+'</label>').join('');
+  const r=ev.target.getBoundingClientRect();
+  pop.style.top=(r.bottom+8)+'px';
+  pop.style.left=Math.max(10,Math.min(r.left,window.innerWidth-210))+'px';
+  pop.classList.add('open');
+  setTimeout(()=>{ const closer=e2=>{ if(!pop.contains(e2.target)&&e2.target.id!=='cols-btn'){ pop.classList.remove('open'); document.removeEventListener('click',closer); } }; document.addEventListener('click',closer); },50);
+}
+function colToggle(idx,visible){
+  let hid=_hiddenCols();
+  hid=visible?hid.filter(i=>i!==idx):hid.concat([idx]);
+  try{ localStorage.setItem('aspen_cm_cols',JSON.stringify(hid)); }catch(e){ dbgWarn('caught:',e); }
+  _applyCols();
+}
+/* #3 — saved filter views */
+function _svList(){ try{ return JSON.parse(localStorage.getItem('aspen_cm_views')||'[]'); }catch(e){ return []; } }
+function _renderSavedViews(){
+  const row=document.getElementById('sv-row'); if(!row) return;
+  const es=LANG==='es';
+  const views=_svList();
+  row.innerHTML=views.map((v,i)=>'<button class="sv-chip" onclick="applyView('+i+')">\u2B50 '+esc(v.name)+'<span class="sv-x" onclick="event.stopPropagation();deleteView('+i+')">\u2715</span></button>').join('')
+    +'<button class="sv-chip" style="border-style:dashed;color:var(--muted)" onclick="saveCurrentView()">\uFF0B '+(es?'Guardar vista':'Save view')+'</button>';
+}
+function saveCurrentView(){
+  const es=LANG==='es';
+  const name=prompt(es?'Nombre de la vista:':'View name:'); if(!name||!name.trim()) return;
+  const views=_svList();
+  views.push({name:name.trim().slice(0,26),s:document.getElementById('srch').value,ff:document.getElementById('ffreq').value,fs:document.getElementById('fstat').value,fd:document.getElementById('fday').value,sk:window._cSort.key,sd:window._cSort.dir});
+  try{ localStorage.setItem('aspen_cm_views',JSON.stringify(views.slice(0,10))); }catch(e){ dbgWarn('caught:',e); }
+  _renderSavedViews();
+  showToast('\u2B50 '+(es?'Vista guardada':'View saved'),'ok');
+}
+function applyView(i){
+  const v=_svList()[i]; if(!v) return;
+  document.getElementById('srch').value=v.s||'';
+  document.getElementById('ffreq').value=v.ff||'';
+  document.getElementById('fstat').value=v.fs||'';
+  document.getElementById('fday').value=v.fd||'';
+  window._cSort.key=v.sk||null; window._cSort.dir=v.sd||1;
+  pg=0; rc();
+}
+function deleteView(i){
+  const views=_svList(); views.splice(i,1);
+  try{ localStorage.setItem('aspen_cm_views',JSON.stringify(views)); }catch(e){ dbgWarn('caught:',e); }
+  _renderSavedViews();
+}
+/* #18 — metric count-up */
+function _animateMetrics(){
+  if(window._metsAnimated) return;
+  window._metsAnimated=true;
+  document.querySelectorAll('#mets .mval').forEach(el=>{
+    const target=parseInt(el.textContent,10);
+    if(!isFinite(target)||target<=0||target>5000) return;
+    const t0=performance.now();
+    const step=t2=>{
+      const p=Math.min((t2-t0)/450,1);
+      el.textContent=Math.round(target*(1-Math.pow(1-p,3)));
+      if(p<1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+/* #16 — voice search in the palette */
+function ckVoice(){
+  try{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){ showToast(LANG==='es'?'Voz no disponible en este navegador':'Voice not available in this browser','warn'); return; }
+    const rec=new SR();
+    rec.lang=LANG==='es'?'es-US':'en-US';
+    rec.interimResults=false;
+    const mic=document.getElementById('cmdk-mic');
+    if(mic) mic.textContent='\uD83D\uDD34';
+    rec.onresult=ev=>{
+      const txt=ev.results[0][0].transcript;
+      const inp=document.getElementById('cmdk-in');
+      if(inp){ inp.value=txt; ckRender(); }
+    };
+    rec.onend=()=>{ if(mic) mic.textContent='\uD83C\uDF99'; };
+    rec.onerror=()=>{ if(mic) mic.textContent='\uD83C\uDF99'; };
+    rec.start();
+  }catch(e){ dbgWarn('voice',e); }
+}
+/* #12 — client signature pad (feeds the existing photo pipeline) */
+let _sigCtx=null,_sigDrawn=false,_sigTarget=null;
+function openSignaturePad(cid,dateKey){
+  _sigTarget={cid:cid,dateKey:dateKey};
+  const ov=document.getElementById('sig-ov'); if(!ov) return;
+  ov.classList.add('open');
+  const cv=document.getElementById('sig-canvas');
+  const scale=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*scale; cv.height=220*scale;
+  _sigCtx=cv.getContext('2d');
+  _sigCtx.scale(scale,scale);
+  _sigCtx.fillStyle='#FFFFFF'; _sigCtx.fillRect(0,0,cv.width,cv.height);
+  _sigCtx.strokeStyle='#2C2418'; _sigCtx.lineWidth=2.4; _sigCtx.lineCap='round'; _sigCtx.lineJoin='round';
+  _sigDrawn=false;
+  if(!cv._wired){
+    cv._wired=true;
+    let drawing=false;
+    const pos=ev=>{ const r=cv.getBoundingClientRect(); return [ev.clientX-r.left,ev.clientY-r.top]; };
+    cv.addEventListener('pointerdown',ev=>{ drawing=true; _sigDrawn=true; const p=pos(ev); _sigCtx.beginPath(); _sigCtx.moveTo(p[0],p[1]); cv.setPointerCapture(ev.pointerId); });
+    cv.addEventListener('pointermove',ev=>{ if(!drawing) return; const p=pos(ev); _sigCtx.lineTo(p[0],p[1]); _sigCtx.stroke(); });
+    cv.addEventListener('pointerup',()=>{ drawing=false; });
+  }
+  const t2=document.getElementById('sig-title');
+  const c=C.find(x=>x.id===cid);
+  if(t2) t2.textContent=(LANG==='es'?'Firma del cliente':'Client signature')+(c?' \u2014 '+c.name:'');
+}
+function sigClear(){ const cv=document.getElementById('sig-canvas'); if(_sigCtx&&cv){ _sigCtx.fillStyle='#FFFFFF'; _sigCtx.fillRect(0,0,cv.width,cv.height); _sigDrawn=false; } }
+function sigClose(){ const ov=document.getElementById('sig-ov'); if(ov) ov.classList.remove('open'); _sigTarget=null; }
+function sigSave(){
+  try{
+    if(!_sigDrawn||!_sigTarget){ showToast(LANG==='es'?'Dibuja la firma primero':'Draw the signature first','warn'); return; }
+    const cv=document.getElementById('sig-canvas');
+    const b64=cv.toDataURL('image/jpeg',0.8);
+    const cid=_sigTarget.cid, dateKey=_sigTarget.dateKey;
+    const backupKey=_chkPhotoKey(cid,dateKey,'signature');
+    try{ localStorage.setItem(backupKey,b64); }catch(e){ dbgWarn('caught:',e); }
+    const saved=_loadChkState(cid,dateKey)||{};
+    saved.photos=saved.photos||{};
+    saved.photos.signature=true;
+    _saveChkState(cid,dateKey,saved);
+    try{ _uploadChkPhoto(b64,cid,dateKey,'signature',backupKey); }catch(e){ dbgWarn('caught:',e); }
+    try{ logAudit('signature',cid+' \u00b7 '+dateKey); }catch(e){ dbgWarn('caught:',e); }
+    sigClose();
+    showToast('\u270D\uFE0F '+(LANG==='es'?'Firma guardada \u2014 saldr\u00e1 con las fotos de la visita':'Signature saved \u2014 stored with the visit photos'),'ok');
+  }catch(e){ dbgWarn('sig',e); }
+}
+/* #9 — executive quarterly report (print → Save as PDF) */
+function printExecReport(){
+  try{
+    const es=LANG==='es';
+    const curQ=document.getElementById('qsel')?document.getElementById('qsel').value:'';
+    const ac=C.filter(c=>c.status==='active');
+    let inv=0,paid=0,invN=0,paidN=0;
+    ac.forEach(c=>{ const b=BL[c.id]&&BL[c.id][curQ]; if(b&&b.i){ const a=parseFloat(b.a)||0; inv+=a; invN++; if(b.s==='paid'){ paid+=a; paidN++; } } });
+    const now=todayLocal();
+    const overdue=C.filter(c=>c.status==='active'&&c.nwc&&!c.wcN&&(parseLocalDate(c.nwc)||now)<now).length;
+    let visits=0;
+    const qStartMonth={Q1:0,Q2:3,Q3:6,Q4:9}[curQ.split(' ')[0]]||0;
+    const yr=Number(curQ.split(' ')[1])||now.getFullYear();
+    Object.keys(VL).forEach(cid=>Object.keys(VL[cid]||{}).forEach(dk=>{
+      const d2=parseLocalDate(dk); if(!d2) return;
+      if(d2.getFullYear()===yr&&d2.getMonth()>=qStartMonth&&d2.getMonth()<qStartMonth+3){
+        const v=VL[cid][dk]; if(v&&!v._deleted&&v.status==='done') visits++;
+      }
+    }));
+    const line=(l,v2,color)=>'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #E5DDD0;font-size:13px"><span>'+l+'</span><b'+(color?' style="color:'+color+'"':'')+'>'+v2+'</b></div>';
+    document.getElementById('exec-report').innerHTML='<div style="max-width:680px;margin:0 auto;padding:30px 10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #B5733A;padding-bottom:12px;margin-bottom:16px">'
+      +'<div><div style="font-family:Poppins,sans-serif;font-weight:300;letter-spacing:2px;font-size:22px">ASPEN SPAS</div><div style="color:#7A7060;font-size:12px">Chemical Maintenance \u2014 '+esc(curQ)+' '+(es?'Reporte ejecutivo':'Executive Report')+'</div></div>'
+      +'<span style="font-size:30px">\uD83C\uDF42</span></div>'
+      +line(es?'Clientes activos':'Active clients',ac.length)
+      +line(es?'Facturado \u2014 '+curQ:'Invoiced \u2014 '+curQ,fmtUSD(inv)+' ('+invN+')')
+      +line(es?'Cobrado':'Collected',fmtUSD(paid)+' ('+(inv?Math.round(paid/inv*100):0)+'%)','#16A34A')
+      +line(es?'Visitas realizadas en el trimestre':'Visits completed this quarter',visits)
+      +line(es?'Water changes vencidos':'Overdue water changes',overdue,overdue?'#DC2626':'#16A34A')
+      +'<div style="text-align:center;color:#A09888;font-size:10.5px;margin-top:22px">'+(es?'Generado':'Generated')+' '+new Date().toLocaleDateString(es?'es-US':'en-US',{month:'long',day:'numeric',year:'numeric'})+' \u00b7 aspenspas.com \u00b7 (314) 776-5050</div></div>';
+    document.body.classList.add('printing-exec');
+    setTimeout(()=>{ window.print(); setTimeout(()=>document.body.classList.remove('printing-exec'),500); },120);
+  }catch(e){ dbgWarn('exec report',e); }
+}
+/* #10 — TV mode for the shop monitor */
+let _tvT2=null,_tvIdx=0;
+function _tvSlides(){
+  const es=LANG==='es', now=todayLocal(), tk=_localDateKey();
+  let doneToday=0;
+  Object.keys(VL).forEach(cid=>{ const v=VL[cid]&&VL[cid][tk]; if(v&&!v._deleted&&v.status==='done') doneToday++; });
+  const wk=new Date(now); wk.setDate(wk.getDate()-7);
+  const wkKey=_localDateKey(wk);
+  let wkDone=0,wkAll=0;
+  Object.keys(VL).forEach(cid=>Object.keys(VL[cid]||{}).forEach(dk=>{ if(dk>=wkKey&&dk<=tk){ const v=VL[cid][dk]; if(v&&!v._deleted){ wkAll++; if(v.status==='done') wkDone++; } } }));
+  const overdue=C.filter(c=>c.status==='active'&&c.nwc&&!c.wcN&&(parseLocalDate(c.nwc)||now)<now).length;
+  const curQ=document.getElementById('qsel')?document.getElementById('qsel').value:'';
+  let inv=0;
+  C.forEach(c=>{ const b=BL[c.id]&&BL[c.id][curQ]; if(b&&b.i) inv+=parseFloat(b.a)||0; });
+  return [
+    {n:String(doneToday),l:es?'Visitas completadas hoy':'Visits completed today'},
+    {n:wkAll?Math.round(wkDone/wkAll*100)+'%':'\u2014',l:es?'Cumplimiento \u00faltimos 7 d\u00edas':'Completion last 7 days'},
+    {n:String(overdue),l:'Water changes '+(es?'vencidos':'overdue')},
+    {n:inv>=1000?'$'+(inv/1000).toFixed(1)+'k':'$'+inv.toFixed(0),l:(es?'Facturado \u2014 ':'Invoiced \u2014 ')+curQ}
+  ];
+}
+function openTvMode(){
+  const ov=document.getElementById('tv-ov'); if(!ov) return;
+  ov.innerHTML='<div id="tv-brand">ASPEN SPAS</div><div id="tv-clock"></div><div id="tv-num"></div><div id="tv-lbl"></div><div id="tv-dots"><span></span><span></span><span></span><span></span></div>';
+  ov.classList.add('open');
+  try{ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); }catch(e){ dbgWarn('caught:',e); }
+  _tvIdx=0;
+  const paint=()=>{
+    const s=_tvSlides();
+    const sl=s[_tvIdx%s.length];
+    document.getElementById('tv-num').textContent=sl.n;
+    document.getElementById('tv-lbl').textContent=sl.l;
+    document.querySelectorAll('#tv-dots span').forEach((d2,i)=>d2.classList.toggle('on',i===_tvIdx%s.length));
+    document.getElementById('tv-clock').textContent=new Date().toLocaleTimeString(LANG==='es'?'es-US':'en-US',{hour:'numeric',minute:'2-digit'});
+  };
+  paint();
+  _tvT2=setInterval(()=>{ _tvIdx++; paint(); },12000);
+}
+function closeTvMode(){
+  const ov=document.getElementById('tv-ov'); if(ov) ov.classList.remove('open');
+  clearInterval(_tvT2);
+  try{ document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen(); }catch(e){ dbgWarn('caught:',e); }
+}
+/* ══════════ NIVEL PRO 2 — helpers (campo + gestión) ══════════ */
+/* #8 — consistent color per technician, everywhere */
+const _TECH_PAL=['#B5733A','#1C8FA8','#7C3AED','#16A34A','#DC2626','#D4860A','#2563EB','#DB2777','#0D9488','#7A4E1E'];
+function techColor(name){
+  const s=String(name||'?');
+  let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+  return _TECH_PAL[h%_TECH_PAL.length];
+}
+/* #11 — full day route in Google Maps (multi-stop) */
+function openDayRoute(){
+  try{
+    const today=_techViewedDate();
+    const dateKey=_localDateKey(today);
+    const wt=(typeof _techWeek==='function')?_techWeek():null;
+    // Rebuild the same ordered list the view shows: pending first is not
+    // needed — Maps wants the physical stop order (1,2,3…).
+    const cards=Array.from(document.querySelectorAll('.tech-card'));
+    const ids=cards.map(el=>Number(el.dataset.cid));
+    const addrs=ids.map(id=>{const c=C.find(x=>x.id===id);return c&&c.addr?c.addr:null;}).filter(Boolean);
+    if(addrs.length<1){ showToast(LANG==='es'?'Sin direcciones para la ruta':'No addresses for a route','warn'); return; }
+    // C6 — Google Maps silently truncates routes beyond ~10 waypoints; split
+    // long days into two legs instead of losing the last houses.
+    const first=addrs.slice(0,10), rest=addrs.slice(10);
+    window.open('https://www.google.com/maps/dir/'+first.map(a=>encodeURIComponent(a)).join('/'),'_blank','noopener');
+    if(rest.length){
+      showToast('\uD83D\uDDFA '+(LANG==='es'?'D\u00eda largo \u2014 ruta dividida en 2 partes':'Long day \u2014 route split in 2 parts'),'ok');
+      setTimeout(async()=>{
+        const ok2=await showConfirm(LANG==='es'?'Abrir la 2\u00aa parte de la ruta ('+rest.length+' paradas)?':'Open route part 2 ('+rest.length+' stops)?');
+        if(ok2) window.open('https://www.google.com/maps/dir/'+encodeURIComponent(first[first.length-1])+'/'+rest.map(a=>encodeURIComponent(a)).join('/'),'_blank','noopener');
+      },600);
+    }
+    try{ logAudit('dayRoute',dateKey+' \u00b7 '+addrs.length+' stops'); }catch(e){ dbgWarn('caught:',e); }
+  }catch(e){ dbgWarn('route',e); }
+}
+/* #20 — today's hourly weather for St. Louis (open-meteo, keyless, cached 30 min) */
+const _WX_CODE={0:'\u2600\uFE0F',1:'\uD83C\uDF24',2:'\u26C5',3:'\u2601\uFE0F',45:'\uD83C\uDF2B',48:'\uD83C\uDF2B',51:'\uD83C\uDF26',53:'\uD83C\uDF26',55:'\uD83C\uDF27',61:'\uD83C\uDF27',63:'\uD83C\uDF27',65:'\uD83C\uDF27',66:'\uD83C\uDF28',71:'\uD83C\uDF28',73:'\uD83C\uDF28',75:'\u2744\uFE0F',80:'\uD83C\uDF26',81:'\uD83C\uDF27',82:'\u26C8',95:'\u26C8',96:'\u26C8',99:'\u26C8'};
+async function _loadTechWeather(){
+  const box=document.getElementById('tech-wx');
+  if(!box) return;
+  // C3 — back off after a failure: without this the 2.5s watcher re-hit the
+  // API forever on a field phone with a bad signal.
+  if(window._wxFail&&Date.now()-window._wxFail<600000) return;
+  try{
+    const cached=window._wxCache;
+    if(cached&&Date.now()-cached.t<1800000){ box.innerHTML=cached.html; return; }
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=38.63&longitude=-90.24&hourly=temperature_2m,precipitation_probability,weather_code&temperature_unit=fahrenheit&forecast_days=1&timezone=America%2FChicago');
+    const d=await r.json();
+    const hrs=d.hourly&&d.hourly.time?d.hourly.time:[];
+    const nowH=new Date().getHours();
+    const cells=[];
+    for(let i=0;i<hrs.length&&cells.length<5;i++){
+      const h=Number(hrs[i].slice(11,13));
+      if(h<nowH||h>19) continue;
+      const t2=Math.round(d.hourly.temperature_2m[i]);
+      const pp=d.hourly.precipitation_probability?d.hourly.precipitation_probability[i]:0;
+      const ic=_WX_CODE[d.hourly.weather_code[i]]||'\u26C5';
+      const rain=pp>=40;
+      cells.push('<div style="background:'+(rain?'linear-gradient(160deg,#4A5568,#2D3748)':'linear-gradient(160deg,#134A63,#1C8FA8)')+';color:#FFF;border-radius:10px;padding:7px 10px;min-width:70px;text-align:center;font-size:11px;flex-shrink:0">'
+        +'<span style="font-size:17px;display:block">'+ic+'</span><b style="font-size:15px;font-family:Poppins">'+t2+'\u00b0</b><br>'+(h>12?(h-12)+' PM':h+' AM')+(rain?'<br>\uD83D\uDCA7'+pp+'%':'')+'</div>');
+    }
+    if(!cells.length){ box.innerHTML=''; return; }
+    const html='<div style="display:flex;gap:7px;overflow-x:auto;padding:2px 0">'+cells.join('')+'</div>';
+    window._wxCache={t:Date.now(),html:html};
+    box.innerHTML=html;
+    window._wxFail=null;
+  }catch(e){ dbgWarn('weather',e); window._wxFail=Date.now(); box.innerHTML='<span style="font-size:10.5px;color:#81786E"></span>'; }
+}
+/* #17 — visible offline bar with pending-changes queue */
+function _updOfflineBar(){
+  let bar=document.getElementById('off-bar');
+  const offline=!navigator.onLine||(window._fbWasConnected&&!fbConnected);
+  if(!offline){
+    if(bar){ bar.remove(); if(window._wasOffline){ window._wasOffline=false; showToast('\u2713 '+(LANG==='es'?'Conexi\u00f3n restaurada \u2014 cambios sincronizados':'Back online \u2014 changes synced'),'ok'); } }
+    return;
+  }
+  window._wasOffline=true;
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='off-bar';
+    bar.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99970;background:#7A2828;color:#FFE1E1;padding:8px 14px;font:600 13px "Source Sans 3",sans-serif;display:flex;align-items:center;gap:10px;justify-content:center';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML='\uD83D\uDCE1 '+(LANG==='es'?'Sin conexi\u00f3n \u2014 trabajando localmente':'Offline \u2014 working locally')
+    +(window._fbDirty?' <span style="background:rgba(255,255,255,.15);border-radius:12px;padding:1px 9px;font-size:11px">'+(LANG==='es'?'cambios en cola':'changes queued')+'</span>':'');
+}
+/* #14 — dated reminders (stored on the client → sync for free) */
+function addClientReminder(cid){
+  const c=C.find(x=>x.id===cid); if(!c) return;
+  const es=LANG==='es';
+  const txt=prompt(es?'Recordatorio para '+c.name+':':'Reminder for '+c.name+':'); if(!txt||!txt.trim()) return;
+  const due=prompt(es?'Fecha (YYYY-MM-DD):':'Due date (YYYY-MM-DD):',_localDateKey());
+  if(!due||!/^\d{4}-\d{2}-\d{2}$/.test(due.trim())){ showToast(es?'Fecha inv\u00e1lida':'Invalid date','warn'); return; }
+  c.reminders=c.reminders||[];
+  c.reminders.push({t:txt.trim().slice(0,140),due:due.trim(),who:CURRENT_ROLE==='admin'?'Admin':(CURRENT_TECH||CURRENT_ROLE||'?'),at:Date.now(),done:false});
+  c.lastModified=Date.now();
+  saveData();
+  try{ logAudit('reminder',c.name+' \u00b7 '+due.trim()); }catch(e){ dbgWarn('caught:',e); }
+  showToast('\u23F0 '+(es?'Recordatorio guardado':'Reminder saved'),'ok');
+  try{ if(typeof _cdRender==='function'&&document.body.classList.contains('drawer-open')) _cdRender(); }catch(e){ dbgWarn('caught:',e); }
+}
+function doneClientReminder(cid,idx){
+  const c=C.find(x=>x.id===cid); if(!c||!c.reminders||!c.reminders[idx]) return;
+  c.reminders[idx].done=true;
+  c.lastModified=Date.now();
+  saveData();
+  try{ _updBellBadge(); }catch(e){ dbgWarn('caught:',e); }
+  try{ if(typeof _cdRender==='function'&&document.body.classList.contains('drawer-open')) _cdRender(); }catch(e){ dbgWarn('caught:',e); }
+}
+function _dueReminders(){
+  const today=_localDateKey(), out=[];
+  C.forEach(c=>(c.reminders||[]).forEach((r,i)=>{ if(!r.done&&r.due<=today) out.push({c:c,r:r,i:i}); }));
+  return out.sort((a,b)=>String(a.r.due).localeCompare(String(b.r.due)));
+}
+/* #2 — tech performance insights (last 30 days, real VL data) */
+function _renderTechInsights(){
+  const box=document.getElementById('insights-body'); if(!box) return;
+  const es=LANG==='es';
+  const cutoff=_localDateKey(new Date(Date.now()-30*86400000));
+  const stats={};
+  Object.keys(VL).forEach(cid=>Object.keys(VL[cid]||{}).forEach(dk=>{
+    if(dk<cutoff) return;
+    const v=VL[cid][dk];
+    if(!v||v._deleted||v.status!=='done') return;
+    const tech=(v.tech||(v.checklist&&v.checklist.tech)||'').trim()||'\u2014';
+    const s=stats[tech]=stats[tech]||{n:0,chk:0,chkTot:0,ph:0};
+    s.n++;
+    const chk=v.checklist||{};
+    const tot=chk.total||0, done=chk.checked||Object.values(chk.items||{}).filter(Boolean).length;
+    if(tot){ s.chk+=done; s.chkTot+=tot; }
+    s.ph+=Object.values(chk.photos||{}).filter(p=>typeof p==='string').length+(chk._photosStripped||0);
+  }));
+  const rows=Object.entries(stats).filter(([t2])=>t2!=='\u2014').sort((a,b)=>b[1].n-a[1].n).slice(0,8);
+  if(!rows.length){ box.innerHTML='<div style="color:var(--muted);font-size:12.8px;padding:6px 0">'+(es?'Sin visitas en los \u00faltimos 30 d\u00edas':'No visits in the last 30 days')+'</div>'; return; }
+  const max=rows[0][1].n||1;
+  box.innerHTML=rows.map(([tech,s])=>{
+    const col=techColor(tech);
+    const ini=tech.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const pct=s.chkTot?Math.round(s.chk/s.chkTot*100):null;
+    return '<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;font-size:12.5px">'
+      +'<span style="width:26px;height:26px;border-radius:50%;background:'+col+';color:#FFF;font-weight:700;font-size:10.5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">'+esc(ini)+'</span>'
+      +'<b style="min-width:76px">'+esc(tech)+'</b>'
+      +'<div style="flex:1;height:18px;background:#EDE4D6;border-radius:9px;overflow:hidden"><div style="width:'+Math.max(8,Math.round(s.n/max*100))+'%;height:100%;background:'+col+';border-radius:9px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;color:#FFF;font-size:10px;font-weight:700">'+s.n+'</div></div>'
+      +'<small style="color:var(--muted);min-width:86px;text-align:right">'+(pct!=null?pct+'% \u2713 \u00b7 ':'')+s.ph+' \uD83D\uDCF7</small></div>';
+  }).join('');
+  /* #19 — month vs previous month comparison */
+  const cmp=document.getElementById('insights-cmp');
+  if(cmp){
+    const now=new Date();
+    const mk=d2=>d2.toISOString().slice(0,7);
+    const thisM=mk(now), lastM=mk(new Date(now.getFullYear(),now.getMonth()-1,15));
+    const cnt={[thisM]:{v:0,wc:0},[lastM]:{v:0,wc:0}};
+    Object.keys(VL).forEach(cid=>Object.keys(VL[cid]||{}).forEach(dk=>{
+      const m=dk.slice(0,7);
+      if(!cnt[m]) return;
+      const v=VL[cid][dk];
+      if(v&&!v._deleted&&v.status==='done') cnt[m].v++;
+    }));
+    C.forEach(c=>{ if(c.lwc&&cnt[c.lwc.slice(0,7)]) cnt[c.lwc.slice(0,7)].wc++; });
+    let newC=0,newL=0;
+    C.forEach(c=>{ if(c.id>1e12){ const m=mk(new Date(c.id)); if(m===thisM)newC++; if(m===lastM)newL++; } });
+    const cell=(lbl,cur,prev)=>{
+      const d2=cur-prev, up=d2>=0;
+      return '<div style="background:var(--light);border:1px solid var(--border);border-radius:11px;padding:10px;text-align:center;flex:1;min-width:100px">'
+        +'<small style="color:var(--muted);font-size:10.8px">'+lbl+'</small>'
+        +'<b style="font-family:Poppins;font-size:21px;display:block">'+cur+'</b>'
+        +'<span style="color:'+(up?'#16A34A':'#DC2626')+';font-weight:700;font-size:11px">'+(up?'\u25B2 +':'\u25BC ')+d2+' '+(es?'vs mes ant.':'vs last mo.')+'</span></div>';
+    };
+    cmp.innerHTML='<div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px">'
+      +cell(es?'Visitas este mes':'Visits this month',cnt[thisM].v,cnt[lastM].v)
+      +cell(es?'Clientes nuevos':'New clients',newC,newL)
+      +cell('Water changes',cnt[thisM].wc,cnt[lastM].wc)+'</div>';
+  }
+}
+/* #15 — per-client change history (from the audit trail) */
+function _cdLoadHistory(c){
+  const el=document.getElementById('cd-hist');
+  if(!el||!fbDB){ if(el) el.innerHTML='<div style="color:var(--muted)">Sin conexi\u00f3n</div>'; return; }
+  fbDB.ref('aspen_spas/audit').limitToLast(300).once('value').then(s=>{
+    const d=s.val()||{};
+    const nm=String(c.name||'').toLowerCase();
+    const rows=Object.values(d).filter(r=>r&&String(r.detail||'').toLowerCase().includes(nm)).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,30);
+    const el2=document.getElementById('cd-hist'); if(!el2) return;
+    if(!rows.length){ el2.innerHTML='<div class="empty-state"><div class="es-ico">\uD83D\uDCDC</div><h4>'+(LANG==='es'?'Sin historial registrado':'No history recorded')+'</h4><p style="font-size:11.5px">'+(LANG==='es'?'Solo acciones desde que se activ\u00f3 el registro':'Only actions since audit logging began')+'</p></div>'; return; }
+    el2.innerHTML=rows.map(r=>{
+      const when=r.at?new Date(r.at).toLocaleString(LANG==='es'?'es-US':'en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      return '<div style="display:flex;gap:8px;font-size:12.4px;padding:6px 0;border-bottom:1px dashed var(--border)"><small style="color:var(--muted);min-width:100px">'+esc(when)+'</small><b>'+esc(r.who||'?')+'</b><span style="color:var(--brand)">'+esc(r.action||'')+'</span></div>';
+    }).join('');
+  }).catch(e=>{ dbgWarn('hist',e); });
+}
 /* ══════════ TECH VIEW FIXES v1.3.1 — helpers ══════════ */
 window._roOpen=new Set();
 function toggleRoDetails(btn,ev){
@@ -9527,6 +10700,7 @@ function _scheduleTechRerender(){
       const y=window.scrollY;
       renderTechView();
       window.scrollTo(0,y);
+      try{ _loadTechWeather(); }catch(e){ dbgWarn('caught:',e); }
     }catch(e){ dbgWarn('caught:',e); }
   },1200);
 }
@@ -9543,7 +10717,7 @@ function _lbShow(){
   const u=_lbList[_lbIdx];
   const img=document.getElementById('lb-img'); if(img) img.src=u;
   const op=document.getElementById('lb-open');
-  if(op){ op.href=u; op.style.display=u.indexOf('https://')===0?'block':'none'; }
+  if(op){ op.href=u; op.textContent='\u2197 '+(LANG==='es'?'Ver original':'Open original'); op.style.display=u.indexOf('https://')===0?'block':'none'; }
   const ct=document.getElementById('lb-count');
   if(ct) ct.textContent=(_lbIdx+1)+' / '+_lbList.length;
   document.querySelectorAll('#lb-ov .lb-nav').forEach(b=>b.style.display=_lbList.length>1?'block':'none');
@@ -9664,7 +10838,7 @@ function _cdRender(){
     :d&&d<now&&!c.wcN?['#DC2626',(es?'C.A. vencido':'W.C. overdue')]
     :d&&((d-now)/86400000)<=30?['#F59E0B',(es?'C.A. pr\u00f3ximo':'W.C. soon')]
     :['#16A34A',es?'Al d\u00eda':'Up to date'];
-  const tabs=[['info','Info'],['timeline','Timeline'],['visitas',es?'Visitas':'Visits'],['fact',es?'Facturaci\u00f3n':'Billing'],['fotos',es?'Fotos':'Photos'],['citas',es?'Citas':'Appts']];
+  const tabs=[['info','Info'],['timeline','Timeline'],['quimica',es?'Qu\u00edmica':'Chemistry'],['visitas',es?'Visitas':'Visits'],['fact',es?'Facturaci\u00f3n':'Billing'],['fotos',es?'Fotos':'Photos'],['citas',es?'Citas':'Appts'],['hist',es?'Historial':'History']];
   box.innerHTML='<div class="cd-head">'
     +'<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap">'
     +'<span class="cav" style="width:40px;height:40px;font-size:14px">'+ini+'</span>'
@@ -9691,7 +10865,15 @@ function _cdBody(c){
       ['\uD83D\uDCC5',(es?'D\u00eda: ':'Day: ')+(c.day||'\u2014')],
       ['\uD83D\uDCA7',(es?'\u00daltimo C.A.: ':'Last W.C.: ')+(c.lwc||'\u2014')+' \u00b7 '+(es?'Pr\u00f3ximo: ':'Next: ')+(c.nwc||'\u2014')]
     ];
+    const rems=(c.reminders||[]).filter(r=>!r.done);
+    const remHtml='<div style="margin-top:12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="color:var(--brand);font-size:12.5px">\u23F0 '+(es?'Recordatorios':'Reminders')+'</b><button class="btn" style="font-size:11px;padding:2px 9px" onclick="addClientReminder('+c.id+')">\uFF0B</button></div>'
+      +(rems.length?rems.map((r,ri)=>{
+        const overdue=r.due<_localDateKey();
+        const realIdx=(c.reminders||[]).indexOf(r);
+        return '<div style="display:flex;gap:8px;align-items:flex-start;background:'+(overdue?'#FEE2E2':'#FFF8EE')+';border:1px solid '+(overdue?'#FECACA':'#F2DDCB')+';border-radius:9px;padding:8px 10px;font-size:12.4px;margin-bottom:6px"><span>\u23F0</span><div style="flex:1"><b>'+esc(r.t)+'</b><br><small style="color:'+(overdue?'#991B1B':'var(--muted)')+'">'+(overdue?(es?'venci\u00f3 ':'overdue '):'')+esc(r.due)+' \u00b7 '+esc(r.who||'')+'</small></div><button class="btn btn-green" style="font-size:11px" onclick="doneClientReminder('+c.id+','+realIdx+')">\u2713</button></div>';
+      }).join(''):'<div style="font-size:11.8px;color:var(--muted)">'+(es?'Sin recordatorios pendientes':'No pending reminders')+'</div>')+'</div>';
     return rows.map(r=>'<div style="padding:7px 0;border-bottom:1px dashed var(--border)">'+r[0]+' '+esc(r[1])+'</div>').join('')
+      +remHtml
       +(c.notes?'<div style="margin-top:12px;background:var(--warm2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12.8px"><b style="color:var(--brand)">'+(es?'Notas':'Notes')+'</b><br>'+esc(c.notes)+'</div>':'');
   }
   if(_cdTab==='timeline'){
@@ -9734,6 +10916,13 @@ function _cdBody(c){
     window._cdPh=ph.slice(0,40).map(p=>p.u);
     return '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px">'
       +ph.slice(0,40).map((p,i)=>'<a href="javascript:void 0" onclick="openLightbox(window._cdPh,'+i+')" style="line-height:0;border-radius:9px;overflow:hidden;border:1px solid var(--border);cursor:zoom-in"><img loading="lazy" src="'+esc(p.u)+'" style="width:100%;height:100px;object-fit:cover;display:block" title="'+esc(p.d)+'"></a>').join('')+'</div>';
+  }
+  if(_cdTab==='quimica'){
+    return _cdChemistry(c);
+  }
+  if(_cdTab==='hist'){
+    setTimeout(()=>{ try{ _cdLoadHistory(c); }catch(e){ dbgWarn('caught:',e); } },50);
+    return '<div id="cd-hist" style="color:var(--muted);font-size:12.8px">\u23F3 '+(es?'Cargando historial\u2026':'Loading history\u2026')+'</div>';
   }
   if(_cdTab==='citas'){
     const arr=TAPPTS[c.id]||[];
@@ -9786,13 +10975,29 @@ function renderTechKanban(){
       +'<h5>'+col[1]+' <span>'+items.length+'</span></h5>'
       +items.map(x=>{
         const cName=(C.find(cl=>cl.id===Number(x.cid)||cl.id===x.cid)||{}).name||('#'+x.cid);
+        const tcol=techColor(x.a.tech||'');
         return '<div class="tk-card" draggable="true" ondragstart="event.dataTransfer.setData(\'text/plain\',\''+x.cid+'|'+x.i+'\')"'
-          +(col[0]==='done'?' style="opacity:.65"':'')+'>'
+          +' style="border-left:4px solid '+tcol+(col[0]==='done'?';opacity:.65':'')+'">'
           +'<b onclick="vc('+Number(x.cid)+')">'+esc(cName)+'</b>'
           +esc(x.a.type||'')+(x.a.desc?' \u2014 '+esc(String(x.a.desc).slice(0,44)):'')
-          +'<small><br>'+esc(x.a.date||'')+(x.a.time?' '+esc(x.a.time):'')+(x.a.tech?' \u00b7 '+esc(x.a.tech):'')+'</small></div>';
+          +'<small><br>'+esc(x.a.date||'')+(x.a.time?' '+esc(x.a.time):'')+(x.a.tech?' \u00b7 <b style="color:'+tcol+'">'+esc(x.a.tech)+'</b>':'')+'</small>'
+          +(col[0]!=='done'?'<button class="btn" style="font-size:10.3px;padding:2px 9px;margin-top:5px" onclick="event.stopPropagation();tkAdvance(\''+x.cid+'\','+x.i+')" title="'+(es?'Pasar a la siguiente columna':'Move to next column')+'">'+(es?'Avanzar \u00bb':'Advance \u00bb')+'</button>':'')
+          +'</div>';
       }).join('')+'</div>';
   }).join('');
+}
+/* M1 — touch fallback: HTML5 drag doesn't exist on iPad/phones */
+function tkAdvance(cid,idx){
+  try{
+    if(!TAPPTS[cid]||!TAPPTS[cid][idx]) return;
+    const cur=TAPPTS[cid][idx].status||'scheduled';
+    const next=cur==='scheduled'?'pending':'done';
+    TAPPTS[cid][idx].status=next;
+    _touchTappts(cid);
+    saveData();
+    renderTechKanban();
+    try{ ra(); }catch(e){ dbgWarn('caught:',e); }
+  }catch(e){ dbgWarn('caught:',e); }
 }
 function tkDrop(ev,colEl){
   ev.preventDefault();
@@ -9872,21 +11077,36 @@ function openSystemStatus(){
     +row(bDays==null?'#DC2626':bDays>=7?'#F59E0B':'#16A34A','Backup',(bDays==null?(es?'nunca descargado':'never downloaded'):bDays===0?(es?'hoy':'today'):(es?'hace ':'')+bDays+' d'+(es?'\u00edas':' ago')))
     +row('#16A34A',(es?'Datos locales':'Local data'),C.length+(es?' clientes \u00b7 ':' clients \u00b7 ')+visits+(es?' visitas \u00b7 ':' visits \u00b7 ')+lsKB+' KB')
     +row('#16A34A',(es?'Versi\u00f3n':'Version'),'v'+UI_VERSION)
+    +'<div id="sys-pres"></div>'
+    +'<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px"><button class="btn" onclick="openDataQuality()">\uD83E\uDDF9 '+(es?'Calidad de datos':'Data quality')+'</button><button class="btn" onclick="openTrash()">\uD83D\uDDD1 '+(es?'Papelera':'Trash')+'</button></div>'
     +'<div style="display:flex;justify-content:space-between;margin-top:12px"><button class="btn" id="sys-repair-btn" onclick="repairAllPhotos()" title="'+(es?'Reconecta fotos perdidas desde Storage (30 d\u00edas)':'Relink lost photos from Storage (30 days)')+'">\uD83E\uDDE9 '+(es?'Reparar fotos':'Repair photos')+'</button><button class="btn" onclick="document.getElementById(\'sys-ov\').classList.remove(\'open\')">'+(es?'Cerrar':'Close')+'</button></div>';
   ov.classList.add('open');
   try{
     if(fbDB){
       Promise.all([fbDB.ref('aspen_spas/devices').once('value'),fbDB.ref('aspen_spas/admins').once('value')]).then(r=>{
-        const nd=Object.keys(r[0].val()||{}).length, na=Object.keys(r[1].val()||{}).length;
+        const devs=r[0].val()||{};
+        const nd=Object.keys(devs).length, na=Object.keys(r[1].val()||{}).length;
         const el=document.getElementById('sys-dev');
         if(el) el.textContent=nd+(es?' activos \u00b7 ':' active \u00b7 ')+na+' admin';
+        // #33 — live team presence
+        const pl=document.getElementById('sys-pres');
+        if(pl){
+          const rows=Object.values(devs).sort((a,b)=>String(b.lastSeen||'').localeCompare(String(a.lastSeen||''))).slice(0,8);
+          pl.innerHTML='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700;margin:10px 0 4px">'+(es?'Equipo':'Team')+'</div>'
+            +rows.map(dv=>{
+              const on=dv.online===true;
+              const ago=dv.lastSeen?Math.round((Date.now()-new Date(dv.lastSeen).getTime())/60000):null;
+              const agoTxt=on?(es?'\u25CF ahora':'\u25CF now'):(ago==null?'\u2014':ago<60?(es?'hace ':'')+ago+' min':(es?'hace ':'')+Math.round(ago/60)+' h');
+              return '<div class="pres-row"><span class="pres-dot" style="background:'+(on?'#16A34A':'#D6CDB8')+'"></span><b>'+esc(dv.who||'?')+'</b><small style="color:var(--muted)">\u00b7 '+esc(dv.role||'')+' \u00b7 '+esc(dv.platform||'')+'</small><small style="margin-left:auto;color:'+(on?'#16A34A':'var(--muted)')+';font-weight:700">'+agoTxt+'</small></div>';
+            }).join('');
+        }
       }).catch(e=>dbgWarn('caught:',e));
     }
   }catch(e){ dbgWarn('caught:',e); }
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.3.0';
+const UI_VERSION='1.5.0';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -9924,6 +11144,7 @@ function _updUserChip(){
     document.getElementById('u-role').textContent=CURRENT_ROLE;
     document.getElementById('u-av').textContent=(who[0]||'?').toUpperCase();
     chip.style.display='inline-flex';
+    try{ _updRailState(); }catch(e){ dbgWarn('caught:',e); }
   }catch(e){ dbgWarn('caught:',e); }
 }
 /* P1 — command palette */
@@ -9955,7 +11176,10 @@ function ckRender(){
     {ic:'\uD83D\uDCDD',t:es?'Visitas':'Visits',k:'5',run:()=>{ckClose();_bnavGo('visits');}},
     {ic:'\uD83D\uDCA7',t:'Water Change',k:'7',run:()=>{ckClose();_bnavGo('wctab');}},
     {ic:'\uD83C\uDF19',t:es?'Modo oscuro':'Dark mode',k:'D',run:()=>{ckClose();toggleDarkMode();}},
-    {ic:'\uD83E\uDE7A',t:es?'Estado del sistema':'System status',run:()=>{ckClose();openSystemStatus();}}
+    {ic:'\uD83E\uDE7A',t:es?'Estado del sistema':'System status',run:()=>{ckClose();openSystemStatus();}},
+    {ic:'\uD83D\uDCFA',t:es?'Modo TV (monitor del taller)':'TV mode (shop monitor)',run:()=>{ckClose();openTvMode();}},
+    {ic:'\uD83E\uDDF9',t:es?'Calidad de datos':'Data quality',run:()=>{ckClose();openDataQuality();}},
+    {ic:'\uD83D\uDDD1',t:es?'Papelera':'Trash',run:()=>{ckClose();openTrash();}}
   ].filter(a=>!q||a.t.toLowerCase().includes(q));
   acts.forEach(a=>items.push(Object.assign({grp:es?'Acciones':'Actions'},a)));
   _ckItems=items; _ckIdx=0;
@@ -9993,6 +11217,12 @@ function _bellData(){
         const amt=unpaid.reduce((s,c)=>s+(parseFloat(BL[c.id][curQ].a)||0),0);
         items.push({ic:'\uD83D\uDCB5',t:unpaid.length+(es?' facturas sin pagar \u2014 ':' unpaid invoices \u2014 ')+curQ,s:'$'+amt.toFixed(0)+(es?' pendientes':' outstanding'),go:()=>_bnavGo('billing')});
       }
+    }
+  }catch(e){ dbgWarn('caught:',e); }
+  try{
+    const due=_dueReminders();
+    if(due.length){
+      items.push({ic:'\u23F0',t:due.length+(es?' recordatorio(s) para hoy':' reminder(s) due'),s:due[0].c.name+': '+due[0].r.t.slice(0,42),go:()=>{vc(due[0].c.id);}});
     }
   }catch(e){ dbgWarn('caught:',e); }
   try{
@@ -10124,12 +11354,26 @@ function _bnavMore(){
   if(s) s.classList.toggle('open');
 }
 /* V4 — Dark Pro */
-function toggleDarkMode(){
-  const on=document.body.classList.toggle('dark');
-  try{ localStorage.setItem('aspen_cm_dark',on?'1':'0'); }catch(e){ dbgWarn('caught:',e); }
+function _darkApply(mode){
+  const sys=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark=mode==='1'||(mode==='auto'&&sys);
+  document.body.classList.toggle('dark',dark);
   const b=document.getElementById('dark-toggle');
-  if(b) b.textContent=on?'\u2600\uFE0F':'\uD83C\uDF19';
+  if(b){ b.textContent=mode==='auto'?'\uD83C\uDF17':(dark?'\u2600\uFE0F':'\uD83C\uDF19'); b.title=mode==='auto'?(LANG==='es'?'Auto (sigue al sistema)':'Auto (follows system)'):(dark?(LANG==='es'?'Modo claro':'Light mode'):(LANG==='es'?'Modo oscuro':'Dark mode')); }
 }
+function toggleDarkMode(){
+  // #30 — three-state cycle: light → dark → auto (follows the system)
+  const cur=localStorage.getItem('aspen_cm_dark')||'0';
+  const next=cur==='0'?'1':cur==='1'?'auto':'0';
+  try{ localStorage.setItem('aspen_cm_dark',next); }catch(e){ dbgWarn('caught:',e); }
+  _darkApply(next);
+  showToast(next==='auto'?'\uD83C\uDF17 '+(LANG==='es'?'Modo autom\u00e1tico':'Auto mode'):next==='1'?'\uD83C\uDF19 '+(LANG==='es'?'Modo oscuro':'Dark mode'):'\u2600\uFE0F '+(LANG==='es'?'Modo claro':'Light mode'),'ok');
+}
+try{
+  window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+    if((localStorage.getItem('aspen_cm_dark')||'0')==='auto') _darkApply('auto');
+  });
+}catch(e){ dbgWarn('caught:',e); }
 /* V6 — "saving…" state for the cloud badge */
 function _setCloudSyncing(){
   const el=document.getElementById('cloud-ind');
@@ -10199,8 +11443,10 @@ function _registerDevice(){
     const ua=navigator.userAgent||'';
     const plat=/iPhone|iPad/.test(ua)?'iPhone/iPad':/Android/.test(ua)?'Android':/Mac/.test(ua)?'Mac':'PC';
     fbDB.ref('aspen_spas/devices/'+u.uid).update({
-      who:who, role:CURRENT_ROLE||'?', platform:plat, lastSeen:new Date().toISOString()
+      who:who, role:CURRENT_ROLE||'?', platform:plat, lastSeen:new Date().toISOString(), online:true
     }).catch(e=>dbgWarn('device registry',e));
+    // #33 — live presence: the green dot turns itself off when the tab closes
+    try{ fbDB.ref('aspen_spas/devices/'+u.uid+'/online').onDisconnect().set(false); }catch(e){ dbgWarn('caught:',e); }
   }catch(e){ dbgWarn('device registry',e); }
 }
 function _renderDeviceList(){
@@ -10263,6 +11509,7 @@ function saveToFirebase(){
 }
 function _saveToFirebaseNow(){
   _stfT=null;
+  try{ _updSaveInd(); }catch(e){ dbgWarn('caught:',e); }
   // Even if not connected, schedule a fail-safe release of fbSyncing in case the caller set it
   // (e.g. _techRecordVisit). Otherwise the local guard could stay locked when offline.
   if(!fbConnected||!fbRef){
@@ -11676,6 +12923,9 @@ function applyRole(){
   // Localize switch-user button
   const lbl=document.getElementById('switch-user-label');
   if(lbl) lbl.textContent = LANG==='es'?'Cambiar usuario':'Switch user';
+  // C1 — the new chrome (rail, user chip, FAB, contextual actions) must
+  // follow role changes immediately, not on the next reload / minute tick.
+  try{ if(typeof _updRailState==='function'){ _updRailState(); _updUserChip(); _updFab(typeof ctab!=='undefined'?ctab:'dash'); _updCtxActions(typeof ctab!=='undefined'?ctab:'dash'); _updSaveInd(); } }catch(e){ dbgWarn('caught:',e); }
 }
 
 // Show the role-selection overlay (called on first load + via switch-user)
@@ -11684,7 +12934,14 @@ function showRoleSelection(){
   if(typeof PORTAL_TOKEN!=='undefined'&&PORTAL_TOKEN)return;
   const card=document.getElementById('role-pick-card');
   if(!card)return;
+  try{ card.parentElement.style.background='linear-gradient(160deg,#2A211A 0%,#3A2A1C 100%)'; }catch(e){ dbgWarn('caught:',e); }
   card.innerHTML = `
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:36px;line-height:1">🍂</div>
+      <div style="font-family:'Poppins',sans-serif;font-weight:300;letter-spacing:3px;font-size:21px;color:#2A1C0F;margin-top:6px">ASPEN SPAS</div>
+      <div style="color:#B5733A;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Chemical Maintenance System</div>
+      <div style="color:#A09888;font-size:10px;margin-top:3px">v${typeof UI_VERSION!=='undefined'?UI_VERSION:''} · St. Louis, MO</div>
+    </div>
     <h2>${LANG==='es'?'¿Quién eres?':'Who are you?'}</h2>
     <div class="sub">${LANG==='es'?'Elige tu rol para continuar':'Choose your role to continue'}</div>
     <div class="role-pick-buttons">
@@ -12988,6 +14245,7 @@ function _renderChkEditable(c, dateKey){
     </button>
     <div class="tcc-chk-body">
       ${sectionsHtml}
+      <button type="button" class="tcc-sign-btn" onclick="openSignaturePad(${c.id},'${dateKey}')">✍️ ${LANG==='es'?'Firma del cliente (opcional)':'Client signature (optional)'}</button>
       <div class="tcc-chk-final${finalChecked?' checked':''}" onclick="toggleChkFinal(${c.id})">
         <div class="tcc-chk-box">✓</div>
         <div class="tcc-chk-final-text">${LANG==='es'?'Trabajo realizado satisfactoriamente':'Work completed satisfactorily'}</div>
@@ -14811,6 +16069,8 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
     </div>
     <div style="font-size:13px;color:#81786E;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
       <span>${ordered.length} ${LANG==='es'?'clientes':'clients'} · Semana ${wt}${overridden?' <span style="color:#D48F53;font-weight:700">('+(LANG==='es'?'manual':'manual')+')</span>':''}</span>
+      <button onclick="openDayRoute()" style="background:#134A63;border:none;color:#FFF;font:700 12px 'Source Sans 3',sans-serif;border-radius:8px;padding:6px 12px;cursor:pointer;margin-left:8px">🗺 ${LANG==='es'?'Abrir ruta del día':'Open day route'}</button>
+      <div id="tech-wx" style="flex-basis:100%;margin-top:8px"></div>
       ${switchLine}
     </div>
     ${cards}`;
@@ -15856,7 +17116,8 @@ document.addEventListener('keydown',e=>{
       return;
     }
     if(e.key==='Escape'){
-      ['bell-panel','kbd-ov','sys-ov'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('open'); });
+      ['bell-panel','kbd-ov','sys-ov','sig-ov','ctx-menu','dq-ov','tr-ov','dc-ov','hd-more-menu'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('open'); });
+      try{ if(document.getElementById('tv-ov')&&document.getElementById('tv-ov').classList.contains('open')) closeTvMode(); }catch(e){ dbgWarn('caught:',e); }
       const s=document.getElementById('bnav-more-sheet'); if(s) s.classList.remove('open');
       if(typeof closeClientDrawer==='function'&&document.body.classList.contains('drawer-open')) closeClientDrawer();
       return;
@@ -15873,6 +17134,12 @@ document.addEventListener('keydown',e=>{
     if(e.key==='?'){ const k=document.getElementById('kbd-ov'); if(k) k.classList.add('open'); return; }
   }catch(err){ dbgWarn('kbd',err); }
 });
+// #20 — weather loads whenever the tech view paints
+setInterval(()=>{ try{ if(CURRENT_ROLE==='tech'&&document.getElementById('tech-wx')&&!document.getElementById('tech-wx').innerHTML) _loadTechWeather(); }catch(e){ dbgWarn('caught:',e); } },2500);
+// #17 — offline bar
+window.addEventListener('offline',()=>{ try{ _updOfflineBar(); }catch(e){ dbgWarn('caught:',e); } });
+window.addEventListener('online',()=>{ try{ setTimeout(_updOfflineBar,800); }catch(e){ dbgWarn('caught:',e); } });
+setInterval(()=>{ try{ window._fbWasConnected=window._fbWasConnected||fbConnected; _updOfflineBar(); }catch(e){ dbgWarn('caught:',e); } },5000);
 // FIX — midnight rollover: a tech tab left open overnight kept recording
 // visits under YESTERDAY's dateKey. Check every minute; when the day flips,
 // jump the tech view back to "today". The cloud badge time also refreshes.
@@ -15895,6 +17162,8 @@ setInterval(()=>{
     }
     if(fbConnected&&!fbSyncing) updateCloudIndicator(true); // keep "Synced \u00b7 hh:mm" honest
     _updBellBadge(); _updUserChip();
+    try{ _updSaveInd(); }catch(e){ dbgWarn('caught:',e); }
+    try{ if(fbConnected&&CURRENT_ROLE&&document.visibilityState==='visible') _registerDevice(); }catch(e){ dbgWarn('caught:',e); }
   }catch(e){ dbgWarn('rollover',e); }
 },60000);
 // FIX — multi-tab: when another tab of this same browser saves, merge its
@@ -15911,10 +17180,31 @@ window.addEventListener('pagehide',()=>{ try{ if(_stfT){ clearTimeout(_stfT); _s
 document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='hidden'&&_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
 // PRO PACK boot
 try{ _initClientSort(); }catch(e){ dbgWarn('caught:',e); }
+try{ _applyCols(); }catch(e){ dbgWarn('caught:',e); }
+try{ _darkApply(localStorage.getItem('aspen_cm_dark')||'0'); }catch(e){ dbgWarn('caught:',e); }
+try{ _buildRail(); _tidyHeader(); }catch(e){ dbgWarn('caught:',e); }
+try{ _updFab('dash'); }catch(e){ dbgWarn('caught:',e); }
+// #32 — capture deleted clients into the recovery trash (wraps the wrapped fn)
+try{
+  const _delC0=deleteClient;
+  deleteClient=async function(id){
+    const c=C.find(x=>x.id===id);
+    const snap=c?JSON.parse(JSON.stringify(c)):null;
+    const r=await _delC0(id);
+    if(snap&&!C.find(x=>x.id===id)){
+      _trashPush({type:'client',at:Date.now(),who:CURRENT_ROLE==='admin'?'Admin':(CURRENT_ROLE||'?'),data:snap});
+    }
+    return r;
+  };
+}catch(e){ dbgWarn('caught:',e); }
+try{ _bootSkeletons(); }catch(e){ dbgWarn('caught:',e); }
+try{ _applyDashCfg(); }catch(e){ dbgWarn('caught:',e); }
+try{ if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){ const m=document.getElementById('cmdk-mic'); if(m) m.style.display='none'; } }catch(e){ dbgWarn('caught:',e); }
 try{ if(localStorage.getItem('aspen_cm_dense')==='1'){ document.body.classList.add('dense'); const dl=document.getElementById('dens-lbl'); if(dl) dl.textContent=LANG==='es'?'C\u00f3modo':'Comfortable'; } }catch(e){ dbgWarn('caught:',e); }
 try{ _updUserChip(); _updCrumb('dash'); setTimeout(_updBellBadge,1500); }catch(e){ dbgWarn('caught:',e); }
 // V4 — Dark Pro: restore saved preference
-try{ if(localStorage.getItem('aspen_cm_dark')==='1'){ document.body.classList.add('dark'); const _dt=document.getElementById('dark-toggle'); if(_dt)_dt.textContent='\u2600\uFE0F'; } }catch(e){ dbgWarn('caught:',e); }
+// C10 — (retirado) el restore de dark ahora vive solo en _darkApply(), que
+// también entiende el modo 'auto'; el duplicado creaba carreras de icono.
 // FEATURE #7 — client portal mode (read-only overlay driven by ?portal=token)
 if(PORTAL_TOKEN) _renderClientPortal(PORTAL_TOKEN);
 
