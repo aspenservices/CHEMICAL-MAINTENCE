@@ -5163,12 +5163,29 @@ function owc(id){
   document.getElementById('wcd').value=td();document.getElementById('wcnt').value='';
   cm('mdet');setTimeout(()=>om('mwc'),50);
 }
+/* When a water change gets REGISTERED, any open tech request that was made
+   FOR that change (from the WC page, or typed as water-change work) is now
+   fulfilled — mark it done so the "Sent to Service Log" badge clears and
+   the row is clean for the next cycle. Repairs are never auto-closed. */
+function _completeWcAppts(id){
+  try{
+    const arr=TAPPTS[id]; if(!arr) return;
+    let n=0;
+    arr.forEach(a=>{
+      if(!a||a.status==='done'||a.status==='completed'||a.status==='cancelled') return;
+      const isWc=a.src==='wc'||/agua|water/i.test(String(a.type||''));
+      if(isWc){ a.status='done'; a.doneVia='wc-registered'; a.doneAt=new Date().toISOString(); n++; }
+    });
+    if(n){ _touchTappts(id); dbgWarn('WC: '+n+' solicitud(es) completadas automáticamente'); }
+  }catch(e){ dbgWarn('caught:',e); }
+}
 function swc(){
   const id=parseInt(document.getElementById('wcid').value);
   const d=document.getElementById('wcd').value;
   if(!d){showToast(t('enterDate'));return;}
   const c=C.find(x=>x.id===id);
   c.lwc=d;c.wcN=false;c.wcD=true;
+  _completeWcAppts(id);
   const nd=new Date(d);nd.setMonth(nd.getMonth()+6);
   c.nwc=_localDateKey(nd);
   cm('mwc');ra();
@@ -5190,7 +5207,8 @@ function stc(){
   c.lastModified=Date.now(); // FIX — merge races dropped tech-panel edits
   cm('mtech');ra();
 }
-function oTechAppt(id){
+function oTechAppt(id,src){
+  window._taSrc=src||null; // origin tag — 'wc' = requested from the WC page
   const c=C.find(x=>x.id===id);
   refreshTechDataLists();
   document.getElementById('ta-cid').value=id;document.getElementById('ta-cname').value=c.name;
@@ -5407,7 +5425,7 @@ async function saveTechApptAndSendToSL(){
   }catch(_e){console.warn('dup check skipped:',_e);}
 
   // Always save locally (existing behavior) — this is what shows the 🔧 badge on the schedule
-  const appt={date,time,type,desc,tech,status,created:new Date().toISOString()};
+  const appt={date,time,type,desc,tech,status,created:new Date().toISOString(),src:window._taSrc||undefined};
   if(!TAPPTS[id])TAPPTS[id]=[];
   TAPPTS[id].push(appt);
   _touchTappts(id);
@@ -7086,7 +7104,7 @@ function rwc(){
       <td><div class="arow">
         <button class="btn btn-amber" style="font-size:12.1px" onclick="owc(${c.id})">💧 ${LANG==='es'?'Registrar':'Register'}</button>
         <button class="btn" style="font-size:12.1px" onclick="editWCDate(${c.id})">📅 ${LANG==='es'?'Cambiar fecha':'Change date'}</button>
-        <button class="btn" style="font-size:12.1px;background:#0EA5E9;border-color:#0EA5E9;color:#FFF" onclick="event.stopPropagation();oTechAppt(${c.id})" title="${LANG==='es'?'Agendar visita t\u00e9cnica \u2014 se env\u00eda a Service Log':'Schedule tech visit \u2014 sent to Service Log'}">🔧 ${LANG==='es'?'T\u00e9cnico':'Tech'}</button>
+        <button class="btn" style="font-size:12.1px;background:#0EA5E9;border-color:#0EA5E9;color:#FFF" onclick="event.stopPropagation();oTechAppt(${c.id},'wc')" title="${LANG==='es'?'Agendar visita t\u00e9cnica \u2014 se env\u00eda a Service Log':'Schedule tech visit \u2014 sent to Service Log'}">🔧 ${LANG==='es'?'T\u00e9cnico':'Tech'}</button>
       </div></td></tr>`;
   }).join('')||_emptyRowHtml(8,'wc');
   _wcBulkRefreshBar();
@@ -7187,6 +7205,7 @@ async function editWCDate(id){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){showToast(LANG==='es'?'Formato inválido. Usa AAAA-MM-DD':'Invalid format. Use YYYY-MM-DD','err');return;}
   const prev=c.nwc;
   c.nwc=newDate;c.lastModified=Date.now();
+  _completeWcAppts(id);
   pushUndo((LANG==='es'?'Fecha cambiada para ':'Date changed for ')+c.name,()=>{c.nwc=prev;c.lastModified=Date.now();});
   saveData();rwc();rd();
 }
@@ -10181,7 +10200,7 @@ function _wcApptBadge(c){
   try{
     const arr=TAPPTS[c.id]; if(!arr||!arr.length) return '';
     const es=LANG==='es';
-    const act=arr.filter(a=>a&&a.status!=='done'&&a.status!=='completed'&&a.status!=='cancelled');
+    const act=arr.filter(a=>a&&a.status!=='done'&&a.status!=='completed'&&a.status!=='cancelled'&&(!c.lwc||String(a.date||'9999')>=c.lwc));
     if(!act.length) return '';
     act.sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
     const a=act[0];
@@ -11340,7 +11359,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.7';
+const UI_VERSION='1.6.8';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
