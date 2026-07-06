@@ -846,6 +846,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
    the tech doesn't confuse it with today's route. */
 .tech-past-banner{background:#FEF3C7;border-bottom:1.5px solid #F59E0B;color:#78350F;font-size:13.5px;font-weight:600;padding:9px 14px;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}
 .tech-past-banner .icn{font-size:16px}
+.tech-future-banner{background:#DBEAFE;border-bottom-color:#3B82F6;color:#1E3A8A}
 .tech-content{padding:14px;max-width:600px;margin:0 auto}
 .tech-card{background:#FFFFFF;border:2px solid #F0E9E2;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.06);transition:all .25s ease}
 .tech-card.visited{background:#F0FDF4;border-color:#16A34A;box-shadow:0 2px 8px rgba(22,163,74,.15)}
@@ -4827,9 +4828,14 @@ function cpBtn(val){
 }
 
 function vc(id){
+  window._vcTs=Date.now(); // breadcrumb for the delegated safety-net below
   // P2 — on desktop the client opens in the 360° side drawer; the modal
-  // stays for mobile, where the bottom-sheet works better.
-  if(window.innerWidth>820&&typeof openClientDrawer==='function'){ openClientDrawer(id); return; }
+  // stays for mobile. If the drawer render throws on real-world data, we
+  // FALL THROUGH to the classic modal instead of failing silently.
+  if(window.innerWidth>820&&typeof openClientDrawer==='function'){
+    try{ openClientDrawer(id); return; }
+    catch(e){ dbgWarn('drawer failed → modal fallback:',e&&e.message); try{ closeClientDrawer(); }catch(e2){ dbgWarn('caught:',e2); } }
+  }
   const c=C.find(x=>x.id===id);if(!c)return;
   const b=BL[id]||{};
   const qs=getCurrentYearQuarters();
@@ -10815,8 +10821,11 @@ async function _autoRepairPhotos(){
 /* P2+P6 — client drawer 360° with activity timeline */
 let _cdId=null,_cdTab='info';
 function openClientDrawer(id){
-  const c=C.find(x=>x.id===id); if(!c) return;
-  _cdId=id;
+  const c=C.find(x=>x.id===Number(id)); if(!c) return;
+  // If the drawer host isn't in the DOM (mixed/partial deploy), THROW so the
+  // caller's fallback opens the classic modal instead of dying silently.
+  if(!document.getElementById('cdrawer-in')) throw new Error('drawer host missing');
+  _cdId=c.id;
   document.body.classList.add('drawer-open');
   if(_cdTab!=='info'&&_cdTab!=='timeline') _cdTab='info';
   _cdRender();
@@ -10852,7 +10861,13 @@ function _cdRender(){
     +'<button class="btn" onclick="copyClientPortalLink('+c.id+')">\uD83D\uDD17 Portal</button>'
     +'</div>'
     +'<div class="cd-tabs">'+tabs.map(t2=>'<button class="'+(_cdTab===t2[0]?'on':'')+'" onclick="cdTab(\''+t2[0]+'\')">'+t2[1]+'</button>').join('')+'</div>'
-    +'</div><div class="cd-body">'+_cdBody(c)+'</div>';
+    +'</div><div class="cd-body">'+(function(){
+      try{ return _cdBody(c); }
+      catch(e){
+        dbgWarn('cd tab render',e&&e.message);
+        return '<div style="color:#B91C1C;font-size:12.8px">\u26A0 '+(LANG==='es'?'Error mostrando esta pesta\u00f1a \u2014 prueba otra':'Error rendering this tab \u2014 try another')+'</div>';
+      }
+    })()+'</div>';
 }
 function _cdBody(c){
   const es=LANG==='es';
@@ -11106,7 +11121,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.5.0';
+const UI_VERSION='1.5.8';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -15853,10 +15868,11 @@ function techNavigateDay(dir){
     const dow = d.getDay();
     if(dow >= 1 && dow <= 5) break; // landed on a weekday
   }
-  // Forward guard: never go past today
+  // Forward guard: the tech CAN preview upcoming days (read-only), up to 14
   const today = new Date(); today.setHours(0,0,0,0);
   const target = new Date(d); target.setHours(0,0,0,0);
-  if(target > today){ showToast(LANG==='es'?'No se puede ver el futuro':"Can't see the future",'warn'); return; }
+  const fwdDays = Math.round((target - today) / 86400000);
+  if(fwdDays > 14){ showToast(LANG==='es'?'M\u00e1ximo 14 d\u00edas adelante':'Max 14 days ahead','warn'); return; }
   // Backward guard: cap at TECH_MAX_DAYS_BACK weekdays
   const diffDays = Math.round((today - target) / 86400000);
   if(diffDays > TECH_MAX_DAYS_BACK){
@@ -15925,8 +15941,8 @@ function _renderTechDayNav(){
   const daysBack = _techDaysBackFromToday();
   // Prev: blocked once we hit the cap
   prev.disabled = (daysBack >= TECH_MAX_DAYS_BACK);
-  // Next: blocked when we're already on today (can't go to the future)
-  next.disabled = _techIsViewingToday();
+  // Next: enabled up to 14 days ahead (future days are read-only previews)
+  next.disabled = (daysBack <= -14);
   // Today button: hidden when we ARE on today (nothing to return to)
   todayBtn.style.display = _techIsViewingToday() ? 'none' : '';
 }
@@ -15937,6 +15953,14 @@ function _renderTechPastBanner(){
   if(!wrap) return;
   if(_techIsViewingToday()){ wrap.innerHTML = ''; return; }
   const daysBack = _techDaysBackFromToday();
+  if(daysBack < 0){
+    const f = -daysBack;
+    const txt = LANG==='es'
+      ? `Vista previa: estás viendo un día futuro (en ${f} ${f===1?'día':'días'}) — solo lectura, las visitas se registran el día que toca.`
+      : `Preview: you're viewing a future day (${f} ${f===1?'day':'days'} ahead) — read-only; visits get recorded on the actual day.`;
+    wrap.innerHTML = `<div class="tech-past-banner tech-future-banner"><span class="icn">🔮</span><span>${txt}</span></div>`;
+    return;
+  }
   const txt = LANG==='es'
     ? `Estás viendo un día pasado (hace ${daysBack} ${daysBack===1?'día':'días'}). Puedes terminar tickets pendientes de ese día.`
     : `You're viewing a past day (${daysBack} ${daysBack===1?'day':'days'} ago). You can still close out pending tickets from that day.`;
@@ -15962,6 +15986,11 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
   const today = _techViewedDate();
   const dateKey = _localDateKey(today); // YYYY-MM-DD
   const viewingPast = !_techIsViewingToday();
+  // Read-only preview flag: recording a visit on a FUTURE dateKey would
+  // corrupt the visit log, so future cards hide the checklist and buttons.
+  const _rt=new Date(); _rt.setHours(0,0,0,0);
+  const _vt=new Date(today); _vt.setHours(0,0,0,0);
+  window._techFuture = _vt > _rt;
   // Get clients scheduled for this day + week (active only)
   const dayClients = C.filter(c =>
     c.status==='active' && _dayForWeek(c,wt)===dayKey && (c.week===wt || c.week==='A&B')
@@ -16008,7 +16037,7 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
     try{
       chkHtml = (visited || noVisit)
         ? (v && v.checklist ? _renderChkReadonly(v.checklist, c.id, dateKey) : '')
-        : _renderChkEditable(c, dateKey);
+        : (window._techFuture ? '' : _renderChkEditable(c, dateKey));
     }catch(e){
       dbgWarn('card render',e);
       chkHtml='<div style="color:#B91C1C;font-size:12px;padding:6px 0">⚠ '+(LANG==='es'?'Error mostrando el checklist de esta visita':'Error rendering this visit checklist')+'</div>';
@@ -16053,11 +16082,13 @@ function renderTechDayClients(dayKey, wt, detectedWeek){
                 <button class="tcc-undo" onclick="techUndoVisit(${c.id})">${LANG==='es'?'Deshacer':'Undo'}</button>
               </div>
             </div>`
-          : `<textarea class="tcc-note-input" id="tcc-note-${c.id}" placeholder="${LANG==='es'?'Nota (opcional): lectura química, observaciones...':'Note (optional): chemical readings, observations...'}" rows="2"></textarea>
+          : (window._techFuture
+            ? `<div style="background:#DBEAFE;border:1px dashed #93C5FD;color:#1E3A8A;border-radius:10px;padding:9px 12px;font-size:12.6px;font-weight:600;text-align:center">🔮 ${LANG==='es'?'Vista previa — podrás registrar esta visita el día que toque':'Preview — you can record this visit on the actual day'}</div>`
+            : `<textarea class="tcc-note-input" id="tcc-note-${c.id}" placeholder="${LANG==='es'?'Nota (opcional): lectura química, observaciones...':'Note (optional): chemical readings, observations...'}" rows="2"></textarea>
              <div class="tcc-action-row">
               <button class="tcc-visit-btn" onclick="techMarkVisited(${c.id})">✓ ${LANG==='es'?'VISITADO':'VISITED'}</button>
               <button class="tcc-novisit-btn" onclick="techMarkNoVisit(${c.id})">✗ ${LANG==='es'?'NO VISITADO':'NO VISIT'}</button>
-            </div>`)
+            </div>`))
       }
     </div>`;
   }).join('');
@@ -17097,6 +17128,22 @@ _idbHydrateIfNeeded();
 try{ _gcPhotoBackupKeys(); }catch(e){ dbgWarn('caught:',e); }
 // FIX #5 — retry pending cloud writes when the connection returns
 window.addEventListener('online',()=>{ try{ if(window._fbDirty&&fbConnected) saveToFirebase(); }catch(e){ dbgWarn('caught:',e); } });
+// Safety net — open the client profile even if the row's inline onclick
+// was lost (stale cache, exotic re-render). Skips if vc already ran (<350ms).
+document.addEventListener('click',e=>{
+  try{
+    if(Date.now()-(window._vcTs||0)<350) return;
+    if(e.target.closest('button,input,a,select,label')) return;
+    const row=e.target.closest('#ctbody tr, .mcc');
+    if(!row) return;
+    let cid=row.dataset&&row.dataset.cid?Number(row.dataset.cid):null;
+    if(cid==null){
+      const cb=row.querySelector('.bulk-cb');
+      cid=cb?Number(cb.dataset.id):null;
+    }
+    if(cid!=null&&!isNaN(cid)) vc(cid);
+  }catch(err){ dbgWarn('row net',err); }
+});
 // P8 — global keyboard shortcuts
 document.addEventListener('keydown',e=>{
   try{
