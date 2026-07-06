@@ -1873,7 +1873,6 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
       <button id="tech-prev-day" onclick="techNavigateDay(-1)" title="Ver día anterior">◀ Día anterior</button>
       <button id="tech-next-day" onclick="techNavigateDay(1)" title="Ver día siguiente" disabled>Día siguiente ▶</button>
       <button id="tech-today-btn" class="today-btn" onclick="techGoToToday()" style="display:none">↺ Volver a hoy</button>
-      <button id="tech-lang-btn" onclick="toggleLang()" title="Español / English">🌐 EN</button>
     </div>
   </div>
   <div id="tech-past-banner-wrap"></div>
@@ -3152,21 +3151,6 @@ function toggleLang(){
   LANG=LANG==='es'?'en':'es';
   localStorage.setItem('aspen_lang',LANG);
   rebuildUI();
-  // The tech view is its own world — refresh it too so every label flips
-  try{ _applyTechLang(); if(CURRENT_ROLE==='tech'&&typeof renderTechView==='function') renderTechView(); }catch(e){ dbgWarn('caught:',e); }
-}
-function _applyTechLang(){
-  const es=LANG==='es';
-  const g=document.querySelector('.tech-greet');
-  if(g) g.textContent='\uD83D\uDC4B '+(es?'Hola,':'Hi,');
-  const prev=document.getElementById('tech-prev-day');
-  if(prev){ prev.textContent='\u25C0 '+(es?'D\u00eda anterior':'Previous day'); prev.title=es?'Ver d\u00eda anterior':'View previous day'; }
-  const next=document.getElementById('tech-next-day');
-  if(next){ next.textContent=(es?'D\u00eda siguiente':'Next day')+' \u25B6'; next.title=es?'Ver d\u00eda siguiente':'View next day'; }
-  const tod=document.getElementById('tech-today-btn');
-  if(tod) tod.textContent='\u21BA '+(es?'Volver a hoy':'Back to today');
-  const lb=document.getElementById('tech-lang-btn');
-  if(lb){ lb.textContent='\uD83C\uDF10 '+(es?'EN':'ES'); lb.title=es?'Switch to English':'Cambiar a espa\u00f1ol'; }
 }
 function rebuildUI(){
   // Update header
@@ -3574,10 +3558,7 @@ function showToast(msg,type){
 }
 // Promise-based confirmation modal (replaces blocking confirm())
 function showConfirm(message,opts){
-  // Reentrancy guard: a double-fired click (or any duplicate caller) must
-  // NOT stack a second dialog on top — fold into the pending one.
-  if(window._confirmPending) return window._confirmPending;
-  window._confirmPending = new Promise(resolve=>{
+  return new Promise(resolve=>{
     const o=opts||{};
     const okText=o.okText||(LANG==='es'?'Aceptar':'OK');
     const cancelText=o.cancelText||(LANG==='es'?'Cancelar':'Cancel');
@@ -3593,13 +3574,12 @@ function showConfirm(message,opts){
       </div>`;
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-    const close=v=>{overlay.remove();window._confirmPending=null;resolve(v);};
+    const close=v=>{overlay.remove();resolve(v);};
     box.querySelector('#cf-ok').onclick=()=>close(true);
     box.querySelector('#cf-cancel').onclick=()=>close(false);
     overlay.onclick=e=>{if(e.target===overlay)close(false);};
     setTimeout(()=>box.querySelector('#cf-ok').focus(),50);
   });
-  return window._confirmPending;
 }
 // Promise-based prompt (replaces blocking prompt())
 function showPrompt(message,defaultValue,opts){
@@ -7411,7 +7391,7 @@ function buildWeekSection(wt,clients,q){
           <span style="font-size:11.5px;font-weight:600;color:#AC672B">${a.date}${a.time?' '+a.time:''}</span>
           <span style="font-size:11.5px;color:#2A1C0F;font-weight:600;flex:1">${esc(a.type)}${descSnip?`<span style="font-weight:400;color:var(--muted);font-size:10.5px"> · ${esc(descSnip)}</span>`:''}${a.tech?`<span style="font-size:10.5px;color:var(--muted)"> · ${esc(a.tech)}</span>`:''}</span>
           ${a.slTicketId
-            ? `<span class="ta-sent-badge ${stClass}" data-slid="${esc(a.slTicketId)}" onclick="event.stopPropagation();(async(el)=>{const info=await pollSLTicketStatus('${esc(a.slTicketId)}',true);if(info)_slBadgeApply(el,info);el.title='${esc(shortId)} · Click=refresh';})(event.currentTarget);" title="${esc(shortId)} · Click to refresh">${stLabel} ${shortId}</span>`
+            ? `<span class="ta-sent-badge ${stClass}" data-slid="${esc(a.slTicketId)}" data-cid="${c.id}" data-adate="${esc(a.date||'')}" data-atype="${esc(a.type||'')}" onclick="event.stopPropagation();(async(el)=>{const info=await pollSLTicketStatus('${esc(a.slTicketId)}',true);if(info)_slBadgeApply(el,info);el.title='${esc(shortId)} · Click=refresh';})(event.currentTarget);" title="${esc(shortId)} · Click to refresh">${stLabel} ${shortId}</span>`
             : `<span style="font-size:10px;color:#EF4444;font-weight:700;flex-shrink:0;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:6px;padding:1px 5px" title="${LANG==='es'?'No enviado a TECH-TICKETS':'Not sent to TECH-TICKETS'}">⚠ Not sent</span>`}
           <button class="btn btn-green" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();completeTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Completar':'Complete'}">✓</button>
           <button class="btn btn-red" style="font-size:9.2px;padding:1px 5px" onclick="event.stopPropagation();deleteTechAppt(${c.id},${a._idx})" title="${LANG==='es'?'Eliminar':'Delete'}">✕</button>
@@ -8505,6 +8485,67 @@ function _slBadgeApply(el,info){
   const sid=el.getAttribute('data-slid')||'';
   el.textContent=lc.label+(sid?' #'+sid.substring(0,5):'');
   el.className='ta-sent-badge '+lc.cls;
+  // #P2 (Jul 2026): close the loop. When the ticket comes back DONE, surface a
+  // one-tap "↻ Next" link next to the badge that pre-fills a follow-up visit.
+  // Semi-automatic on purpose — the admin reviews the suggested date before it
+  // becomes a new ticket (never a silent write). The link lives as a sibling so
+  // el.textContent above doesn't clobber it.
+  try{
+    var done=info&&(info.status==='completed'||info.status==='done');
+    var sib=el.nextElementSibling;
+    var isNextLink=sib&&sib.classList&&sib.classList.contains('sl-next-link');
+    if(done){
+      var cid=el.getAttribute('data-cid'), adate=el.getAttribute('data-adate')||'', atype=el.getAttribute('data-atype')||'';
+      if(!isNextLink&&cid){
+        var b=document.createElement('button');
+        b.className='sl-next-link';
+        b.type='button';
+        b.textContent='\u21BB '+(LANG==='es'?'Sig.':'Next');
+        b.title=(LANG==='es'?'Agendar la pr\u00F3xima visita para este cliente':'Schedule the next visit for this client');
+        b.style.cssText='margin-left:6px;font-size:10px;font-weight:800;color:var(--c-chem-fg);background:var(--c-chem-bg);border:1px solid var(--c-chem-strong);border-radius:8px;padding:1px 7px;cursor:pointer;flex-shrink:0';
+        b.setAttribute('data-cid',cid);b.setAttribute('data-adate',adate);b.setAttribute('data-atype',atype);
+        b.onclick=function(ev){ev.stopPropagation();_scheduleNextVisit(parseInt(cid),adate,atype);};
+        el.insertAdjacentElement('afterend',b);
+      }
+    }else if(isNextLink){
+      sib.remove(); // status changed away from done → drop the stale link
+    }
+  }catch(_e){}
+}
+
+// #P2: compute a sensible next-visit date. Uses the client's chemical-route
+// cadence when present (weekly→+7d, biweekly→+14d, A&B→+7d); otherwise defaults
+// to +30d (monthly follow-up). The admin can still change the date in the modal.
+function _nextVisitDate(c,fromStr){
+  var base=(fromStr&&/^\d{4}-\d{2}-\d{2}$/.test(fromStr))?new Date(fromStr+'T12:00:00'):new Date();
+  var f=((c&&c.freq)||'').toLowerCase();
+  var days=30;
+  if(f==='weekly'||(c&&c.week==='A&B'))days=7;
+  else if(f==='biweekly')days=14;
+  base.setDate(base.getDate()+days);
+  return base.getFullYear()+'-'+String(base.getMonth()+1).padStart(2,'0')+'-'+String(base.getDate()).padStart(2,'0');
+}
+
+// #P2: open the existing tech-appt modal, pre-filled for a follow-up visit.
+// One tap from the "↻ Next" link → admin confirms → normal send-to-SL flow runs
+// (and the duplicate guard #7 still fires, so no double-booking).
+function _scheduleNextVisit(cid,fromDate,type){
+  var c=C.find(function(x){return x.id===cid;});
+  if(!c){showToast(LANG==='es'?'Cliente no encontrado':'Client not found');return;}
+  if(typeof refreshTechDataLists==='function')refreshTechDataLists();
+  var next=_nextVisitDate(c,fromDate);
+  var setV=function(id,v){var e=document.getElementById(id);if(e)e.value=v;};
+  setV('ta-cid',cid);
+  setV('ta-cname',c.name);
+  setV('ta-date',next);
+  setV('ta-time','09:00');
+  setV('ta-type',type||'Reparación general');
+  setV('ta-desc',(LANG==='es'?'Seguimiento de visita completada ':'Follow-up from completed visit ')+(fromDate||''));
+  setV('ta-status','scheduled');
+  setV('ta-tech',(typeof TECHS!=='undefined'&&TECHS.length)?TECHS[0].name:'');
+  try{cm('mdet');}catch(_e){}
+  setTimeout(function(){om('mtech-appt');},50);
+  showToast(LANG==='es'?('\u21BB Pr\u00F3xima visita sugerida: '+next+' \u2014 revisa y env\u00EDa'):('\u21BB Suggested next visit: '+next+' \u2014 review & send'));
 }
 
 // #6 (Jul 2026): lazy auto-refresh of every visible sent-badge. Runs shortly
@@ -10059,32 +10100,29 @@ function _rowCid(tr,sel,attr){
    del elemento DIRECTAMENTE (invocación que nada puede bloquear).
    En navegadores sanos el click nativo llega primero y esto NO hace nada. */
 (function(){
-  let pd=null, lastNativeClick=0;
+  let pd=null;
   document.addEventListener('pointerdown',e=>{
-    pd=(e.button===0)?{x:e.clientX,y:e.clientY,ts:Date.now()}:null;
+    if(e.button===0) pd={x:e.clientX,y:e.clientY,ts:Date.now(),clicked:false};
+    else pd=null;
   },true);
-  // El click NATIVO llega DESPUÉS del pointerup: registrarlo en una marca
-  // de tiempo independiente (v1.6.1 lo anulaba antes de tiempo y ejecutaba
-  // el handler dos veces — los toggles se expandían y colapsaban solos).
-  document.addEventListener('click',()=>{ lastNativeClick=Date.now(); },true);
+  document.addEventListener('click',()=>{ if(pd) pd.clicked=true; },true);
   document.addEventListener('pointerup',e=>{
     const p=pd; pd=null;
     if(!p||e.button!==0) return;
     if(Math.abs(e.clientX-p.x)>8||Math.abs(e.clientY-p.y)>8||(Date.now()-p.ts)>700) return;
-    if(e.target.closest('select,input,textarea,option,label')) return; // controles nativos: no interferir
+    if(e.target.closest('select,input,textarea,option')) return; // controles nativos: no interferir
     const el=e.target.closest('[onclick],button');
     if(!el||typeof el.onclick!=='function') return;
-    const upTs=Date.now();
     setTimeout(()=>{
       try{
-        if(lastNativeClick>=upTs-50) return; // llegó el click nativo — navegador sano, cero efecto
+        if(p.clicked) return; // el click nativo llegó — navegador sano, cero efecto
         const ev2=new MouseEvent('click',{bubbles:false,cancelable:true,clientX:e.clientX,clientY:e.clientY,view:window});
         try{ Object.defineProperty(ev2,'target',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
         try{ Object.defineProperty(ev2,'currentTarget',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
         dbgWarn('click rescatado en',el.id||el.className||el.tagName);
         el.onclick.call(el,ev2);
       }catch(err){ dbgWarn('rescate click',err); }
-    },160);
+    },120);
   },true);
 })();
 /* Immune row-open: some Chrome extensions swallow the 'click' event on
@@ -10320,13 +10358,7 @@ function _tidyHeader(){
 function hdMoreToggle(ev){
   let m=document.getElementById('hd-more-menu');
   if(!m){ m=document.createElement('div'); m.id='hd-more-menu'; document.body.appendChild(m); }
-  if(m.classList.contains('open')){
-    // Self-healing: a double-fired toggle within 300ms must NOT close the
-    // menu the user just opened — ignore the echo.
-    if(Date.now()-(m._openedAt||0)<300) return;
-    m.classList.remove('open'); return;
-  }
-  m._openedAt=Date.now();
+  if(m.classList.contains('open')){ m.classList.remove('open'); return; }
   m.innerHTML='';
   _HD_MORE_IDS.forEach(id=>{
     const orig=document.getElementById(id);
@@ -11260,7 +11292,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.5';
+const UI_VERSION='1.6.2';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -13475,8 +13507,6 @@ function loginAsOrganizer(name){
 
 // Switch user button — confirm then show role selection again
 async function switchUser(){
-  const rs=document.getElementById('role-pick-overlay');
-  if(rs&&rs.style.display!=='none') return; // ya estamos eligiendo rol
   const ok = await showConfirm(LANG==='es'?'¿Cambiar de usuario?':'Switch user?');
   if(!ok) return;
   CURRENT_ROLE=null; CURRENT_TECH=null;
@@ -17372,7 +17402,6 @@ try{ _wireClientTables(); }catch(e){ dbgWarn('caught:',e); }
 try{ _applyCols(); }catch(e){ dbgWarn('caught:',e); }
 try{ _darkApply(localStorage.getItem('aspen_cm_dark')||'0'); }catch(e){ dbgWarn('caught:',e); }
 try{ _buildRail(); _tidyHeader(); }catch(e){ dbgWarn('caught:',e); }
-try{ _applyTechLang(); }catch(e){ dbgWarn('caught:',e); }
 try{ _updFab('dash'); }catch(e){ dbgWarn('caught:',e); }
 // #32 — capture deleted clients into the recovery trash (wraps the wrapped fn)
 try{
