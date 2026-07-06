@@ -1873,6 +1873,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
       <button id="tech-prev-day" onclick="techNavigateDay(-1)" title="Ver día anterior">◀ Día anterior</button>
       <button id="tech-next-day" onclick="techNavigateDay(1)" title="Ver día siguiente" disabled>Día siguiente ▶</button>
       <button id="tech-today-btn" class="today-btn" onclick="techGoToToday()" style="display:none">↺ Volver a hoy</button>
+      <button id="tech-lang-btn" onclick="toggleLang()" title="Español / English">🌐 EN</button>
     </div>
   </div>
   <div id="tech-past-banner-wrap"></div>
@@ -3151,6 +3152,21 @@ function toggleLang(){
   LANG=LANG==='es'?'en':'es';
   localStorage.setItem('aspen_lang',LANG);
   rebuildUI();
+  // The tech view is its own world — refresh it too so every label flips
+  try{ _applyTechLang(); if(CURRENT_ROLE==='tech'&&typeof renderTechView==='function') renderTechView(); }catch(e){ dbgWarn('caught:',e); }
+}
+function _applyTechLang(){
+  const es=LANG==='es';
+  const g=document.querySelector('.tech-greet');
+  if(g) g.textContent='\uD83D\uDC4B '+(es?'Hola,':'Hi,');
+  const prev=document.getElementById('tech-prev-day');
+  if(prev){ prev.textContent='\u25C0 '+(es?'D\u00eda anterior':'Previous day'); prev.title=es?'Ver d\u00eda anterior':'View previous day'; }
+  const next=document.getElementById('tech-next-day');
+  if(next){ next.textContent=(es?'D\u00eda siguiente':'Next day')+' \u25B6'; next.title=es?'Ver d\u00eda siguiente':'View next day'; }
+  const tod=document.getElementById('tech-today-btn');
+  if(tod) tod.textContent='\u21BA '+(es?'Volver a hoy':'Back to today');
+  const lb=document.getElementById('tech-lang-btn');
+  if(lb){ lb.textContent='\uD83C\uDF10 '+(es?'EN':'ES'); lb.title=es?'Switch to English':'Cambiar a espa\u00f1ol'; }
 }
 function rebuildUI(){
   // Update header
@@ -3558,7 +3574,10 @@ function showToast(msg,type){
 }
 // Promise-based confirmation modal (replaces blocking confirm())
 function showConfirm(message,opts){
-  return new Promise(resolve=>{
+  // Reentrancy guard: a double-fired click (or any duplicate caller) must
+  // NOT stack a second dialog on top — fold into the pending one.
+  if(window._confirmPending) return window._confirmPending;
+  window._confirmPending = new Promise(resolve=>{
     const o=opts||{};
     const okText=o.okText||(LANG==='es'?'Aceptar':'OK');
     const cancelText=o.cancelText||(LANG==='es'?'Cancelar':'Cancel');
@@ -3574,12 +3593,13 @@ function showConfirm(message,opts){
       </div>`;
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-    const close=v=>{overlay.remove();resolve(v);};
+    const close=v=>{overlay.remove();window._confirmPending=null;resolve(v);};
     box.querySelector('#cf-ok').onclick=()=>close(true);
     box.querySelector('#cf-cancel').onclick=()=>close(false);
     overlay.onclick=e=>{if(e.target===overlay)close(false);};
     setTimeout(()=>box.querySelector('#cf-ok').focus(),50);
   });
+  return window._confirmPending;
 }
 // Promise-based prompt (replaces blocking prompt())
 function showPrompt(message,defaultValue,opts){
@@ -10300,7 +10320,13 @@ function _tidyHeader(){
 function hdMoreToggle(ev){
   let m=document.getElementById('hd-more-menu');
   if(!m){ m=document.createElement('div'); m.id='hd-more-menu'; document.body.appendChild(m); }
-  if(m.classList.contains('open')){ m.classList.remove('open'); return; }
+  if(m.classList.contains('open')){
+    // Self-healing: a double-fired toggle within 300ms must NOT close the
+    // menu the user just opened — ignore the echo.
+    if(Date.now()-(m._openedAt||0)<300) return;
+    m.classList.remove('open'); return;
+  }
+  m._openedAt=Date.now();
   m.innerHTML='';
   _HD_MORE_IDS.forEach(id=>{
     const orig=document.getElementById(id);
@@ -11234,7 +11260,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.2';
+const UI_VERSION='1.6.5';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -13449,6 +13475,8 @@ function loginAsOrganizer(name){
 
 // Switch user button — confirm then show role selection again
 async function switchUser(){
+  const rs=document.getElementById('role-pick-overlay');
+  if(rs&&rs.style.display!=='none') return; // ya estamos eligiendo rol
   const ok = await showConfirm(LANG==='es'?'¿Cambiar de usuario?':'Switch user?');
   if(!ok) return;
   CURRENT_ROLE=null; CURRENT_TECH=null;
@@ -17344,6 +17372,7 @@ try{ _wireClientTables(); }catch(e){ dbgWarn('caught:',e); }
 try{ _applyCols(); }catch(e){ dbgWarn('caught:',e); }
 try{ _darkApply(localStorage.getItem('aspen_cm_dark')||'0'); }catch(e){ dbgWarn('caught:',e); }
 try{ _buildRail(); _tidyHeader(); }catch(e){ dbgWarn('caught:',e); }
+try{ _applyTechLang(); }catch(e){ dbgWarn('caught:',e); }
 try{ _updFab('dash'); }catch(e){ dbgWarn('caught:',e); }
 // #32 — capture deleted clients into the recovery trash (wraps the wrapped fn)
 try{
