@@ -4544,6 +4544,7 @@ function rc(){
   }
   try{ document.querySelectorAll('#clients-thead th[data-sort]').forEach(el=>el.classList.toggle('on',window._cSort&&el.dataset.sort===window._cSort.key)); }catch(e){ dbgWarn('caught:',e); }
   try{ _renderSavedViews(); }catch(e){ dbgWarn('caught:',e); }
+  try{ _wireClientTables(); }catch(e){ dbgWarn('caught:',e); }
   document.getElementById('ccount').textContent=f.length;
   const tot=f.length,st2=pg*PS;
   if(st2>=tot&&pg>0)pg=Math.max(0,Math.ceil(tot/PS)-1);
@@ -7052,7 +7053,7 @@ function rwc(){
     const daysCol = noDate
       ? '<span style="color:var(--muted);font-style:italic">—</span>'
       : `<span style="font-weight:600;color:${isVeryOverdue?'#7F1D1D':isOverdue?'#DC2626':isClose?'#F59E0B':'#16A34A'}">${daysLeft}d</span>`;
-    return`<tr${isVeryOverdue?' style="background:#FEF2F2"':''}>
+    return`<tr style="cursor:pointer${isVeryOverdue?';background:#FEF2F2':''}" title="${LANG==='es'?'Clic: perfil · Clic derecho: acciones':'Click: profile · Right-click: actions'}">
       <td style="text-align:center"><input type="checkbox" class="wc-bulk-chk" data-cid="${c.id}" ${isChecked?'checked':''} onchange="wcBulkToggle(${c.id},this)"></td>
       <td><strong style="font-weight:600;color:var(--brand);cursor:pointer" onclick="vc(${c.id})">${esc(c.name)}</strong></td>
       <td>${fb(c.freq)}</td>
@@ -10018,6 +10019,52 @@ function _updSaveInd(){
     } else { el.textContent=''; }
   }catch(e){ dbgWarn('caught:',e); }
 }
+/* ══════════ Cableado directo de las tablas (fase de CAPTURA) ══════════
+   El clic izquierdo en las filas se perdía en algunos entornos aunque el
+   derecho funcionara. Capture-phase en el tbody corre ANTES que cualquier
+   handler interno y no puede ser interceptado por stopPropagation. Se
+   registra UNA vez por tbody (el tbody sobrevive a los innerHTML). */
+function _rowCid(tr,sel,attr){
+  const cb=tr.querySelector(sel);
+  const v=cb?Number(cb.dataset[attr]):NaN;
+  return isNaN(v)?null:v;
+}
+function _wireClientTables(){
+  const tb=document.getElementById('ctbody');
+  if(tb&&!tb._wired){
+    tb._wired=true;
+    tb.addEventListener('click',e=>{
+      try{
+        if(e.target.closest('button,input,a,select,label,textarea')) return;
+        const tr=e.target.closest('tr'); if(!tr) return;
+        const cid=_rowCid(tr,'.bulk-cb','id'); if(cid==null) return;
+        if(Date.now()-(window._vcTs||0)<350) return; // el inline ya lo hizo
+        vc(cid);
+      }catch(err){ dbgWarn('ctbody click',err); }
+    },true);
+  }
+  const wb=document.getElementById('wctbody');
+  if(wb&&!wb._wired){
+    wb._wired=true;
+    wb.addEventListener('click',e=>{
+      try{
+        if(e.target.closest('button,input,a,select,label,textarea')) return;
+        const tr=e.target.closest('tr'); if(!tr) return;
+        const cid=_rowCid(tr,'.wc-bulk-chk','cid'); if(cid==null) return;
+        if(Date.now()-(window._vcTs||0)<350) return;
+        vc(cid);
+      }catch(err){ dbgWarn('wctbody click',err); }
+    },true);
+    wb.addEventListener('contextmenu',e=>{
+      try{
+        const tr=e.target.closest('tr'); if(!tr) return;
+        const cid=_rowCid(tr,'.wc-bulk-chk','cid'); if(cid==null) return;
+        e.preventDefault();
+        _openCtx(cid,e.clientX,e.clientY);
+      }catch(err){ dbgWarn('wctbody ctx',err); }
+    });
+  }
+}
 /* ══════════ NIVEL PRO 4 — helpers (móvil) ══════════ */
 /* #24 — native-style client cards for phones */
 function _renderClientCards(page){
@@ -11121,7 +11168,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.5.8';
+const UI_VERSION='1.5.9';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -17227,6 +17274,7 @@ window.addEventListener('pagehide',()=>{ try{ if(_stfT){ clearTimeout(_stfT); _s
 document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='hidden'&&_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
 // PRO PACK boot
 try{ _initClientSort(); }catch(e){ dbgWarn('caught:',e); }
+try{ _wireClientTables(); }catch(e){ dbgWarn('caught:',e); }
 try{ _applyCols(); }catch(e){ dbgWarn('caught:',e); }
 try{ _darkApply(localStorage.getItem('aspen_cm_dark')||'0'); }catch(e){ dbgWarn('caught:',e); }
 try{ _buildRail(); _tidyHeader(); }catch(e){ dbgWarn('caught:',e); }
