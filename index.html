@@ -4829,6 +4829,8 @@ function cpBtn(val){
 }
 
 function vc(id){
+  if(window._vcLast===id&&Date.now()-(window._vcTs||0)<300) return; // debounce
+  window._vcLast=id;
   window._vcTs=Date.now(); // breadcrumb for the delegated safety-net below
   // P2 — on desktop the client opens in the 360° side drawer; the modal
   // stays for mobile. If the drawer render throws on real-world data, we
@@ -10029,9 +10031,69 @@ function _rowCid(tr,sel,attr){
   const v=cb?Number(cb.dataset[attr]):NaN;
   return isNaN(v)?null:v;
 }
+/* ══════════ Rescatista global de clics ══════════
+   Si una extensión del navegador asesina el evento 'click' (content scripts
+   corren antes que la página y pueden llamar stopImmediatePropagation), este
+   vigilante lo detecta: pointerdown+pointerup sobre el mismo punto sin que
+   llegue un 'click' en 120ms = clic asesinado → ejecuta el handler inline
+   del elemento DIRECTAMENTE (invocación que nada puede bloquear).
+   En navegadores sanos el click nativo llega primero y esto NO hace nada. */
+(function(){
+  let pd=null;
+  document.addEventListener('pointerdown',e=>{
+    if(e.button===0) pd={x:e.clientX,y:e.clientY,ts:Date.now(),clicked:false};
+    else pd=null;
+  },true);
+  document.addEventListener('click',()=>{ if(pd) pd.clicked=true; },true);
+  document.addEventListener('pointerup',e=>{
+    const p=pd; pd=null;
+    if(!p||e.button!==0) return;
+    if(Math.abs(e.clientX-p.x)>8||Math.abs(e.clientY-p.y)>8||(Date.now()-p.ts)>700) return;
+    if(e.target.closest('select,input,textarea,option')) return; // controles nativos: no interferir
+    const el=e.target.closest('[onclick],button');
+    if(!el||typeof el.onclick!=='function') return;
+    setTimeout(()=>{
+      try{
+        if(p.clicked) return; // el click nativo llegó — navegador sano, cero efecto
+        const ev2=new MouseEvent('click',{bubbles:false,cancelable:true,clientX:e.clientX,clientY:e.clientY,view:window});
+        try{ Object.defineProperty(ev2,'target',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
+        try{ Object.defineProperty(ev2,'currentTarget',{value:el,configurable:true}); }catch(err){ dbgWarn('caught:',err); }
+        dbgWarn('click rescatado en',el.id||el.className||el.tagName);
+        el.onclick.call(el,ev2);
+      }catch(err){ dbgWarn('rescate click',err); }
+    },120);
+  },true);
+})();
+/* Immune row-open: some Chrome extensions swallow the 'click' event on
+   non-button elements (content scripts run before page code and can call
+   stopImmediatePropagation). pointerdown/pointerup are rarely touched, so a
+   press-and-release on the same row opens the profile even in that case. */
+function _rowOpenWire(tb,sel,attr){
+  let pd=null;
+  tb.addEventListener('pointerdown',e=>{
+    if(e.button!==0){ pd=null; return; }
+    const tr=e.target.closest('tr');
+    pd=tr?{tr:tr,x:e.clientX,y:e.clientY,t:Date.now()}:null;
+  },true);
+  tb.addEventListener('pointerup',e=>{
+    try{
+      if(!pd||e.button!==0) return;
+      const tr=e.target.closest('tr');
+      const ok=tr&&tr===pd.tr&&Math.abs(e.clientX-pd.x)<=8&&Math.abs(e.clientY-pd.y)<=8&&(Date.now()-pd.t)<=700;
+      pd=null;
+      if(!ok) return;
+      if(e.target.closest('button,input,a,select,label,textarea')) return;
+      const s2=window.getSelection&&window.getSelection();
+      if(s2&&String(s2).length) return; // el usuario estaba seleccionando texto
+      const cid=_rowCid(tr,sel,attr); if(cid==null) return;
+      vc(cid);
+    }catch(err){ dbgWarn('rowopen',err); }
+  },true);
+}
 function _wireClientTables(){
   const tb=document.getElementById('ctbody');
   if(tb&&!tb._wired){
+    _rowOpenWire(tb,'.bulk-cb','id');
     tb._wired=true;
     tb.addEventListener('click',e=>{
       try{
@@ -10046,6 +10108,7 @@ function _wireClientTables(){
   const wb=document.getElementById('wctbody');
   if(wb&&!wb._wired){
     wb._wired=true;
+    _rowOpenWire(wb,'.wc-bulk-chk','cid');
     wb.addEventListener('click',e=>{
       try{
         if(e.target.closest('button,input,a,select,label,textarea')) return;
@@ -11168,7 +11231,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.5.9';
+const UI_VERSION='1.6.1';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
