@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aspen Spas — Chemical Maintenance</title>
 <meta name="description" content="Aspen Spas Chemical Maintenance Dashboard">
-<meta name="theme-color" content="#2A211A">
+<meta name="theme-color" content="#0D2B3D">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -78,55 +78,56 @@ function _showSwUpdateBanner(reg){
   if(document.getElementById('sw-update-banner'))return;
   const b=document.createElement('div');
   b.id='sw-update-banner';
-  b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#2A211A;color:#FFF;padding:12px 18px;border-radius:12px;z-index:999998;display:flex;gap:12px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.3);font-family:inherit;font-size:14px;white-space:nowrap';
-  b.innerHTML='<span>🔄 Nueva versión / New version</span><button style="background:#B5733A;color:#FFF;border:none;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit" id="sw-update-btn">Actualizar</button>';
+  b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0D2B3D;color:#FFF;padding:12px 18px;border-radius:12px;z-index:999998;display:flex;gap:12px;align-items:center;box-shadow:0 8px 30px rgba(0,0,0,.3);font-family:inherit;font-size:14px;white-space:nowrap';
+  b.innerHTML='<span>🔄 Nueva versión / New version</span><button style="background:#1C8FA8;color:#FFF;border:none;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit" id="sw-update-btn">Actualizar</button>';
   document.body.appendChild(b);
   document.getElementById('sw-update-btn').onclick=()=>{ const w=reg.waiting; if(w)w.postMessage({type:'SKIP_WAITING'}); };
 }
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5EFE6;color:#2C2418;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv02','cv03','cv04','cv11'}
+body{font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F8F9;color:#1F2A30;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv02','cv03','cv04','cv11'}
 h1,h2,h3,h4{font-family:'Poppins',system-ui,sans-serif;letter-spacing:-.01em}
 /* ─── Aspen Spas brand palette — matches Service Ticket System ──────────
-   Header is near-black (#2A211A) with white wordmark and orange leaf icon.
-   Primary brand is Aspen burnt orange (#B5733A). Backgrounds are warm cream
-   (#F5EFE6 page, #FFFFFF card). Text is warm dark brown (#2C2418), muted is
-   warm gray-brown (#7A7060). Accent colors stay Apple system (green/red) but
+   Header is near-black (#0D2B3D) with white wordmark and orange leaf icon.
+   Primary brand is Aspen burnt orange (#1C8FA8). Backgrounds are warm cream
+   (#F4F8F9 page, #FFFFFF card). Text is warm dark brown (#1F2A30), muted is
+   warm gray-brown (#5A6A72). Accent colors stay Apple system (green/red) but
    shifted slightly warmer to fit the cream tone. */
 :root{
-  --brand:#B5733A;--brand2:#9A5F2C;--brand-dark:#874E22;--brand-light:#F4E7DA;
-  --warm:#F5EFE6;--warm2:#FAF7F1;
-  --accent:#B5733A;--gold:#D4860A;--rust:#C0392B;
-  --light:#FFFFFF;--mid:#D6CDB8;
-  --text:#2C2418;--muted:#7A7060;--dim:#A09888;
-  --border:#E5DDD0;--border-dark:#D6CDB8;
-  --green:#2D8A4E;--red:#C0392B;--purple:#D48F53;--cyan:#7E4C20;--blue:#B96F2E;--pink:#FF2D55;--indigo:#D59257;--teal:#DDA777;
-  /* Shared "chem = teal" identity — same values as TECH-TICKETS --c-chem-* */
-  --c-chem-bg:#dcf4f9;--c-chem-fg:#0e6a7d;--c-chem-strong:#1C8FA8;
-  --header-bg:#2A211A;--header-text:#FFFFFF;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:0 4px 16px rgba(0,0,0,.08);
-  --shadow-lg:0 8px 30px rgba(0,0,0,.12);
+  /* ═══ ASPEN OPS · Chemicals — Porcelana Spa (water identity) ═══ */
+  --brand:#1C8FA8;--brand2:#17788E;--brand-dark:#134A63;--brand-light:#E1F1F4;  /* teal = agua */
+  --warm:#F4F8F9;--warm2:#EDF3F5;                                                /* porcelana */
+  --accent:#1C8FA8;--gold:#1C8FA8;--rust:#C0492F;                                /* copper como especia */
+  --light:#FFFFFF;--mid:#C4D3D9;
+  --text:#1F2A30;--muted:#5A6A72;--dim:#8CA0A8;                                   /* charcoal */
+  --border:#DFE9EC;--border-dark:#C4D3D9;
+  --green:#2E8B57;--red:#C0492F;--purple:#7A6FA8;--cyan:#1C8FA8;--blue:#1C8FA8;--pink:#C0492F;--indigo:#4FC3D9;--teal:#4FC3D9;
+  --c-chem-bg:#E1F1F4;--c-chem-fg:#134A63;--c-chem-strong:#1C8FA8;
+  --header-bg:#0D2B3D;--header-text:#FFFFFF;                                      /* deep blue header */
+  --shadow:0 1px 3px rgba(19,74,99,.06),0 1px 2px rgba(19,74,99,.04);
+  --shadow-md:0 4px 16px rgba(19,74,99,.08);
+  --shadow-lg:0 8px 30px rgba(19,74,99,.12);
+  --aqua:#4FC3D9;--copper:#1C8FA8;--deep:#134A63;
 }
 .app{max-width:100%;margin:0;padding:0}
 /* Header — solid near-black like the Service Ticket System. White wordmark,
    orange leaf icon, orange tagline. No glassmorphism — clean editorial look. */
-.header{background:#2A211A;padding:14px 20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-radius:0;gap:12px 16px;box-shadow:0 1px 0 rgba(0,0,0,.08),inset 0 -1px 0 rgba(255,255,255,.04)}
+.header{background:#0D2B3D;padding:14px 20px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-radius:0;gap:12px 16px;box-shadow:0 1px 0 rgba(0,0,0,.08),inset 0 -1px 0 rgba(255,255,255,.04)}
 .logo-area{display:flex;align-items:center;gap:12px}
 .logo-mark{width:48px;height:48px;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible}
 .logo-mark svg{overflow:visible}
 .brand-name{color:#FFFFFF;font-size:24px;font-weight:300;line-height:1.1;letter-spacing:1.5px;text-transform:uppercase}
-.brand-sub{color:#B5733A;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;margin-top:2px}
+.brand-sub{color:#1C8FA8;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;margin-top:2px}
 .header-primary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-self:start}
 .header-secondary{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-self:end}
 .hbtn{padding:7px 15px;font-size:13.5px;border-radius:9px;cursor:pointer;font-weight:600;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#FFFFFF;font-family:inherit;transition:background .14s ease,border-color .14s ease,transform .08s ease,box-shadow .14s ease}
 .hbtn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.34);box-shadow:0 2px 8px rgba(0,0,0,.18)}
 .hbtn:active{transform:scale(.97)}
 .hbtn-sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
-.hbtn-accent{background:#B5733A;border-color:#B5733A;color:#FFFFFF;box-shadow:0 1px 4px rgba(181,115,58,.32)}
-.hbtn-accent:hover{background:#874E22;border-color:#874E22;box-shadow:0 2px 10px rgba(181,115,58,.45)}
-select.hbtn option{color:#2C2418;background:#FFFFFF}
+.hbtn-accent{background:#1C8FA8;border-color:#1C8FA8;color:#FFFFFF;box-shadow:0 1px 4px rgba(181,115,58,.32)}
+.hbtn-accent:hover{background:#134A63;border-color:#134A63;box-shadow:0 2px 10px rgba(181,115,58,.45)}
+select.hbtn option{color:#1F2A30;background:#FFFFFF}
 .tabs-bar{background:#FFFFFF;border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;flex-wrap:wrap;box-shadow:0 1px 0 rgba(0,0,0,.02)}
 .tab{padding:13px 18px;font-size:14.5px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:inherit;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;font-weight:600;letter-spacing:-.1px;transition:color .14s ease,border-color .14s ease,background .14s ease;border-radius:6px 6px 0 0}
 .tab.active{color:var(--brand);font-weight:700;border-bottom-color:var(--brand);background:linear-gradient(180deg,rgba(181,115,58,.05),transparent)}
@@ -218,7 +219,7 @@ body.no-billing #bnav-billing{display:none}
 .mcc .mpill{font-size:9.8px;font-weight:700;border-radius:8px;padding:2px 7px;white-space:nowrap}
 .mcc .mchev{margin-left:auto;color:#C9B99F;font-size:19px;flex-shrink:0}
 /* #25 contextual FAB */
-#fab{display:none;position:fixed;right:16px;bottom:86px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#CF8341,#B5733A);color:#FFF;font-size:27px;border:none;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(181,115,58,.45);z-index:950;cursor:pointer}
+#fab{display:none;position:fixed;right:16px;bottom:86px;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#CF8341,#1C8FA8);color:#FFF;font-size:27px;border:none;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(181,115,58,.45);z-index:950;cursor:pointer}
 @media(max-width:820px){body.fab-on #fab{display:flex}}
 /* #26 context menu */
 #ctx-menu{display:none;position:fixed;z-index:99978;background:var(--light);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px rgba(44,36,24,.22);min-width:200px;overflow:hidden}
@@ -228,8 +229,8 @@ body.no-billing #bnav-billing{display:none}
 #ctx-menu .cx-sep{border-top:1px solid var(--border)}
 #ctx-menu button.cx-danger{color:#DC2626}
 /* #28 skeletons */
-.sk{background:linear-gradient(90deg,#EDE4D6 25%,#F7F1E7 50%,#EDE4D6 75%);background-size:200% 100%;animation:skm 1.25s infinite;border-radius:8px}
-body.dark .sk{background:linear-gradient(90deg,#2A2014 25%,#382A18 50%,#2A2014 75%);background-size:200% 100%}
+.sk{background:linear-gradient(90deg,#E1F1F4 25%,#F4F8F9 50%,#CDE9EF 62%,#E1F1F4 75%);background-size:200% 100%;animation:skm 1.25s infinite;border-radius:8px}
+body.dark .sk{background:linear-gradient(90deg,#12333F 25%,#1A4553 50%,#12333F 75%);background-size:200% 100%}
 @keyframes skm{from{background-position:200% 0}to{background-position:-200% 0}}
 /* #29 filter chips */
 .fch{background:var(--brand-light);color:var(--brand-dark);border:none;border-radius:14px;padding:4px 11px;font:700 11.3px 'Source Sans 3',sans-serif;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
@@ -285,8 +286,8 @@ body.role-admin .switch-user-btn,body.role-organizer .switch-user-btn{display:no
 /* #22 contextual topbar actions */
 #ctx-actions{display:none;gap:7px;align-self:center}
 @media(min-width:900px){#ctx-actions{display:inline-flex}}
-#ctx-actions button{background:rgba(255,255,255,.10);border:1px solid rgba(233,198,167,.3);color:#F5EFE6;border-radius:8px;padding:4px 11px;font:700 11.5px 'Source Sans 3',sans-serif;cursor:pointer}
-#ctx-actions button.primary{background:#B5733A;border-color:#B5733A}
+#ctx-actions button{background:rgba(255,255,255,.10);border:1px solid rgba(233,198,167,.3);color:#F4F8F9;border-radius:8px;padding:4px 11px;font:700 11.5px 'Source Sans 3',sans-serif;cursor:pointer}
+#ctx-actions button.primary{background:#1C8FA8;border-color:#1C8FA8}
 /* #23 dashboard 2-column grid (desktop) */
 @media(min-width:1100px){
   /* :not(.hidden) — an id selector alone out-ranked .hidden{display:none},
@@ -324,7 +325,7 @@ body.dark #ctbody tr.crow:hover{background:#2A2114}
 #pdash,#pclients,#pcalendar,#pbilling,#pvisits,#psummary,#pwctab{animation:tabfade .16s ease}
 @keyframes tabfade{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
 .role-pick-card{max-width:470px}
-.role-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(181,115,58,.18);border-color:#B5733A!important;transition:all .15s}
+.role-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(181,115,58,.18);border-color:#1C8FA8!important;transition:all .15s}
 #tv-ov{display:none;position:fixed;inset:0;background:#171208;z-index:999995;color:#EDE6DB;text-align:center;cursor:pointer}
 #tv-ov.open{display:flex;flex-direction:column;align-items:center;justify-content:center}
 #tv-clock{position:fixed;top:22px;right:28px;font:600 17px 'Source Sans 3',sans-serif;color:#A08B72}
@@ -333,22 +334,22 @@ body.dark #ctbody tr.crow:hover{background:#2A2114}
 #tv-lbl{font-size:2.2vw;text-transform:uppercase;letter-spacing:.4vw;color:#A08B72;margin-top:2vh;font-weight:700}
 #tv-dots{margin-top:5vh}
 #tv-dots span{display:inline-block;width:9px;height:9px;border-radius:50%;background:#3A2E22;margin:0 4px}
-#tv-dots span.on{background:#B5733A}
+#tv-dots span.on{background:#1C8FA8}
 #sig-ov{display:none;position:fixed;inset:0;background:rgba(42,28,15,.55);z-index:999994;align-items:center;justify-content:center;padding:16px}
 #sig-ov.open{display:flex}
 #sig-card{background:#FFF;border-radius:16px;padding:16px 18px;max-width:640px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3)}
-#sig-canvas{width:100%;height:220px;background:#FFF;border:2px dashed #D6CDB8;border-radius:12px;touch-action:none;cursor:crosshair}
+#sig-canvas{width:100%;height:220px;background:#FFF;border:2px dashed #C4D3D9;border-radius:12px;touch-action:none;cursor:crosshair}
 #exec-report{display:none}
 body.printing-exec #exec-report{display:block}
 #route-sheets{display:none}
 body.printing-routes #route-sheets{display:block}
 @media print{
   body.printing-routes > *:not(#route-sheets){display:none!important}
-  body.printing-routes #route-sheets{display:block!important;font-family:'Source Sans 3',sans-serif;color:#2C2418}
+  body.printing-routes #route-sheets{display:block!important;font-family:'Source Sans 3',sans-serif;color:#1F2A30}
 }
 @media print{
   body.printing-exec > *:not(#exec-report){display:none!important}
-  body.printing-exec #exec-report{display:block!important;font-family:'Source Sans 3',sans-serif;color:#2C2418}
+  body.printing-exec #exec-report{display:block!important;font-family:'Source Sans 3',sans-serif;color:#1F2A30}
 }
 /* F3 — photo lightbox */
 #lb-ov{display:none;position:fixed;inset:0;background:rgba(18,12,6,.93);z-index:999996;align-items:center;justify-content:center}
@@ -413,7 +414,7 @@ body.drawer-open #cdrawer-bg{display:block}
 /* P3 — identity chip + breadcrumb */
 #u-chip{display:none;align-items:center;gap:7px;background:rgba(255,255,255,.08);border:1px solid rgba(233,198,167,.28);border-radius:20px;padding:3px 11px 3px 4px;cursor:pointer;align-self:center}
 #u-chip .uav{width:24px;height:24px;border-radius:50%;background:var(--brand);color:#FFF;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
-#u-chip b{color:#F5EFE6;font-size:12px;line-height:1.15;display:block}
+#u-chip b{color:#F4F8F9;font-size:12px;line-height:1.15;display:block}
 #u-chip small{color:#C9B99F;font-size:9.5px;display:block}
 #crumb{color:#C9B99F;font-size:12px;align-self:center;white-space:nowrap}
 #crumb b{color:#FFFFFF}
@@ -446,7 +447,7 @@ body:has(#off-bar) #bell-panel{top:104px!important}
 /* FIX — print: never print the app chrome, and never waste toner on dark mode */
 @media print{
   #bnav,#bnav-more-sheet,#wc-chips,#dark-toggle,#sw-update-banner,#wc-remind-bar{display:none!important}
-  body.dark{--warm:#F5EFE6;--warm2:#FAF7F1;--light:#FFFFFF;--text:#2C2418;--muted:#7A7060;--border:#E5DDD0;background:#FFF!important;color:#2C2418!important}
+  body.dark{--warm:#F4F8F9;--warm2:#EDF3F5;--light:#FFFFFF;--text:#1F2A30;--muted:#5A6A72;--border:#DFE9EC;background:#FFF!important;color:#1F2A30!important}
   body.dark .card,body.dark .metric,body.dark .modal{background:#FFF!important}
 }
 @media(max-width:820px){
@@ -826,7 +827,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 
 /* ─── Tech view (mobile-first, big touch targets) ────────────────────────── */
 #tech-view{min-height:100vh;background:linear-gradient(180deg,#FCF7F2 0%,#FCFAF8 100%);font-family:inherit;color:#2A1C0F;padding-bottom:30px}
-.tech-view-header{background:#2A211A;color:#FFFFFF;padding:20px 16px 16px;border-radius:0 0 16px 16px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.tech-view-header{background:#0D2B3D;color:#FFFFFF;padding:20px 16px 16px;border-radius:0 0 16px 16px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .tech-greet{font-size:14px;opacity:.9;margin-bottom:2px}
 .tech-name{font-size:24px;font-weight:700;margin-bottom:8px}
 .tech-day-info{font-size:15px;opacity:.95}
@@ -840,7 +841,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .tech-day-nav button{background:rgba(255,255,255,.14);color:#FFFFFF;border:1px solid rgba(255,255,255,.25);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s ease}
 .tech-day-nav button:hover:not(:disabled){background:rgba(255,255,255,.24)}
 .tech-day-nav button:disabled{opacity:.35;cursor:not-allowed}
-.tech-day-nav button.today-btn{background:#F59E0B;border-color:#F59E0B;color:#2A211A}
+.tech-day-nav button.today-btn{background:#F59E0B;border-color:#F59E0B;color:#0D2B3D}
 .tech-day-nav button.today-btn:hover{background:#FBBF24}
 /* Yellow ribbon under the header that shouts "you're viewing a PAST day" so
    the tech doesn't confuse it with today's route. */
@@ -910,7 +911,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .tech-progress-fill{height:100%;background:linear-gradient(90deg,#16A34A,#22C55E);transition:width .4s ease}
 
 /* Role-selection screen (shown on first load if no role saved) */
-.role-pick-overlay{position:fixed;inset:0;background:#2A211A;z-index:9999;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.role-pick-overlay{position:fixed;inset:0;background:#0D2B3D;z-index:9999;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .role-pick-card{background:#FFFFFF;border-radius:16px;padding:32px 28px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .role-pick-card h2{margin:0 0 8px;font-size:24px;color:#2A1C0F}
 .role-pick-card .sub{color:#81786E;margin-bottom:24px;font-size:14px}
@@ -1826,7 +1827,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .inv-chem-bar:hover{background:#FFF7ED}
 .inv-chem-name{flex:1;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
 .inv-chem-track{flex:0 0 140px;height:6px;background:#F9F5F1;border-radius:3px;overflow:hidden;position:relative}
-.inv-chem-fill{height:100%;background:linear-gradient(90deg,#F59E0B,#B5733A);border-radius:3px;transition:width .3s ease}
+.inv-chem-fill{height:100%;background:linear-gradient(90deg,#F59E0B,#1C8FA8);border-radius:3px;transition:width .3s ease}
 .inv-chem-amount{flex:0 0 90px;text-align:right;font-weight:700;color:var(--brand);font-size:13.5px}
 .inv-chem-unit{font-size:11px;color:var(--muted);font-weight:500}
 .inv-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:14px}
@@ -1849,9 +1850,69 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .ws-day-fill{height:100%;background:linear-gradient(90deg,#16A34A,#22C55E);border-radius:5px;display:flex;align-items:center;padding-left:8px;color:#FFFFFF;font-size:11.5px;font-weight:700;transition:width .3s ease}
 .ws-day-fill.empty{background:#EAE8E6}
 .ws-day-cnt{text-align:right;font-weight:600;color:var(--text);font-size:12.5px}
+
+/* ═══ ASPEN OPS — brand additions (Chemicals) ═══ */
+/* Aspen Spas real logo — leaf + wordmark */
+.aspen-logo-full{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
+.aspen-logo-full .leaf{width:30px;height:30px;flex-shrink:0}
+.aspen-logo-full .wordmark{font-family:'Poppins',sans-serif;font-weight:700;font-size:19px;letter-spacing:.5px;line-height:1;white-space:nowrap}
+.aspen-logo-full .wordmark .a{color:#6B4A2F}   /* ASPEN café oscuro */
+.aspen-logo-full .wordmark .s{color:#C97A3C;font-weight:600}  /* SPAS copper */
+/* on dark header, lighten the ASPEN text */
+.header .aspen-logo-full .wordmark .a, #rail .aspen-logo-full .wordmark .a{color:#EAF3F6}
+#rail .aspen-logo-full .wordmark{font-size:16px}
+#rail .aspen-logo-full .wordmark .a{color:var(--text)}
+.ops-waterline{position:relative;height:40px;margin:0;overflow:hidden;background:var(--header-bg);z-index:2}
+.ops-waterline svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(79,195,217,.35))}
+.ops-wl-glint{animation:opsGlint 7s linear infinite}
+@keyframes opsGlint{to{stroke-dashoffset:-96}}
+.ops-ripple-wave{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(28,143,168,.28) 0%,rgba(79,195,217,.1) 45%,transparent 70%);transform:translate(-50%,-50%) scale(0);animation:opsRipple .7s cubic-bezier(.25,.1,.25,1) forwards}
+@keyframes opsRipple{to{transform:translate(-50%,-50%) scale(1);opacity:0}}
+@media (prefers-reduced-motion: reduce){.ops-ripple-wave{display:none}.ops-wl-glint{animation:none}}
+
+/* ═══ ASPEN OPS — acuático: aurora + burbujas ═══ */
+body{position:relative}
+body::before{content:'';position:fixed;inset:0;background:var(--warm);z-index:-3}
+.ops-aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;filter:blur(80px);opacity:.5;pointer-events:none}
+.ops-blob{position:absolute;border-radius:50%;display:block}
+.ops-blob.ob1{width:480px;height:480px;background:rgba(79,195,217,.30);top:-140px;left:-80px;animation:opsD1 24s ease-in-out infinite alternate}
+.ops-blob.ob2{width:420px;height:420px;background:rgba(28,143,168,.22);bottom:-140px;right:-70px;animation:opsD2 30s ease-in-out infinite alternate}
+.ops-blob.ob3{width:360px;height:360px;background:rgba(181,115,58,.12);top:40%;left:50%;animation:opsD3 34s ease-in-out infinite alternate}
+@keyframes opsD1{to{transform:translate(80px,60px)}}
+@keyframes opsD2{to{transform:translate(-70px,-50px)}}
+@keyframes opsD3{to{transform:translate(-60px,40px) scale(1.15)}}
+.ops-bubbles{position:fixed;inset:0;z-index:500;overflow:hidden;pointer-events:none}
+.ops-bubble{position:absolute;bottom:-30px;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(125,214,232,.55),rgba(79,195,217,.14) 60%,transparent);box-shadow:0 0 6px rgba(79,195,217,.3);animation:opsBub linear infinite}
+@keyframes opsBub{0%{transform:translateY(0) translateX(0);opacity:0}8%{opacity:.7}92%{opacity:.5}100%{transform:translateY(-110vh) translateX(var(--sway,16px));opacity:0}}
+@media (prefers-reduced-motion: reduce){.ops-blob,.ops-bubble{animation:none!important}}
+
+/* ═══ Vista TÉCNICO: sin efectos (ligera para campo/móvil) ═══ */
+body.role-tech .ops-aurora,
+body.role-tech .ops-bubbles,
+body.role-tech .ops-waterline{display:none!important}
+
+
+/* ═══ ASPEN OPS — 3 efectos (count-up / water drop / shimmer) ═══ */
+/* Gota de agua al completar (éxito) */
+.ops-drop{position:fixed;z-index:100000;pointer-events:none;width:16px;height:16px;margin-left:-8px;margin-top:-8px}
+.ops-drop::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 40% 30%,#7DD6E8,#1C8FA8 70%);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;transform:rotate(45deg);box-shadow:0 0 10px rgba(79,195,217,.6);animation:opsDropFall .55s cubic-bezier(.4,0,.7,1) forwards}
+.ops-drop::after{content:'';position:absolute;left:50%;top:100%;width:34px;height:34px;margin-left:-17px;border:2px solid rgba(79,195,217,.55);border-radius:50%;transform:scale(0);opacity:0;animation:opsDropRipple .6s ease-out .45s forwards}
+@keyframes opsDropFall{0%{transform:translateY(-12px) scale(.7);opacity:0}25%{opacity:1}100%{transform:translateY(6px) scale(1);opacity:1}}
+@keyframes opsDropRipple{0%{transform:scale(0);opacity:.8}100%{transform:scale(1.6);opacity:0}}
+/* Shimmer acuático de carga */
+.ops-shimmer{position:relative;overflow:hidden;background:var(--warm2)!important}
+.ops-shimmer::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(79,195,217,.18),rgba(125,214,232,.28),rgba(79,195,217,.18),transparent);animation:opsShimmer 1.4s ease-in-out infinite}
+@keyframes opsShimmer{100%{transform:translateX(100%)}}
+/* count-up no necesita CSS, es JS */
+@media (prefers-reduced-motion: reduce){.ops-drop,.ops-shimmer::after{animation:none!important;display:none}}
+body.role-tech .ops-drop{display:none}
 </style>
 </head>
 <body>
+
+<!-- ═══ ASPEN OPS — ambient water: aurora + bubbles ═══ -->
+<div class="ops-aurora" aria-hidden="true"><span class="ops-blob ob1"></span><span class="ops-blob ob2"></span><span class="ops-blob ob3"></span></div>
+<div class="ops-bubbles" aria-hidden="true"></div>
 
 <!-- ─── Role selection overlay (first-load only, when no role saved) ───────── -->
 <div id="role-pick-overlay" class="role-pick-overlay" style="display:none">
@@ -1923,37 +1984,23 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 
 <div class="header">
   <div class="logo-area">
-    <div class="logo-mark">
-      <!-- Single orange Aspen leaf — matches the Service Ticket System logo.
-           Stylized leaf with central vein, in Aspen burnt orange. Sits flat
-           on the dark header (no white plate background). -->
-      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <span class="aspen-logo-full">
+      <svg class="leaf" width="38" height="38" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="asp-leaf-grad" x1="6" y1="6" x2="38" y2="38" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#F58A3F"/>
-            <stop offset="1" stop-color="#874E22"/>
+          <linearGradient id="asp-leaf-grad" x1="10" y1="4" x2="34" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#E8823A"/>
+            <stop offset="1" stop-color="#C2662B"/>
           </linearGradient>
         </defs>
-        <!-- Leaf body — pointed top, rounded bottom -->
-        <path d="M22 4
-                 C 14 8, 8 14, 7 22
-                 C 6 30, 11 37, 17 39
-                 C 19 39.6, 21 39.8, 22 39.8
-                 C 23 39.8, 25 39.6, 27 39
-                 C 33 37, 38 30, 37 22
-                 C 36 14, 30 8, 22 4 Z"
+        <!-- Aspen leaf: pointed curl top-right, rounded body (matches real logo) -->
+        <path d="M32 5 C23 7, 12 13, 10 25 C8.5 34.5, 13 41, 20 41 C21 34, 22.5 27, 28 20 C24 27, 22.5 34, 23.5 41 C31 39, 37 31, 36.5 22 C36 13, 34 8, 32 5 Z"
               fill="url(#asp-leaf-grad)"/>
-        <!-- Central vein -->
-        <path d="M22 6 L22 39" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
-        <!-- Side veins -->
-        <path d="M22 14 L14 19" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity=".35"/>
-        <path d="M22 14 L30 19" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity=".35"/>
-        <path d="M22 22 L13 27" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity=".3"/>
-        <path d="M22 22 L31 27" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+        <!-- inner vein curl -->
+        <path d="M20 35 C22 27, 25 20, 30 15" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
       </svg>
-    </div>
-    <div>
-      <div class="brand-name">Aspen Spas</div>
+      <span class="wordmark"><span class="a">ASPEN</span> <span class="s">SPAS</span></span>
+    </span>
+    <div style="margin-left:4px">
       <div class="brand-sub">Chemical Maintenance</div>
     </div>
   </div>
@@ -1987,6 +2034,40 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
     <div id="u-chip" onclick="switchUser()" title="Cambiar usuario"><span class="uav" id="u-av">?</span><span><b id="u-name">—</b><small id="u-role"></small></span></div>
     <span id="cloud-ind" style="font-size:11px;color:#E9C6A7;opacity:.85;align-self:center;white-space:nowrap"></span>
   </div>
+</div>
+
+<!-- ═══ LÍNEA DE AGUA — Aspen OPS signature (water app) ═══ -->
+<div class="ops-waterline" aria-hidden="true">
+  <svg viewBox="0 0 1100 34" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="ops-wl-grad" x1="0" x2="1">
+        <stop offset="0" stop-color="#1C8FA8" stop-opacity=".35"/>
+        <stop offset=".5" stop-color="#4FC3D9" stop-opacity="1"/>
+        <stop offset="1" stop-color="#B5733A" stop-opacity=".5"/>
+      </linearGradient>
+      <linearGradient id="ops-wl-fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4FC3D9" stop-opacity=".2"/>
+        <stop offset="1" stop-color="#4FC3D9" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#ops-wl-fill)"
+      d="M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13 L1100,34 L0,34 Z">
+      <animate attributeName="d" dur="8s" repeatCount="indefinite"
+        values="M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13 L1100,34 L0,34 Z;
+                M0,13 C140,17 260,11 400,15 S680,18 820,12 S1020,11 1100,15 L1100,34 L0,34 Z;
+                M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13 L1100,34 L0,34 Z"/>
+    </path>
+    <path fill="none" stroke="url(#ops-wl-grad)" stroke-width="1.8"
+      d="M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13">
+      <animate attributeName="d" dur="8s" repeatCount="indefinite"
+        values="M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13;
+                M0,13 C140,17 260,11 400,15 S680,18 820,12 S1020,11 1100,15;
+                M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13"/>
+    </path>
+    <path fill="none" stroke="rgba(181,115,58,.55)" stroke-width="1" stroke-linecap="round"
+      stroke-dasharray="2 46" class="ops-wl-glint"
+      d="M0,14 C140,10 260,18 400,14 S680,10 820,14 S1020,18 1100,13"/>
+  </svg>
 </div>
 
 <div class="tabs-bar">
@@ -2025,7 +2106,7 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 <!-- #12 — Signature pad -->
 <div id="sig-ov">
   <div id="sig-card">
-    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:15px;color:#2C2418;margin-bottom:8px">✍️ <span id="sig-title">Firma del cliente</span></div>
+    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:15px;color:#1F2A30;margin-bottom:8px">✍️ <span id="sig-title">Firma del cliente</span></div>
     <canvas id="sig-canvas" width="600" height="220"></canvas>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
       <button class="btn" onclick="sigClear()">↺ Borrar</button>
@@ -3570,6 +3651,8 @@ function showToast(msg,type){
   el.textContent=msg;
   el.onclick=()=>el.remove();
   host.appendChild(el);
+  // Aspen OPS: gota de agua en éxitos
+  if((type==='ok'||!type)&&window.opsWaterDrop){try{const r=el.getBoundingClientRect();window.opsWaterDrop(r.left+r.width/2,r.top);}catch(e){}}
   setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},type==='err'?5500:3500);
 }
 // Promise-based confirmation modal (replaces blocking confirm())
@@ -4579,10 +4662,10 @@ function rc(){
     // V3 — status strip (left edge) + initials avatar
     const _d=parseLocalDate(c.nwc), _now=todayLocal();
     let strip='#16A34A';
-    if(c.status!=='active') strip='#A09888';
+    if(c.status!=='active') strip='#8CA0A8';
     else if(_d&&_d<_now&&!c.wcN) strip='#DC2626';
     else if(_d&&((_d-_now)/86400000)<=30) strip='#F59E0B';
-    else if(!_d) strip='#D6CDB8';
+    else if(!_d) strip='#C4D3D9';
     const _p=String(c.name||'').replace(',',' ').split(/\s+/).filter(Boolean);
     const _ini=((_p[0]||' ')[0]+((_p[1]||' ')[0]||'')).toUpperCase();
     return`<tr class="crow" onclick="if(event.target.closest('button,input,a,select'))return;vc(${c.id})" oncontextmenu="ctxMenu(event,${c.id})" style="box-shadow:inset 4px 0 0 ${strip}">
@@ -9711,7 +9794,7 @@ function _renderWCRemindBar(){
       const days=Math.ceil((d-now)/86400000);
       const badge=days<0
         ?'<span style="color:#DC2626;font-weight:700;font-size:12.5px">'+Math.abs(days)+'d '+(LANG==='es'?'vencido':'overdue')+'</span>'
-        :'<span style="color:#B5733A;font-weight:700;font-size:12.5px">'+(days===0?(LANG==='es'?'HOY':'TODAY'):days+'d')+'</span>';
+        :'<span style="color:#1C8FA8;font-weight:700;font-size:12.5px">'+(days===0?(LANG==='es'?'HOY':'TODAY'):days+'d')+'</span>';
       return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px dashed var(--border);flex-wrap:wrap">'
         +'<strong style="cursor:pointer;color:var(--brand)" onclick="vc('+c.id+')">'+esc(c.name)+'</strong>'
         +'<span style="font-size:12.8px;color:var(--muted)">'+esc(c.nwc)+'</span>'+badge
@@ -9771,19 +9854,19 @@ function copyClientPortalLink(cid){
 function _renderClientPortal(token){
   const ov=document.createElement('div');
   ov.id='client-portal';
-  ov.style.cssText='position:fixed;inset:0;z-index:999999;background:#F5EFE6;overflow:auto;-webkit-overflow-scrolling:touch';
-  ov.innerHTML='<div style="max-width:640px;margin:0 auto;padding:0 16px 60px" id="cp-body"><div style="text-align:center;padding:80px 0;color:#7A7060;font-size:15px">Loading your spa care history…</div></div>';
+  ov.style.cssText='position:fixed;inset:0;z-index:999999;background:#F4F8F9;overflow:auto;-webkit-overflow-scrolling:touch';
+  ov.innerHTML='<div style="max-width:640px;margin:0 auto;padding:0 16px 60px" id="cp-body"><div style="text-align:center;padding:80px 0;color:#5A6A72;font-size:15px">Loading your spa care history…</div></div>';
   document.body.appendChild(ov);
   let tries=0;
   const tryLoad=()=>{
-    if(!fbDB){ if(++tries<20){ setTimeout(tryLoad,600); } else { document.getElementById('cp-body').innerHTML='<div style="text-align:center;padding:80px 0;color:#7A7060">Could not connect. Please check your internet and reload.</div>'; } return; }
+    if(!fbDB){ if(++tries<20){ setTimeout(tryLoad,600); } else { document.getElementById('cp-body').innerHTML='<div style="text-align:center;padding:80px 0;color:#5A6A72">Could not connect. Please check your internet and reload.</div>'; } return; }
     fbDB.ref('aspen_spas/portal/'+token).once('value').then(s=>{
       const d=s.val();
       const el=document.getElementById('cp-body');
-      if(!d){ el.innerHTML='<div style="text-align:center;padding:80px 0;color:#7A7060">This link is not active.<br>Please contact Aspen Spas at (314) 776-5050.</div>'; return; }
+      if(!d){ el.innerHTML='<div style="text-align:center;padding:80px 0;color:#5A6A72">This link is not active.<br>Please contact Aspen Spas at (314) 776-5050.</div>'; return; }
       el.innerHTML=_portalHtml(d);
     }).catch(()=>{
-      document.getElementById('cp-body').innerHTML='<div style="text-align:center;padding:80px 0;color:#7A7060">Could not load your history right now.<br>Please try again later or call (314) 776-5050.</div>';
+      document.getElementById('cp-body').innerHTML='<div style="text-align:center;padding:80px 0;color:#5A6A72">Could not load your history right now.<br>Please try again later or call (314) 776-5050.</div>';
     });
   };
   setTimeout(tryLoad,800);
@@ -9792,36 +9875,36 @@ function _portalHtml(d){
   const fmtD=s=>{ try{ return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }catch(e){ return s; } };
   const readingsRow=r=>{
     if(!r) return '';
-    const items=Object.entries(r).filter(([,v])=>v!==''&&v!=null).map(([k,v])=>'<span style="background:#F4E7DA;border-radius:6px;padding:3px 9px;font-size:12.5px;color:#874E22;font-weight:600">'+esc(String(k).toUpperCase())+': '+esc(String(v))+'</span>');
+    const items=Object.entries(r).filter(([,v])=>v!==''&&v!=null).map(([k,v])=>'<span style="background:#F4E7DA;border-radius:6px;padding:3px 9px;font-size:12.5px;color:#134A63;font-weight:600">'+esc(String(k).toUpperCase())+': '+esc(String(v))+'</span>');
     return items.length?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+items.join('')+'</div>':'';
   };
   const chemRow=ch=>{
     if(!ch) return '';
     const items=Object.entries(ch).filter(([,v])=>v&&v!=='0').map(([k,v])=>esc(k)+' ('+esc(String(v))+')');
-    return items.length?'<div style="font-size:12.8px;color:#7A7060;margin-top:5px">Chemicals: '+items.join(' · ')+'</div>':'';
+    return items.length?'<div style="font-size:12.8px;color:#5A6A72;margin-top:5px">Chemicals: '+items.join(' · ')+'</div>':'';
   };
   const photoRow=ph=>{
     if(!ph||!ph.length) return '';
-    return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+ph.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener" style="line-height:0;border-radius:8px;overflow:hidden;border:1px solid #E5DDD0"><img src="'+esc(u)+'" style="width:92px;height:92px;object-fit:cover;display:block"></a>').join('')+'</div>';
+    return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+ph.map(u=>'<a href="'+esc(u)+'" target="_blank" rel="noopener" style="line-height:0;border-radius:8px;overflow:hidden;border:1px solid #DFE9EC"><img src="'+esc(u)+'" style="width:92px;height:92px;object-fit:cover;display:block"></a>').join('')+'</div>';
   };
   const visits=(d.visits||[]).map(v=>{
     const done=v.status!=='not_done';
-    return '<div style="background:#FFFFFF;border:1px solid #E5DDD0;border-radius:12px;padding:14px 16px;margin-bottom:10px">'
-      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><strong style="color:#2C2418;font-size:15px">'+fmtD(v.date)+'</strong>'
+    return '<div style="background:#FFFFFF;border:1px solid #DFE9EC;border-radius:12px;padding:14px 16px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><strong style="color:#1F2A30;font-size:15px">'+fmtD(v.date)+'</strong>'
       +(done?'<span style="background:#DCFCE7;color:#166534;border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:700">✓ Serviced</span>':'<span style="background:#FEF3C7;color:#92400E;border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:700">Rescheduled</span>')
-      +(v.tech?'<span style="color:#7A7060;font-size:12.8px">by '+esc(v.tech)+'</span>':'')+'</div>'
+      +(v.tech?'<span style="color:#5A6A72;font-size:12.8px">by '+esc(v.tech)+'</span>':'')+'</div>'
       +readingsRow(v.readings)+chemRow(v.chemicals)+photoRow(v.photos)
       +'</div>';
   }).join('');
-  return '<div style="background:#2A211A;margin:0 -16px;padding:26px 20px 22px;text-align:center">'
+  return '<div style="background:#0D2B3D;margin:0 -16px;padding:26px 20px 22px;text-align:center">'
     +'<div style="color:#FFFFFF;font-size:22px;font-weight:300;letter-spacing:2px;font-family:Poppins,sans-serif">ASPEN SPAS</div>'
-    +'<div style="color:#B5733A;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-top:3px">Your Spa Care Portal</div></div>'
-    +'<div style="padding-top:18px"><h2 style="color:#2C2418;font-size:20px;margin-bottom:2px;font-family:Poppins,sans-serif">'+esc(d.name||'')+'</h2>'
-    +'<div style="color:#7A7060;font-size:13px;margin-bottom:14px">Updated '+(d.updatedAt?new Date(d.updatedAt).toLocaleDateString('en-US',{month:'long',day:'numeric'}):'')+'</div>'
-    +(d.nextWaterChange?'<div style="background:linear-gradient(135deg,#B5733A,#874E22);color:#FFF;border-radius:14px;padding:16px 18px;margin-bottom:16px"><div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;opacity:.85;font-weight:700">Next water change</div><div style="font-size:21px;font-weight:700;margin-top:2px">'+fmtD(d.nextWaterChange)+'</div>'+(d.sanitizer?'<div style="font-size:12.5px;opacity:.85;margin-top:4px">Sanitizer: '+esc(d.sanitizer)+'</div>':'')+'</div>':'')
-    +'<h3 style="color:#2C2418;font-size:15px;margin:6px 0 10px;font-family:Poppins,sans-serif">Recent service visits</h3>'
-    +(visits||'<div style="color:#7A7060;font-size:14px">No visits recorded yet.</div>')
-    +'<div style="text-align:center;color:#A09888;font-size:12px;margin-top:24px">Questions? Call us at (314) 776-5050<br>Aspen Spas · 4609 McRee Ave, St. Louis, MO</div></div>';
+    +'<div style="color:#1C8FA8;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-top:3px">Your Spa Care Portal</div></div>'
+    +'<div style="padding-top:18px"><h2 style="color:#1F2A30;font-size:20px;margin-bottom:2px;font-family:Poppins,sans-serif">'+esc(d.name||'')+'</h2>'
+    +'<div style="color:#5A6A72;font-size:13px;margin-bottom:14px">Updated '+(d.updatedAt?new Date(d.updatedAt).toLocaleDateString('en-US',{month:'long',day:'numeric'}):'')+'</div>'
+    +(d.nextWaterChange?'<div style="background:linear-gradient(135deg,#1C8FA8,#134A63);color:#FFF;border-radius:14px;padding:16px 18px;margin-bottom:16px"><div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;opacity:.85;font-weight:700">Next water change</div><div style="font-size:21px;font-weight:700;margin-top:2px">'+fmtD(d.nextWaterChange)+'</div>'+(d.sanitizer?'<div style="font-size:12.5px;opacity:.85;margin-top:4px">Sanitizer: '+esc(d.sanitizer)+'</div>':'')+'</div>':'')
+    +'<h3 style="color:#1F2A30;font-size:15px;margin:6px 0 10px;font-family:Poppins,sans-serif">Recent service visits</h3>'
+    +(visits||'<div style="color:#5A6A72;font-size:14px">No visits recorded yet.</div>')
+    +'<div style="text-align:center;color:#8CA0A8;font-size:12px;margin-top:24px">Questions? Call us at (314) 776-5050<br>Aspen Spas · 4609 McRee Ave, St. Louis, MO</div></div>';
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -9867,7 +9950,7 @@ function _cdChemistry(c){
     const stTxt=inBand?(es?'\u2713 en rango':'\u2713 in range'):(trend==='\u2197'?(es?'subiendo':'rising'):trend==='\u2198'?(es?'bajando':'dropping'):(es?'fuera de rango':'out of range'));
     return '<div style="display:flex;align-items:center;gap:10px;background:var(--warm2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12.5px">'
       +'<b style="min-width:52px;text-transform:uppercase;font-size:11.5px">'+esc(p)+'</b>'
-      +'<svg width="'+W+'" height="'+H+'" style="flex-shrink:0">'+bandRect+'<polyline points="'+pts+'" fill="none" stroke="'+(inBand?'#1C8FA8':'#B5733A')+'" stroke-width="2" stroke-linejoin="round"></polyline></svg>'
+      +'<svg width="'+W+'" height="'+H+'" style="flex-shrink:0">'+bandRect+'<polyline points="'+pts+'" fill="none" stroke="'+(inBand?'#1C8FA8':'#1C8FA8')+'" stroke-width="2" stroke-linejoin="round"></polyline></svg>'
       +'<small style="font-weight:700;color:'+(inBand?'#16A34A':'#B45309')+';white-space:nowrap">'+last+' '+trend+'<br><span style="font-weight:600">'+stTxt+'</span></small></div>';
   }).join('')+'<div style="font-size:11px;color:var(--muted)">'+(es?'\u00daltimas ':'Last ')+Math.min(keys.length,8)+(es?' visitas con lecturas \u00b7 banda verde = rango ideal':' visits with readings \u00b7 green band = ideal range')+'</div>';
 }
@@ -9892,15 +9975,15 @@ async function printRouteSheets(){
       const ordered=(typeof getOrderedClients==='function')?getOrderedClients(dayClients,dayKey,wt):dayClients;
       if(!ordered.length) return;
       html+='<div style="page-break-after:always;max-width:700px;margin:0 auto;padding:26px 12px;font-size:12px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #B5733A;padding-bottom:8px;margin-bottom:12px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #1C8FA8;padding-bottom:8px;margin-bottom:12px">'
         +'<b style="font-family:Poppins,sans-serif;font-size:16px">\uD83C\uDF42 '+(es?'Ruta \u2014 ':'Route \u2014 ')+(es?dayEs[dayKey]:dayKey)+'</b>'
         +'<span>'+d2.toLocaleDateString(es?'es-US':'en-US',{month:'short',day:'numeric'})+' \u00b7 '+(es?'Semana ':'Week ')+wt+'</span></div>'
-        +ordered.map((c,j)=>'<div style="display:flex;gap:9px;padding:8px 0;border-bottom:1px dashed #D6CDB8">'
-          +'<span style="width:20px;height:20px;border-radius:50%;background:#2A211A;color:#FFF;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">'+(j+1)+'</span>'
+        +ordered.map((c,j)=>'<div style="display:flex;gap:9px;padding:8px 0;border-bottom:1px dashed #C4D3D9">'
+          +'<span style="width:20px;height:20px;border-radius:50%;background:#0D2B3D;color:#FFF;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">'+(j+1)+'</span>'
           +'<div><b>'+esc(c.name)+'</b>'+(c.addr?' \u00b7 '+esc(c.addr):'')+'<br>'
           +(c.phone?'\uD83D\uDCDE '+esc(c.phone)+' \u00b7 ':'')+(c.san?'\uD83E\uDDEA '+esc(c.san):'')
-          +(c.notes?'<br><i style="color:#7A7060">'+esc(c.notes)+'</i>':'')+'</div></div>').join('')
-        +'<div style="color:#7A7060;margin-top:12px">'+(es?'Notas':'Notes')+': ______________________________________________</div></div>';
+          +(c.notes?'<br><i style="color:#5A6A72">'+esc(c.notes)+'</i>':'')+'</div></div>').join('')
+        +'<div style="color:#5A6A72;margin-top:12px">'+(es?'Notas':'Notes')+': ______________________________________________</div></div>';
     });
     if(!html){ showToast(es?'Sin paradas esta semana':'No stops this week','warn'); return; }
     let box=document.getElementById('route-sheets');
@@ -10267,7 +10350,7 @@ function _renderClientCards(page){
     const ini=((_p[0]||' ')[0]+((_p[1]||' ')[0]||'')).toUpperCase();
     const d=parseLocalDate(c.nwc);
     let pill='',avs='';
-    if(c.status!=='active'){ pill='<span class="mpill" style="background:#EDE4D6;color:#7A7060">'+(c.status==='paused'?(es?'Pausado':'Paused'):(es?'Cancelado':'Cancelled'))+'</span>'; avs='background:#EDE4D6;color:#7A7060'; }
+    if(c.status!=='active'){ pill='<span class="mpill" style="background:#EDE4D6;color:#5A6A72">'+(c.status==='paused'?(es?'Pausado':'Paused'):(es?'Cancelado':'Cancelled'))+'</span>'; avs='background:#EDE4D6;color:#5A6A72'; }
     else if(d&&d<now&&!c.wcN){ const days=Math.floor((now-d)/86400000); pill='<span class="mpill" style="background:#FEE2E2;color:#991B1B">C.A. '+(es?'vencido':'overdue')+' '+days+'d</span>'; avs='background:#FEE2E2;color:#991B1B'; }
     else if(d&&(d-now)/86400000<=30){ pill='<span class="mpill" style="background:#FEF3C7;color:#92400E">C.A. '+esc(c.nwc.slice(5))+'</span>'; }
     else if(c.nwc){ pill='<span class="mpill" style="background:#DCFCE7;color:#15803D">C.A. '+esc(c.nwc.slice(5))+'</span>'; }
@@ -10382,7 +10465,7 @@ function _buildRail(){
   const groups=[[es?'Operaci\u00f3n':'Operations',['dash','clients','calendar','wctab']],[es?'Administraci\u00f3n':'Admin',['billing','visits','summary']]];
   const nav=document.createElement('nav');
   nav.id='rail';
-  nav.innerHTML='<div class="r-logo">\uD83C\uDF42 Aspen Spas</div>'
+  nav.innerHTML='<div class="r-logo"><span class="aspen-logo-full"><svg class="leaf" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rail-leaf-grad" x1="10" y1="6" x2="34" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E8823A"/><stop offset="1" stop-color="#C2662B"/></linearGradient></defs><path d="M30 4C22 6 12 12 10 24c-1.5 9 3 16 10 16 1-6 2-12 7-18-3 6-4 12-3 18 7-2 12-9 12-18C36 12 34 7 30 4Z" fill="url(#rail-leaf-grad)"/><path d="M20 34c2-7 5-13 10-18" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".7"/></svg><span class="wordmark"><span class="a">ASPEN</span> <span class="s">SPAS</span></span></span></div>'
     +groups.map(g=>'<div class="r-sec">'+g[0]+'</div>'
       +g[1].map(id=>{ const t2=byId[id]; return '<button data-tab="'+t2[0]+'" onclick="_bnavGo(\''+t2[0]+'\')">'+t2[1]+' '+(es?t2[2]:t2[3])+'</button>'; }).join('')).join('')
     +'<div class="r-foot" id="rail-foot" onclick="switchUser()" title="'+(es?'Cambiar usuario':'Switch user')+'"></div>';
@@ -10577,18 +10660,27 @@ function deleteView(i){
 /* #18 — metric count-up */
 function _animateMetrics(){
   if(window._metsAnimated) return;
+  if(document.body.classList.contains('role-tech')) return;  // tech = ligero
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   window._metsAnimated=true;
+  // conteos simples en #mets
   document.querySelectorAll('#mets .mval').forEach(el=>{
     const target=parseInt(el.textContent,10);
     if(!isFinite(target)||target<=0||target>5000) return;
     const t0=performance.now();
     const step=t2=>{
-      const p=Math.min((t2-t0)/450,1);
+      const p=Math.min((t2-t0)/700,1);
       el.textContent=Math.round(target*(1-Math.pow(1-p,3)));
       if(p<1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   });
+  // revenue $29,430 y otros — usa opsCountUp (maneja $ y comas)
+  setTimeout(()=>{
+    if(window.opsCountUp){
+      document.querySelectorAll('#rev-metrics .mval').forEach(el=>window.opsCountUp(el));
+    }
+  },80);
 }
 /* #16 — voice search in the palette */
 function ckVoice(){
@@ -10622,7 +10714,7 @@ function openSignaturePad(cid,dateKey){
   _sigCtx=cv.getContext('2d');
   _sigCtx.scale(scale,scale);
   _sigCtx.fillStyle='#FFFFFF'; _sigCtx.fillRect(0,0,cv.width,cv.height);
-  _sigCtx.strokeStyle='#2C2418'; _sigCtx.lineWidth=2.4; _sigCtx.lineCap='round'; _sigCtx.lineJoin='round';
+  _sigCtx.strokeStyle='#1F2A30'; _sigCtx.lineWidth=2.4; _sigCtx.lineCap='round'; _sigCtx.lineJoin='round';
   _sigDrawn=false;
   if(!cv._wired){
     cv._wired=true;
@@ -10675,17 +10767,17 @@ function printExecReport(){
         const v=VL[cid][dk]; if(v&&!v._deleted&&v.status==='done') visits++;
       }
     }));
-    const line=(l,v2,color)=>'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #E5DDD0;font-size:13px"><span>'+l+'</span><b'+(color?' style="color:'+color+'"':'')+'>'+v2+'</b></div>';
+    const line=(l,v2,color)=>'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #DFE9EC;font-size:13px"><span>'+l+'</span><b'+(color?' style="color:'+color+'"':'')+'>'+v2+'</b></div>';
     document.getElementById('exec-report').innerHTML='<div style="max-width:680px;margin:0 auto;padding:30px 10px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #B5733A;padding-bottom:12px;margin-bottom:16px">'
-      +'<div><div style="font-family:Poppins,sans-serif;font-weight:300;letter-spacing:2px;font-size:22px">ASPEN SPAS</div><div style="color:#7A7060;font-size:12px">Chemical Maintenance \u2014 '+esc(curQ)+' '+(es?'Reporte ejecutivo':'Executive Report')+'</div></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1C8FA8;padding-bottom:12px;margin-bottom:16px">'
+      +'<div><div style="font-family:Poppins,sans-serif;font-weight:300;letter-spacing:2px;font-size:22px">ASPEN SPAS</div><div style="color:#5A6A72;font-size:12px">Chemical Maintenance \u2014 '+esc(curQ)+' '+(es?'Reporte ejecutivo':'Executive Report')+'</div></div>'
       +'<span style="font-size:30px">\uD83C\uDF42</span></div>'
       +line(es?'Clientes activos':'Active clients',ac.length)
       +line(es?'Facturado \u2014 '+curQ:'Invoiced \u2014 '+curQ,fmtUSD(inv)+' ('+invN+')')
       +line(es?'Cobrado':'Collected',fmtUSD(paid)+' ('+(inv?Math.round(paid/inv*100):0)+'%)','#16A34A')
       +line(es?'Visitas realizadas en el trimestre':'Visits completed this quarter',visits)
       +line(es?'Water changes vencidos':'Overdue water changes',overdue,overdue?'#DC2626':'#16A34A')
-      +'<div style="text-align:center;color:#A09888;font-size:10.5px;margin-top:22px">'+(es?'Generado':'Generated')+' '+new Date().toLocaleDateString(es?'es-US':'en-US',{month:'long',day:'numeric',year:'numeric'})+' \u00b7 aspenspas.com \u00b7 (314) 776-5050</div></div>';
+      +'<div style="text-align:center;color:#8CA0A8;font-size:10.5px;margin-top:22px">'+(es?'Generado':'Generated')+' '+new Date().toLocaleDateString(es?'es-US':'en-US',{month:'long',day:'numeric',year:'numeric'})+' \u00b7 aspenspas.com \u00b7 (314) 776-5050</div></div>';
     document.body.classList.add('printing-exec');
     setTimeout(()=>{ window.print(); setTimeout(()=>document.body.classList.remove('printing-exec'),500); },120);
   }catch(e){ dbgWarn('exec report',e); }
@@ -10735,7 +10827,7 @@ function closeTvMode(){
 }
 /* ══════════ NIVEL PRO 2 — helpers (campo + gestión) ══════════ */
 /* #8 — consistent color per technician, everywhere */
-const _TECH_PAL=['#B5733A','#1C8FA8','#7C3AED','#16A34A','#DC2626','#D4860A','#2563EB','#DB2777','#0D9488','#7A4E1E'];
+const _TECH_PAL=['#1C8FA8','#1C8FA8','#7C3AED','#16A34A','#DC2626','#D4860A','#2563EB','#DB2777','#0D9488','#7A4E1E'];
 function techColor(name){
   const s=String(name||'?');
   let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
@@ -11081,7 +11173,7 @@ function _cdRender(){
   const _p=String(c.name||'').replace(',',' ').split(/\s+/).filter(Boolean);
   const ini=((_p[0]||' ')[0]+((_p[1]||' ')[0]||'')).toUpperCase();
   const d=parseLocalDate(c.nwc), now=todayLocal();
-  const wcState=c.status!=='active'?['#A09888',es?'Inactivo':'Inactive']
+  const wcState=c.status!=='active'?['#8CA0A8',es?'Inactivo':'Inactive']
     :d&&d<now&&!c.wcN?['#DC2626',(es?'C.A. vencido':'W.C. overdue')]
     :d&&((d-now)/86400000)<=30?['#F59E0B',(es?'C.A. pr\u00f3ximo':'W.C. soon')]
     :['#16A34A',es?'Al d\u00eda':'Up to date'];
@@ -11296,7 +11388,7 @@ function _renderBillingCharts(){
       const isCur=d.q===curQ;
       return '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;font-size:10.3px;color:var(--muted)">'
         +'<span style="font-weight:700;color:var(--text)">'+(d.inv?'$'+(d.inv>=1000?(d.inv/1000).toFixed(1)+'k':d.inv.toFixed(0)):'\u2014')+'</span>'
-        +'<div style="width:100%;height:'+h+'%;border-radius:6px 6px 0 0;background:'+(isCur?'linear-gradient(180deg,#2D8A4E,#16A34A)':'linear-gradient(180deg,#CF8341,#B5733A)')+';min-height:4px" title="'+d.q+'"></div>'
+        +'<div style="width:100%;height:'+h+'%;border-radius:6px 6px 0 0;background:'+(isCur?'linear-gradient(180deg,#2D8A4E,#16A34A)':'linear-gradient(180deg,#CF8341,#1C8FA8)')+';min-height:4px" title="'+d.q+'"></div>'
         +d.q.split(' ')[0]+'</div>';
     }).join('')+'</div></div>'
     +'<div style="background:var(--warm2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center">'
@@ -11350,7 +11442,7 @@ function openSystemStatus(){
               const on=dv.online===true;
               const ago=dv.lastSeen?Math.round((Date.now()-new Date(dv.lastSeen).getTime())/60000):null;
               const agoTxt=on?(es?'\u25CF ahora':'\u25CF now'):(ago==null?'\u2014':ago<60?(es?'hace ':'')+ago+' min':(es?'hace ':'')+Math.round(ago/60)+' h');
-              return '<div class="pres-row"><span class="pres-dot" style="background:'+(on?'#16A34A':'#D6CDB8')+'"></span><b>'+esc(dv.who||'?')+'</b><small style="color:var(--muted)">\u00b7 '+esc(dv.role||'')+' \u00b7 '+esc(dv.platform||'')+'</small><small style="margin-left:auto;color:'+(on?'#16A34A':'var(--muted)')+';font-weight:700">'+agoTxt+'</small></div>';
+              return '<div class="pres-row"><span class="pres-dot" style="background:'+(on?'#16A34A':'#C4D3D9')+'"></span><b>'+esc(dv.who||'?')+'</b><small style="color:var(--muted)">\u00b7 '+esc(dv.role||'')+' \u00b7 '+esc(dv.platform||'')+'</small><small style="margin-left:auto;color:'+(on?'#16A34A':'var(--muted)')+';font-weight:700">'+agoTxt+'</small></div>';
             }).join('');
         }
       }).catch(e=>dbgWarn('caught:',e));
@@ -13187,13 +13279,13 @@ function showRoleSelection(){
   if(typeof PORTAL_TOKEN!=='undefined'&&PORTAL_TOKEN)return;
   const card=document.getElementById('role-pick-card');
   if(!card)return;
-  try{ card.parentElement.style.background='linear-gradient(160deg,#2A211A 0%,#3A2A1C 100%)'; }catch(e){ dbgWarn('caught:',e); }
+  try{ card.parentElement.style.background='linear-gradient(160deg,#0D2B3D 0%,#3A2A1C 100%)'; }catch(e){ dbgWarn('caught:',e); }
   card.innerHTML = `
     <div style="text-align:center;margin-bottom:14px">
       <div style="font-size:36px;line-height:1">🍂</div>
       <div style="font-family:'Poppins',sans-serif;font-weight:300;letter-spacing:3px;font-size:21px;color:#2A1C0F;margin-top:6px">ASPEN SPAS</div>
-      <div style="color:#B5733A;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Chemical Maintenance System</div>
-      <div style="color:#A09888;font-size:10px;margin-top:3px">v${typeof UI_VERSION!=='undefined'?UI_VERSION:''} · St. Louis, MO</div>
+      <div style="color:#1C8FA8;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Chemical Maintenance System</div>
+      <div style="color:#8CA0A8;font-size:10px;margin-top:3px">v${typeof UI_VERSION!=='undefined'?UI_VERSION:''} · St. Louis, MO</div>
     </div>
     <h2>${LANG==='es'?'¿Quién eres?':'Who are you?'}</h2>
     <div class="sub">${LANG==='es'?'Elige tu rol para continuar':'Choose your role to continue'}</div>
@@ -15604,7 +15696,7 @@ function _renderClientReport(){
               return `<div style="text-align:center">
                 <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${esc(q.label)}</div>
                 <div style="height:50px;background:#F0E9E2;border-radius:4px;position:relative;overflow:hidden">
-                  <div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:#B5733A;border-radius:4px 4px 0 0;transition:height .3s"></div>
+                  <div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:#1C8FA8;border-radius:4px 4px 0 0;transition:height .3s"></div>
                 </div>
                 <div style="font-size:11.5px;font-weight:700;color:#92400E;margin-top:3px">${q.total>0?_formatChemAmount(q.total)+' oz':'—'}</div>
               </div>`;
@@ -15949,7 +16041,7 @@ function renderTechDailyReport(auto){
         <div class="tdr-celebration-title">${LANG==='es'?'¡Día completado!':'Day complete!'}</div>
         <div class="tdr-celebration-sub">${LANG==='es'?`Manejaste ${total} cliente${total!==1?'s':''} hoy. ¡Buen trabajo!`:`You handled ${total} client${total!==1?'s':''} today. Great job!`}</div>
       </div>`
-    : `<div class="tdr-celebration" style="background:#2A211A;box-shadow:0 4px 14px rgba(0,0,0,.30)">
+    : `<div class="tdr-celebration" style="background:#0D2B3D;box-shadow:0 4px 14px rgba(0,0,0,.30)">
         <div class="tdr-celebration-emoji">📊</div>
         <div class="tdr-celebration-title">${LANG==='es'?'Reporte del día':'Daily Report'}</div>
         <div class="tdr-celebration-sub">${LANG==='es'?`${handled} de ${total} clientes manejados`:`${handled} of ${total} clients handled`}</div>
@@ -17074,7 +17166,7 @@ function printChemInventory(){
   w.document.write(`<html><head><title>Aspen Spas — ${isEs?'Inventario de químicos':'Chemical inventory'}</title>
     <style>
       body{font-family:-apple-system,'Source Sans 3',sans-serif;padding:24px;color:#2F2B27}
-      h1{color:#B5733A;margin-bottom:4px;font-size:24px}
+      h1{color:#1C8FA8;margin-bottom:4px;font-size:24px}
       .sub{color:#7B7670;font-size:13px;margin-bottom:16px}
       table{width:100%;border-collapse:collapse;font-size:13px}
       th{text-align:left;background:#FFF7ED;color:#9A3412;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #FDBA74}
@@ -17289,7 +17381,7 @@ function printWeekSummary(){
   w.document.write(`<html><head><title>Aspen Spas — ${isEs?'Resumen semanal':'Weekly summary'}</title>
     <style>
       body{font-family:-apple-system,'Source Sans 3',sans-serif;padding:20px;color:#2F2B27;background:#FFFFFF}
-      h1{color:#B5733A;margin-bottom:4px;font-size:22px}
+      h1{color:#1C8FA8;margin-bottom:4px;font-size:22px}
       .sub{color:#7B7670;font-size:13px;margin-bottom:16px}
       ${document.querySelector('style').textContent}
     </style></head><body>
@@ -17607,6 +17699,109 @@ setTimeout(_warmGeocodeCache, 4000);
   });
 })();
 
+
+// ═══ ASPEN OPS — water ripple ═══
+document.addEventListener('click', function(e){
+  const host = e.target.closest('button, .btn, .tab, [role=button]');
+  if(!host) return;
+  const cs = getComputedStyle(host);
+  if(cs.position === 'static') host.style.position = 'relative';
+  if(cs.overflow !== 'hidden') host.style.overflow = 'hidden';
+  try{
+    const rect = host.getBoundingClientRect();
+    const wave = document.createElement('span');
+    wave.className = 'ops-ripple-wave';
+    const size = Math.max(rect.width, rect.height) * 2.2;
+    wave.style.width = wave.style.height = size + 'px';
+    wave.style.left = (e.clientX - rect.left) + 'px';
+    wave.style.top  = (e.clientY - rect.top) + 'px';
+    host.appendChild(wave);
+    setTimeout(()=>wave.remove(), 750);
+  }catch(err){}
+}, {passive:true});
+
+// ═══ ASPEN OPS — spawn bubbles ═══
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  function go(){
+    // No efectos en vista técnico (app ligera para campo/móvil)
+    if(document.body.classList.contains('role-tech')) return;
+    const host=document.querySelector('.ops-bubbles');
+    if(!host) return;
+    for(let i=0;i<18;i++){
+      const b=document.createElement('span');b.className='ops-bubble';
+      const s=4+Math.random()*11;b.style.width=b.style.height=s.toFixed(1)+'px';
+      b.style.left=(Math.random()*100).toFixed(1)+'%';
+      b.style.setProperty('--sway',((Math.random()*48)-24).toFixed(0)+'px');
+      b.style.animationDuration=(13+Math.random()*15).toFixed(1)+'s';
+      b.style.animationDelay=(Math.random()*16).toFixed(1)+'s';
+      host.appendChild(b);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+
+// ═══ ASPEN OPS — 3 efectos: count-up, water drop, shimmer ═══
+(function(){
+  const isTech = ()=>document.body.classList.contains('role-tech');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── 1. COUNT-UP: anima un número de 0 a su valor ──
+  window.opsCountUp = function(el){
+    if(reduce || isTech()) return;
+    if(!el || el.dataset.opsCounted) return;
+    const raw = el.textContent.trim();
+    // detectar prefijo ($) y separadores; solo enteros/decimales simples
+    const m = raw.match(/^([^0-9\-]*)(-?[0-9][0-9,]*\.?[0-9]*)(.*)$/);
+    if(!m) return;
+    const prefix=m[1], suffix=m[3];
+    const target = parseFloat(m[2].replace(/,/g,''));
+    if(!isFinite(target) || target===0) { el.dataset.opsCounted='1'; return; }
+    const hasComma = m[2].includes(',');
+    const decimals = (m[2].split('.')[1]||'').length;
+    el.dataset.opsCounted='1';
+    const dur=900, t0=performance.now();
+    function fmt(n){ let s=decimals?n.toFixed(decimals):Math.round(n).toString(); if(hasComma) s=Number(s).toLocaleString('en-US',{minimumFractionDigits:decimals,maximumFractionDigits:decimals}); return prefix+s+suffix; }
+    function step(now){
+      const p=Math.min(1,(now-t0)/dur);
+      const e=1-Math.pow(1-p,3); // easeOutCubic
+      el.textContent=fmt(target*e);
+      if(p<1) requestAnimationFrame(step); else el.textContent=prefix+m[2]+suffix;
+    }
+    requestAnimationFrame(step);
+  };
+  // aplicar a KPIs cuando aparecen (observer sobre el contenido principal)
+  function scanKPIs(root){
+    if(reduce || isTech()) return;
+    (root||document).querySelectorAll('.sum-kpi-num:not([data-ops-counted]), .kpi-big-num:not([data-ops-counted]), [data-countup]:not([data-ops-counted])').forEach(window.opsCountUp);
+  }
+  const kpiObserver = new MutationObserver(muts=>{
+    for(const mu of muts){ if(mu.addedNodes.length){ scanKPIs(document); break; } }
+  });
+  function startObserver(){
+    const app=document.querySelector('.app')||document.body;
+    kpiObserver.observe(app,{childList:true,subtree:true});
+    scanKPIs(document);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',startObserver); else startObserver();
+
+  // ── 2. WATER DROP: gota al completar/guardar (éxito) ──
+  window.opsWaterDrop = function(x,y){
+    if(reduce || isTech()) return;
+    const d=document.createElement('div'); d.className='ops-drop';
+    d.style.left=(x!=null?x:window.innerWidth-40)+'px';
+    d.style.top=(y!=null?y:70)+'px';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),1100);
+  };
+
+  // ── 3. SHIMMER: helper para marcar carga ──
+  window.opsShimmer = function(el,on){
+    if(!el) return;
+    if(on && !isTech() && !reduce) el.classList.add('ops-shimmer');
+    else el.classList.remove('ops-shimmer');
+  };
+})();
 </script>
 </body>
 </html>
