@@ -5283,26 +5283,77 @@ const AspenBrain = (() => {
     if(primary)return primary;
     try{return firebase.app("brain");}catch(e){return firebase.initializeApp(MASTER_CONFIG,"brain");}
   }
-  async function _db(){
+  async function _dbP(){
     const app=_app();
-    try{if(app.auth&&!app.auth().currentUser){await app.auth().signInAnonymously();}}catch(e){}
+    try{if(app.name==="brain"&&app.auth&&!app.auth().currentUser){await app.auth().signInAnonymously();}}catch(e){}
     return app.firestore();
+  }
+  // v3: alias map (self-healing identity) — 1 read per session, cached.
+  let _ALIAS=null,_aliasLoading=null;
+  async function _aliases(){
+    if(_ALIAS)return _ALIAS;
+    if(_aliasLoading)return _aliasLoading;
+    _aliasLoading=(async()=>{
+      try{const d=await (await _dbP()).collection("config").doc("brainAliases").get();
+        _ALIAS=(d.exists&&d.data()&&d.data().map)||{};}
+      catch(e){_ALIAS={};}
+      return _ALIAS;})();
+    return _aliasLoading;
+  }
+  async function canonKey(name){
+    const k=custKey(name);if(!k)return k;
+    try{const a=await _aliases();return a[k]||k;}catch(e){return k;}
+  }
+  // v3: offline outbox — failed events are queued and retried on the next log.
+  const OUTBOX_KEY="brainOutbox";
+  function _obLoad(){try{return JSON.parse(localStorage.getItem(OUTBOX_KEY)||"[]");}catch(e){return[];}}
+  function _obSave(a){try{localStorage.setItem(OUTBOX_KEY,JSON.stringify(a.slice(-100)));}catch(e){}}
+  async function _obFlush(){
+    let q=_obLoad();if(!q.length)return;
+    const database=await _dbP();const keep=[];
+    for(const it of q){
+      try{
+        const doc=it.doc;doc.ts=firebase.firestore.Timestamp.fromDate(new Date(it.when));doc.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+        await database.collection("events").doc(it.id).set(doc,{merge:true});
+      }catch(e){keep.push(it);}
+    }
+    _obSave(keep);
   }
   async function logEvent(e){
     if(!e||!e.customer||!e.app||!e.type){console.warn("[AspenBrain] skipped \u2014 missing customer/app/type",e);return null;}
-    const key=custKey(e.customer);if(!key)return null;
-    const sourceId=e.ref&&e.ref.id?String(e.ref.id):(e.title||"");
+    const key=await canonKey(e.customer);if(!key||key==="(no name yet)")return null;
+    const sourceId=e.dedup?String(e.dedup):(e.ref&&e.ref.id?String(e.ref.id):(e.title||""));
     const eventId=e.app+"_"+fnv1a(e.app+"|"+e.type+"|"+sourceId);
-    const doc={customerKey:key,customer:String(e.customer),app:e.app,type:e.type,title:e.title||"",actor:e.actor||"",ref:e.ref||null,meta:e.meta||{},schemaV:2,ts:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-    try{const database=await _db();await database.collection("events").doc(eventId).set(doc,{merge:true});return eventId;}
-    catch(err){console.error("[AspenBrain] logEvent failed",err);return null;}
+    const doc={customerKey:key,customer:String(e.customer),app:e.app,type:e.type,title:e.title||"",actor:e.actor||"",ref:e.ref||null,meta:e.meta||{},schemaV:3,
+      ts:e.when?firebase.firestore.Timestamp.fromDate(new Date(e.when)):firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    try{
+      const database=await _dbP();
+      await database.collection("events").doc(eventId).set(doc,{merge:true});
+      _obFlush().catch(function(){});
+      return eventId;
+    }catch(err){
+      console.error("[AspenBrain] logEvent failed \u2014 queued for retry",err);
+      const q=_obLoad();q.push({id:eventId,doc:Object.assign({},doc,{ts:null,updatedAt:null}),when:new Date().toISOString()});_obSave(q);
+      return null;
+    }
   }
   async function timeline(name,max=50){
-    const key=custKey(name);if(!key)return[];
-    try{const database=await _db();const snap=await database.collection("events").where("customerKey","==",key).orderBy("ts","desc").limit(max).get();return snap.docs.map(d=>Object.assign({id:d.id},d.data()));}
+    const key=await canonKey(name);if(!key)return[];
+    try{const database=await _dbP();const snap=await database.collection("events").where("customerKey","==",key).limit(200).get();
+      const rows=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      rows.sort((a,b)=>{const ta=a.ts&&a.ts.toMillis?a.ts.toMillis():0;const tb=b.ts&&b.ts.toMillis?b.ts.toMillis():0;return tb-ta;});
+      return rows.slice(0,max);}
     catch(err){console.error("[AspenBrain] timeline failed",err);return[];}
   }
-  return{logEvent,timeline,custKey,fnv1a};
+  async function addAlias(fromKey,toKey){
+    try{const database=await _dbP();
+      const m={};m[fromKey]=toKey;
+      await database.collection("config").doc("brainAliases").set({map:m},{merge:true});
+      if(_ALIAS)_ALIAS[fromKey]=toKey;return true;
+    }catch(e){console.error("[AspenBrain] addAlias failed",e);return false;}
+  }
+  return{logEvent,timeline,custKey,canonKey,addAlias,fnv1a};
 })();
 
 function swc(){
@@ -5315,7 +5366,7 @@ function swc(){
   const nd=new Date(d);nd.setMonth(nd.getMonth()+6);
   c.nwc=_localDateKey(nd);
   // Aspen Brain: water change registered.
-  try{AspenBrain.logEvent({customer:(c&&c.name)||"",app:"chemical",type:"chem.water_change",title:"Water change",actor:((typeof CURRENT_TECH!=="undefined"&&CURRENT_TECH)||(typeof CURRENT_ROLE!=="undefined"&&CURRENT_ROLE)||""),ref:{app:"chemical",id:(c&&c.id)}});}catch(_be){}
+  try{AspenBrain.logEvent({customer:(c&&c.name)||"",app:"chemical",type:"chem.water_change",title:"Water change",dedup:((c&&c.id)||"")+"|"+(new Date().toISOString().slice(0,10)),actor:((typeof CURRENT_TECH!=="undefined"&&CURRENT_TECH)||(typeof CURRENT_ROLE!=="undefined"&&CURRENT_ROLE)||""),meta:{phone:(c&&c.phone)||"",address:(c&&c.addr)||"",freq:(c&&c.freq)||"",nwc:(c&&c.nwc)||""},ref:{app:"chemical",id:(c&&c.id),url:location.href.split("#")[0]+"#client="+encodeURIComponent((c&&c.id)||"")}});}catch(_be){}
   cm('mwc');ra();
 }
 function otc(id){
@@ -5333,7 +5384,7 @@ function stc(){
   c.techP=true;c.techI=issue;c.techD=document.getElementById('td').value;c.techS=document.getElementById('ts').value;
   if(c.techS==='done')c.techP=false;
   // Aspen Brain: tech visit completed.
-  if(c.techS==='done'){try{AspenBrain.logEvent({customer:(c&&c.name)||"",app:"chemical",type:"chem.visit",title:"Tech visit completed",actor:((typeof CURRENT_TECH!=="undefined"&&CURRENT_TECH)||(typeof CURRENT_ROLE!=="undefined"&&CURRENT_ROLE)||""),ref:{app:"chemical",id:(c&&c.id)}});}catch(_be){}}
+  if(c.techS==='done'){try{AspenBrain.logEvent({customer:(c&&c.name)||"",app:"chemical",type:"chem.visit",title:"Tech visit completed",dedup:((c&&c.id)||"")+"|"+(new Date().toISOString().slice(0,10)),actor:((typeof CURRENT_TECH!=="undefined"&&CURRENT_TECH)||(typeof CURRENT_ROLE!=="undefined"&&CURRENT_ROLE)||""),meta:{phone:(c&&c.phone)||"",address:(c&&c.addr)||"",freq:(c&&c.freq)||"",nwc:(c&&c.nwc)||""},ref:{app:"chemical",id:(c&&c.id),url:location.href.split("#")[0]+"#client="+encodeURIComponent((c&&c.id)||"")}});}catch(_be){}}
   c.lastModified=Date.now(); // FIX — merge races dropped tech-panel edits
   cm('mtech');ra();
 }
