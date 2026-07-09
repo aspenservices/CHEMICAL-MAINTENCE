@@ -11249,6 +11249,50 @@ async function _autoRepairPhotos(){
 /* ══════════ PRO PACK v1.3 — helpers (tanda 2) ══════════ */
 /* P2+P6 — client drawer 360° with activity timeline */
 let _cdId=null,_cdTab='info';
+function _cBrainPanel(name,events){
+  try{events=events||[];var es=(typeof LANG!=="undefined"&&LANG==="es");
+    function latest(pfx){var best=null,bms=-1;events.forEach(function(e){if(String(e.type||"").indexOf(pfx)===0){var ms=e.ts&&e.ts.toMillis?e.ts.toMillis():0;if(ms>bms){bms=ms;best=e;best._ms=ms;}}});return best;}
+    function dAgo(e){if(!e||!e._ms)return null;return Math.floor((Date.now()-e._ms)/86400000);}
+    function fmt(e){var d=dAgo(e);return d===null?"—":(d===0?(es?"hoy":"today"):(es?("hace "+d+"d"):(d+"d ago")));}
+    var del=latest("delivery"),svc=latest("ticket.closed"),chem=latest("chemical"),rev=latest("review");
+    var apps={};events.forEach(function(e){if(e.app)apps[e.app]=1;});
+    function row(l,e){return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#888">'+l+'</span><span style="color:#222;font-weight:600">'+(e?fmt(e):"—")+'</span></div>';}
+    var h='<div style="background:#f7f7f8;border:1px solid #e6e6e8;border-radius:12px;padding:12px 14px;margin-bottom:12px">';
+    h+='<div style="font-size:13px;font-weight:800;color:#B5733A;margin-bottom:8px">🧠 '+(es?"Perfil del cliente":"Customer profile")+'</div>';
+    h+=row(es?"Última entrega":"Last delivery",del)+row(es?"Último servicio":"Last service",svc)+row(es?"Última visita chem":"Last chemical",chem)+row(es?"Último review":"Last review",rev);
+    h+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="color:#888">'+(es?"Interacciones":"Touchpoints")+'</span><span style="color:#222;font-weight:600">'+events.length+' · '+esc(Object.keys(apps).join(", "))+'</span></div>';
+    var alerts=[];
+    if(del&&del._ms){var after=events.some(function(e){var ms=e.ts&&e.ts.toMillis?e.ts.toMillis():0;return (e.type==="ticket.closed"||String(e.type||"").indexOf("chemical")===0)&&ms>del._ms;});var dd=dAgo(del);if(!after&&dd!==null&&dd>=14)alerts.push("🆕 "+(es?("Spa entregado hace "+dd+"d sin servicio de seguimiento — agenda una visita."):("Spa delivered "+dd+"d ago with no follow-up — schedule a visit.")));}
+    var recent=events.filter(function(e){return e.type==="ticket.closed"&&e.ts&&e.ts.toMillis&&(Date.now()-e.ts.toMillis())<=2592000000;}).length;
+    if(recent>=3)alerts.push("🔁 "+recent+" "+(es?"servicios en 30 días — posible problema crónico.":"services in 30 days — possible chronic issue."));
+    if(svc&&svc._ms){var revAfter=rev&&rev._ms&&rev._ms>svc._ms;var sd=dAgo(svc);if(!revAfter&&sd!==null&&sd>=2&&sd<=21)alerts.push("⭐ "+(es?("Servicio hace "+sd+"d sin review — pídelo."):("Service "+sd+"d ago with no review — request it.")));}
+    if(alerts.length){h+='<div style="margin-top:8px">'+alerts.map(function(a){return '<div style="background:#fff4e5;color:#8a5a20;border-radius:8px;padding:7px 10px;font-size:13px;font-weight:600;margin-top:5px">'+esc(a)+'</div>';}).join("")+'</div>';}
+    h+='<div style="margin-top:10px;display:flex;gap:6px"><input id="cBrainNoteInput" placeholder="'+(es?"Nota compartida (se ve en todas las apps)…":"Shared note (shows in all apps)…")+'" style="flex:1;min-width:0;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit"><button onclick="_cBrainAddNote(this.getAttribute(\'data-n\'))" data-n="'+esc(name)+'" style="background:#134A63;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap">'+(es?"Nota":"Note")+'</button></div>';
+    h+='</div>';return h;
+  }catch(_e){return "";}
+}
+function _cBrainEvents(events){
+  var chip={tickets:{t:"TICKETS",c:"#134A63"},chemical:{t:"CHEM",c:"#1C8FA8"},delivery:{t:"DELIVERY",c:"#B5733A"}};
+  var es=(typeof LANG!=="undefined"&&LANG==="es");
+  if(!events||!events.length)return '<div style="padding:16px;text-align:center;color:#999;font-size:13px">'+(es?"Sin actividad cross-app.":"No cross-app activity yet.")+'</div>';
+  return events.map(function(ev){var m=chip[ev.app]||{t:String(ev.app||"").toUpperCase(),c:"#999"};var when="";try{if(ev.ts&&ev.ts.toDate)when=ev.ts.toDate().toLocaleString();}catch(_e){}return '<div style="display:flex;gap:8px;padding:8px 0;border-top:1px solid #eee"><span style="background:'+m.c+';color:#fff;font-size:10px;font-weight:800;border-radius:5px;padding:2px 6px;height:16px;white-space:nowrap">'+m.t+'</span><div style="flex:1;min-width:0"><div style="font-size:13px;color:#222;font-weight:600">'+esc(ev.title||ev.type||"")+'</div><div style="font-size:11px;color:#999">'+esc([when,ev.actor].filter(Boolean).join(" · "))+'</div></div></div>';}).join("");
+}
+async function _cBrainAddNote(name){
+  try{var inp=document.getElementById("cBrainNoteInput");if(!inp)return;var txt=(inp.value||"").trim();if(!txt)return;inp.value="";
+    if(typeof AspenBrain!=="undefined"&&AspenBrain.logEvent){await AspenBrain.logEvent({customer:name,app:"chemical",type:"note",title:"📝 "+txt,actor:(typeof currentUser!=="undefined"&&currentUser&&currentUser.name)||"Chemical"});}
+    try{showToast((typeof LANG!=="undefined"&&LANG==="es")?"Nota guardada":"Note saved","success")}catch(_e){}
+    setTimeout(function(){try{openBrainModalCByName(name);}catch(_e){}},450);
+  }catch(_e){try{showToast("Error","error")}catch(_e2){}}
+}
+async function openBrainModalCByName(name){
+  var ov=document.getElementById("cBrainOv");
+  if(!ov){ov=document.createElement("div");ov.id="cBrainOv";ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:flex-end;justify-content:center";ov.onclick=function(e){if(e.target===ov)ov.remove();};document.body.appendChild(ov);}
+  var es=(typeof LANG!=="undefined"&&LANG==="es");
+  ov.innerHTML='<div style="background:#fff;width:100%;max-width:540px;max-height:86vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="font-size:16px;font-weight:800;color:#B5733A">🧠 '+esc(name||"")+'</div><button onclick="var o=document.getElementById(\'cBrainOv\');if(o)o.remove()" style="margin-left:auto;background:#eee;border:none;border-radius:8px;padding:6px 11px;cursor:pointer;font-weight:800">✕</button></div><div id="cBrainOvBody"><div style="padding:20px;text-align:center;color:#999">'+(es?"Cargando…":"Loading…")+'</div></div></div>';
+  var events=[];try{events=await AspenBrain.timeline(name,50);}catch(e){events=[];}
+  var body=document.getElementById("cBrainOvBody");if(body)body.innerHTML=_cBrainPanel(name,events)+_cBrainEvents(events);
+}
+function openBrainModalC(id){try{var c=(typeof C!=="undefined"?C:[]).find(function(x){return x.id===Number(id);});if(c)openBrainModalCByName(c.name||"");}catch(_e){}}
 function openClientDrawer(id){
   const c=C.find(x=>x.id===Number(id)); if(!c) return;
   // If the drawer host isn't in the DOM (mixed/partial deploy), THROW so the
@@ -11284,7 +11328,7 @@ function _cdRender(){
     +'<div style="font-size:11.8px;color:var(--muted)">'+esc(c.freq||'')+' \u00b7 '+(es?'Semana ':'Week ')+esc(c.week||'')+' \u00b7 <span style="color:'+wcState[0]+';font-weight:700">'+wcState[1]+'</span></div></div>'
     +'<button class="btn" onclick="closeClientDrawer()" style="font-size:15px;padding:4px 11px">\u2715</button></div>'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:11px">'
-    +'<button class="btn btn-amber" onclick="openEdit('+c.id+')">\u270E '+(es?'Editar':'Edit')+'</button>'
+    +'<button class="btn btn-amber" onclick="openEdit('+c.id+')">\u270E '+(es?'Editar':'Edit')+'</button>'+'<button class="btn" onclick="openBrainModalC('+c.id+')">\U0001F9E0 '+(es?'Cerebro':'Brain')+'</button>'
     +'<button class="btn" onclick="owc('+c.id+')">\uD83D\uDCA7 W.Change</button>'
     +'<button class="btn" onclick="oTechAppt('+c.id+')">\uD83D\uDD27 '+(es?'Cita':'Appt')+'</button>'
     +'<button class="btn" onclick="copyClientPortalLink('+c.id+')">\uD83D\uDD17 Portal</button>'
