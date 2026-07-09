@@ -1907,6 +1907,7 @@ body.role-tech .ops-waterline{display:none!important}
 @media (prefers-reduced-motion: reduce){.ops-drop,.ops-shimmer::after{animation:none!important;display:none}}
 body.role-tech .ops-drop{display:none}
 </style>
+
 </head>
 <body>
 
@@ -17901,5 +17902,38 @@ document.addEventListener('click', function(e){
   };
 })();
 </script>
+
+<script id="ak-chem-sheet-gestures">
+/* Swipe-down-to-dismiss for Chemical's bottom-sheet modals (mobile).
+   Only for DISMISSABLE modals (those with a backdrop-dismiss handler), and only
+   when the drag starts in the top grabber area. Closes the same way a backdrop
+   tap does: removes 'open' from the .modal-bg. Non-dismissable/forced modals are
+   left untouched. Touch-only (desktop modals are centered dialogs). */
+(function(){
+  var drag=false,startY=0,dy=0,modal=null,bg=null;
+  function dismissable(el){var oc=(el.getAttribute&&el.getAttribute('onclick'))||'';return oc.indexOf("classList.remove('open')")>=0;}
+  function start(e){
+    var tgt=e.target;if(!tgt||!tgt.closest)return;
+    modal=tgt.closest('.modal');if(!modal)return;
+    bg=modal.closest('.modal-bg');if(!bg||!bg.classList.contains('open')){modal=null;return;}
+    if(!dismissable(bg)){modal=null;bg=null;return;}
+    if(tgt.closest('button,input,textarea,select,a')){modal=null;bg=null;return;}
+    var r=modal.getBoundingClientRect();var y0=e.touches[0].clientY;
+    if(y0-r.top>64){modal=null;bg=null;return;} // only grab the top/grabber area
+    drag=true;startY=y0;modal.style.transition='none';
+  }
+  function move(e){if(!drag)return;dy=Math.max(0,e.touches[0].clientY-startY);modal.style.transform='translateY('+dy+'px)';}
+  function end(){
+    if(!drag)return;drag=false;modal.style.transition='transform .38s cubic-bezier(.32,1.4,.5,1)';
+    if(dy>100){var m=modal,g=bg;m.style.transform='translateY(100%)';setTimeout(function(){try{g.classList.remove('open')}catch(_e){}m.style.transform='';m.style.transition='';},220);}
+    else{modal.style.transform='translateY(0)';}
+    dy=0;modal=null;bg=null;
+  }
+  document.addEventListener('touchstart',start,{passive:true});
+  document.addEventListener('touchmove',move,{passive:true});
+  document.addEventListener('touchend',end);
+})();
+</script>
+
 </body>
 </html>
