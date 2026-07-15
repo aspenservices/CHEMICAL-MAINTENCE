@@ -8532,8 +8532,11 @@ async function autoSyncWaterChanges(opts){
         (DONE_ST.includes(st) || d.fieldReportSubmitted===true || !!d.submitted);
       if(!doneish){ DBG.push('· '+(d.customer||'?')+': WC pero status="'+st+'" (no terminado) — se ignora'); continue; }
 
-      // ¿Ya aplicado? (idempotente)
-      if(_wcSyncApplied[doc.id]){ if(debug) DBG.push('· '+(d.customer||'?')+': ya aplicado antes'); continue; }
+      // NOTA: ya NO saltamos por "aplicado antes". La actualización es idempotente
+      // por fecha (abajo: si el cliente ya tiene una fecha ≥ la del ticket, no se
+      // toca). Depender de una marca de "aplicado" causaba que un ticket cuyo cambio
+      // no llegó a guardarse (carrera con la base) quedara atascado y no se
+      // reintentara nunca. Ahora cada corrida re-evalúa y se auto-repara.
 
       // Fecha del cambio: la del ticket (date), o submitted, o hoy.
       let dateKey = (d.date && /^\d{4}-\d{2}-\d{2}/.test(d.date)) ? String(d.date).slice(0,10) : null;
@@ -8570,18 +8573,44 @@ async function autoSyncWaterChanges(opts){
       if(!DBG.length) console.log('   (nada que reportar)');
     }
 
+    // Diagnóstico EN PANTALLA (para el botón 💧 con debug) — fácil de capturar.
+    if(debug){
+      try{ _showWcSyncReport(wcFound, updated, DBG); }catch(_e){}
+    }
+
     if(updated > 0){
       saveData();
       try{ ra(); }catch(_e){}
       try{ rcal(); }catch(_e){}
       showToast('💧 '+updated+' '+(LANG==='es'?'cambio(s) de agua actualizado(s) desde tickets':'water change(s) updated from tickets'));
-    } else if(!quiet){
-      showToast(LANG==='es'?'Todo al día — revisa la consola para el detalle':'All up to date — see console for detail','info');
+    } else if(!quiet && !debug){
+      showToast(LANG==='es'?'Todo al día — sin cambios':'All up to date','info');
     }
   }catch(e){
     console.error('autoSyncWaterChanges:', e);
     if(!quiet) showToast('Sync error: '+e.message,'err');
   }
+}
+
+// Panel de diagnóstico del auto-sync — se muestra en pantalla para poder capturarlo.
+function _showWcSyncReport(wcFound, updated, lines){
+  var old=document.getElementById('wcSyncReport'); if(old) old.remove();
+  var wrap=document.createElement('div');
+  wrap.id='wcSyncReport';
+  wrap.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+  var rows=(lines&&lines.length)?lines.map(function(l){
+    var color = l.charAt(0)==='\u2713' ? '#059669' : (l.charAt(0)==='=' ? '#6B7280' : '#B45309');
+    return '<div style="padding:6px 10px;border-bottom:1px solid #F1F5F9;color:'+color+';font-size:13px;font-family:ui-monospace,monospace">'+l.replace(/</g,'&lt;')+'</div>';
+  }).join('') : '<div style="padding:12px;color:#6B7280">No se encontró ningún ticket de cambio de agua para procesar.</div>';
+  wrap.innerHTML='<div style="background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    +'<div style="padding:16px 18px;border-bottom:2px solid #0EA5E9;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff">'
+    +'<div><div style="font-weight:800;font-size:16px;color:#0F172A">💧 Sincronización de cambio de agua</div>'
+    +'<div style="font-size:12.5px;color:#64748B;margin-top:2px">'+wcFound+' ticket(s) de cambio de agua · '+updated+' fecha(s) actualizada(s)</div></div>'
+    +'<button onclick="document.getElementById(\'wcSyncReport\').remove()" style="background:#0F172A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer">Cerrar</button></div>'
+    +'<div style="padding:6px 8px">'+rows+'</div>'
+    +'<div style="padding:10px 14px;font-size:11.5px;color:#94A3B8;border-top:1px solid #F1F5F9">✓ actualizado · = ya al día · ⚠ no se pudo emparejar (revisa el nombre)</div>'
+    +'</div>';
+  document.body.appendChild(wrap);
 }
 
 // Arranca el auto-sync: una vez al conectar y luego cada 5 minutos.
@@ -11745,7 +11774,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.11';
+const UI_VERSION='1.6.12';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
