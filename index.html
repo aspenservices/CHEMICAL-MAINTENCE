@@ -8520,17 +8520,21 @@ async function autoSyncWaterChanges(opts){
       if(!isWC) continue;
       wcFound++;
 
-      // ¿Está terminado? Aceptamos completed/done/submitted, o fieldReportSubmitted.
+      // ¿Está terminado? CLAVE: los tickets que Chemical manda a Service Log nacen
+      // con status:"pending" y NUNCA cambian de status — cuando el técnico completa
+      // el trabajo se marca fieldReportSubmitted:true, pero el status SIGUE "pending".
+      // Por eso, tener el reporte de campo (fieldReportSubmitted) o una marca de envío
+      // (submitted) es la señal REAL de "hecho", y MANDA sobre el status. Solo si NO
+      // hay reporte de campo miramos el status para descartar los realmente sin hacer
+      // (reschedule/cancelado/pendiente-de-verdad/agendado/abierto).
       const st = String(d.status||'').toLowerCase();
-      // ¿Está terminado? El botón "Send ✓" de TECH-TICKETS guarda status:"complete"
-      // (¡sin la "d"!). También cuentan otros estados de completado, o tener reporte
-      // de campo (fieldReportSubmitted) o marca de envío (submitted). Se EXCLUYEN los
-      // que significan "todavía no": reschedule/cancelado/pendiente/agendado/abierto.
-      const NOT_DONE = ['reschedule','canceled','cancelled','skip','pending','scheduled','open'];
+      const hasReport = d.fieldReportSubmitted===true || !!d.submitted;
       const DONE_ST  = ['complete','completed','done','resolved','nobill','submitted'];
-      const doneish = !NOT_DONE.includes(st) &&
-        (DONE_ST.includes(st) || d.fieldReportSubmitted===true || !!d.submitted);
-      if(!doneish){ DBG.push('· '+(d.customer||'?')+': WC pero status="'+st+'" (no terminado) — se ignora'); continue; }
+      const NOT_DONE = ['reschedule','canceled','cancelled','skip','pending','scheduled','open'];
+      const doneish = hasReport || (DONE_ST.includes(st) && !NOT_DONE.includes(st));
+      // Un ticket cancelado/reprogramado NO cuenta, aunque tenga fieldReportSubmitted.
+      const reallyCanceled = st==='reschedule' || st==='canceled' || st==='cancelled' || st==='skip';
+      if(!doneish || reallyCanceled){ DBG.push('· '+(d.customer||'?')+': WC pero status="'+st+'"'+(hasReport?' (con reporte pero cancelado)':' (no terminado)')+' — se ignora'); continue; }
 
       // NOTA: ya NO saltamos por "aplicado antes". La actualización es idempotente
       // por fecha (abajo: si el cliente ya tiene una fecha ≥ la del ticket, no se
@@ -11774,7 +11778,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.12';
+const UI_VERSION='1.6.13';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
