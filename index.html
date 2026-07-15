@@ -2021,6 +2021,7 @@ body.role-tech .ops-drop{display:none}
     <button class="hbtn hbtn-sm" id="btn-servicelog" onclick="openSLConfig()" style="background:#D48F53;border-color:#D48F53;font-weight:600" title="Service Log Ticket Routing">🎫</button>
     <button class="hbtn hbtn-sm" id="btn-checklist" onclick="openWeeklyChecklist()" style="background:#7C3AED;border-color:#7C3AED;font-weight:600" title="Weekly Close Checklist">📋</button>
     <button class="hbtn hbtn-sm" id="btn-ttsync" onclick="syncCompletedFromTechTickets()" style="background:#0EA5E9;border-color:#0EA5E9;font-weight:600" title="Sync completed tickets from TECH-TICKETS">🔄</button>
+    <button class="hbtn hbtn-sm" id="btn-wcsync" onclick="autoSyncWaterChanges({loud:true,debug:true})" style="background:#0891B2;border-color:#0891B2;font-weight:600" title="Actualizar fechas de cambio de agua desde tickets completados (con detalle en consola)">💧</button>
     <div id="offline-sync-banner" class="offline-sync-banner hidden">
   <span class="offline-sync-dot"></span>
   <span id="offline-status-text" style="flex:1">Offline</span>
@@ -8487,62 +8488,95 @@ function _wcApplyDateToClient(c, dateKey, ticketId, techName){
 
 async function autoSyncWaterChanges(opts){
   const quiet = !(opts && opts.loud);
+  const debug = !!(opts && opts.debug);
   if(!slDB){ if(!quiet) showToast('Connect to TECH-TICKETS first (🎫)','warn'); return; }
+  const DBG = [];
   try{
-    // Tickets COMPLETADOS que incluyen water change. wcType queda 'chem' o 'nochem'
-    // en cuanto el técnico elige el tipo; ambos cuentan como cambio de agua hecho.
-    const snap = await slDB.collection('tickets')
-      .where('status','in',['completed','done','submitted'])
-      .get();
-    if(snap.empty){ if(!quiet) showToast('No completed tickets found','info'); return; }
+    // Traemos TODOS los tickets recientes y filtramos en memoria — así ningún
+    // ticket de water change se queda fuera por un estado inesperado. (Antes se
+    // filtraba por status in [...] y algún ticket 'submitted'/otro se perdía.)
+    const snap = await slDB.collection('tickets').get();
+    if(snap.empty){ if(!quiet) showToast('No tickets found','info'); return; }
 
     // Índice por nombre canónico para el respaldo (cuando no hay chemClientId).
+    // Normalizamos fuerte: minúsculas, sin espacios extra, sin puntuación suelta.
+    const norm = (s)=>String(s||'').toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
     const byKey = {};
     try{
-      for(const c of C){ const k = AspenBrain.custKey(c.name); if(k) (byKey[k]=byKey[k]||[]).push(c); }
+      for(const c of C){ const k = norm(c.name); if(k) (byKey[k]=byKey[k]||[]).push(c); }
     }catch(_e){}
 
-    let updated = 0;
+    let updated = 0, wcFound = 0;
     for(const doc of snap.docs){
       const d = doc.data() || {};
-      // ¿Este ticket es de cambio de agua? Debe tener wcType puesto.
-      const isWC = !!d.wcType || (Array.isArray(d.workTypes) && d.workTypes.includes('Water Change'));
+      // ¿Es cambio de agua? Cualquiera de estas señales cuenta:
+      //  - wcType puesto ('chem' | 'nochem')
+      //  - workTypes incluye "Water Change"
+      //  - la etiqueta chem plan (chemMaintenance / createdFrom chem-dashboard)
+      const wtArr = Array.isArray(d.workTypes) ? d.workTypes : [];
+      const isWC = !!d.wcType
+        || wtArr.some(w => /water\s*change/i.test(String(w)))
+        || d.chemMaintenance === true;
       if(!isWC) continue;
-      // ¿Ya lo aplicamos antes? (idempotente)
-      if(_wcSyncApplied[doc.id]) continue;
+      wcFound++;
 
-      // Fecha del cambio: la del ticket (date) o, si no, hoy.
+      // ¿Está terminado? Aceptamos completed/done/submitted, o fieldReportSubmitted.
+      const st = String(d.status||'').toLowerCase();
+      // ¿Está terminado? El botón "Send ✓" de TECH-TICKETS guarda status:"complete"
+      // (¡sin la "d"!). También cuentan otros estados de completado, o tener reporte
+      // de campo (fieldReportSubmitted) o marca de envío (submitted). Se EXCLUYEN los
+      // que significan "todavía no": reschedule/cancelado/pendiente/agendado/abierto.
+      const NOT_DONE = ['reschedule','canceled','cancelled','skip','pending','scheduled','open'];
+      const DONE_ST  = ['complete','completed','done','resolved','nobill','submitted'];
+      const doneish = !NOT_DONE.includes(st) &&
+        (DONE_ST.includes(st) || d.fieldReportSubmitted===true || !!d.submitted);
+      if(!doneish){ DBG.push('· '+(d.customer||'?')+': WC pero status="'+st+'" (no terminado) — se ignora'); continue; }
+
+      // ¿Ya aplicado? (idempotente)
+      if(_wcSyncApplied[doc.id]){ if(debug) DBG.push('· '+(d.customer||'?')+': ya aplicado antes'); continue; }
+
+      // Fecha del cambio: la del ticket (date), o submitted, o hoy.
       let dateKey = (d.date && /^\d{4}-\d{2}-\d{2}/.test(d.date)) ? String(d.date).slice(0,10) : null;
       if(!dateKey && d.submitted){ const m=new Date(d.submitted); if(!isNaN(m)) dateKey=_localDateKey(m); }
+      if(!dateKey && d.createdAtMs){ const m=new Date(d.createdAtMs); if(!isNaN(m)) dateKey=_localDateKey(m); }
       if(!dateKey){ dateKey = _localDateKey(new Date()); }
       const tech = (d.techs && d.techs[0]) || '';
 
       // 1) Match por chemClientId (seguro).
-      let target = null;
-      if(d.chemClientId != null){ target = C.find(x => String(x.id) === String(d.chemClientId)); }
-      // 2) Respaldo: match por nombre canónico, SOLO si es inequívoco (un cliente).
+      let target = null, how = '';
+      if(d.chemClientId != null){ target = C.find(x => String(x.id) === String(d.chemClientId)); if(target) how='chemClientId'; }
+      // 2) Respaldo: match por nombre normalizado, SOLO si es inequívoco.
       if(!target && d.customer){
-        try{
-          const k = AspenBrain.custKey(d.customer);
-          const cands = byKey[k] || [];
-          if(cands.length === 1) target = cands[0];
-        }catch(_e){}
+        const k = norm(d.customer);
+        const cands = byKey[k] || [];
+        if(cands.length === 1){ target = cands[0]; how='nombre'; }
+        else if(cands.length > 1){ DBG.push('· '+d.customer+': '+cands.length+' clientes con ese nombre — ambiguo, se ignora'); }
+        else { DBG.push('· "'+d.customer+'": sin cliente que coincida en Chemical (revisa que el nombre sea idéntico)'); }
       }
-      if(!target) continue; // no se pudo emparejar con seguridad → se ignora
+      if(!target){ if(d.chemClientId!=null) DBG.push('· '+(d.customer||'?')+': chemClientId='+d.chemClientId+' no existe en Chemical'); continue; }
 
+      const before = target.lwc;
       const changed = _wcApplyDateToClient(target, dateKey, doc.id, tech);
       _wcSyncApplied[doc.id] = { at: Date.now(), cid: target.id, date: dateKey };
-      if(changed) updated++;
+      if(changed){ updated++; DBG.push('✓ '+target.name+' ('+how+'): '+before+' → '+dateKey); }
+      else DBG.push('= '+target.name+': ya tenía '+target.lwc+' (≥ '+dateKey+'), no se pisa');
     }
 
     try{ localStorage.setItem('aspChemWcSynced', JSON.stringify(_wcSyncApplied)); }catch(_e){}
+
+    if(debug || !quiet){
+      console.log('%c[Auto WC Sync] '+wcFound+' tickets de water change encontrados, '+updated+' fechas actualizadas','color:#0EA5E9;font-weight:bold');
+      DBG.forEach(l=>console.log('   '+l));
+      if(!DBG.length) console.log('   (nada que reportar)');
+    }
+
     if(updated > 0){
       saveData();
       try{ ra(); }catch(_e){}
       try{ rcal(); }catch(_e){}
       showToast('💧 '+updated+' '+(LANG==='es'?'cambio(s) de agua actualizado(s) desde tickets':'water change(s) updated from tickets'));
     } else if(!quiet){
-      showToast(LANG==='es'?'Todo al día — sin cambios nuevos':'All up to date — no new changes','info');
+      showToast(LANG==='es'?'Todo al día — revisa la consola para el detalle':'All up to date — see console for detail','info');
     }
   }catch(e){
     console.error('autoSyncWaterChanges:', e);
@@ -11711,7 +11745,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.9';
+const UI_VERSION='1.6.11';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
