@@ -8306,12 +8306,32 @@ function _lsPayloadStr(keepDays){
   if(keepDays !== null) p.VL = _vlWithoutHeavyPhotos(VL, keepDays);
   return JSON.stringify(p);
 }
-// Persist to localStorage with progressive photo-pruning fallback on quota.
-// Returns {ok, trimmed}. Cloud (Firebase) is unaffected and always has full data.
+// Persist to localStorage. Cloud (Firebase) is unaffected and always has full data.
+// Returns {ok, trimmed}; `trimmed` means "we had to go BEYOND the normal policy
+// because of space pressure" — it drives a toast, so it must not fire routinely.
+//
+// 31 jul 2026 — POR QUE YA NO SE GUARDAN TODAS LAS FOTOS AQUI:
+// localStorage NO es de esta app. Es un solo almacen de ~5 MB compartido por
+// TODAS las apps de Aspen, porque todas se sirven de aspenservices.github.io.
+// Medido ese dia: 4,37 MB de 5 ocupados, y de ellos 1111 KB eran este `VL` —
+// casi todo fotos base64. Eso ahogo al Delivery Tracker, que llevaba tiempo sin
+// poder escribir su cache (`QuotaExceededError` silencioso en cada guardado).
+//
+// Las fotos NO se pierden: van completas a Firebase y ademas a IndexedDB (el
+// mirror de la FEATURE #8, que no tiene el limite de 5 MB). De hecho
+// _idbHydrateIfNeeded() rehidrata desde IndexedDB en cada arranque, porque su
+// sello de tiempo es 4 s posterior al de localStorage. O sea que guardar aqui
+// las fotos era una TERCERA copia de algo que ya esta a salvo dos veces.
+//
+// Se conservan 3 dias de fotos en local para que las visitas recientes se vean
+// sin conexion. El estado "copia local podada" ya estaba previsto de punta a
+// punta: `_photosStripped` marca la entrada, el guard de la linea ~9825 impide
+// que una copia podada pise las fotos de la nube al subir, y la UI ofrece el
+// boton de re-vincular. Esto solo cambia CUANDO se poda: antes, solo despues de
+// que una escritura ya hubiera fallado; ahora, siempre, por politica.
 function persistLocal(){
-  if(_trySetLS(LS_KEY, _lsPayloadStr(null)))  return {ok:true,  trimmed:false}; // full
-  if(_trySetLS(LS_KEY, _lsPayloadStr(3)))     return {ok:true,  trimmed:true};  // keep last 3 days of photos
-  if(_trySetLS(LS_KEY, _lsPayloadStr(0)))     return {ok:true,  trimmed:true};  // strip all photos locally
+  if(_trySetLS(LS_KEY, _lsPayloadStr(3)))     return {ok:true,  trimmed:false}; // politica normal
+  if(_trySetLS(LS_KEY, _lsPayloadStr(0)))     return {ok:true,  trimmed:true};  // presion: sin fotos
   return {ok:false, trimmed:false};
 }
 
