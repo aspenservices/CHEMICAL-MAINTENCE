@@ -9363,25 +9363,87 @@ function getBackupPayload(){
   };
 }
 
-// ─── Auto-backup: keeps the last 7 daily snapshots in localStorage ──
+/* ─── Auto-backup: los ultimos 7 snapshots diarios, en IndexedDB ──────────
+   v1.6.14 (13 ago 2026) — SE MUDAN FUERA DEL localStorage.
+
+   Que estaba pasando: cada snapshot pesa hoy ~708.000 caracteres (1,4 MB en
+   bytes UTF-16) y se guardaban SIETE. Eso son casi 10 MB... y el presupuesto
+   de localStorage es de ~10 MB POR ORIGEN, no por app: TECH-TICKETS, Warehouse,
+   Delivery, el Invoice Tracker y esta comparten `aspenservices.github.io`. La
+   rotacion de 7 no estaba rota -- funcionaba perfecto -- simplemente guardar 7
+   copias de algo que crece con la cartera de clientes no cabe en una cuota
+   compartida. Cuando se llena, la que revienta no es Chemical: es la siguiente
+   app que intente escribir, y a Firestore de TECH-TICKETS se le muere la cola
+   de escrituras EN SILENCIO. Eso fue el apagon del 5 de agosto.
+
+   Y el detalle que lo decide: estos snapshots eran de SOLO ESCRITURA. En todo
+   el archivo AUTO_BACKUP_PREFIX aparecia tres veces -- la constante, el que
+   rota y el que escribe. Ninguna funcion los leia jamas, no habia boton de
+   restaurar ni UI. Se pagaban 10 MB de cuota compartida por algo que ningun
+   codigo podia recuperar.
+
+   Que se hace ahora: van a IndexedDB, que no compite por esa cuota y aguanta
+   cientos de MB. Se conservan los mismos 7 dias. Y ademas AHORA SI SE PUEDEN
+   SACAR: aspChemBackups() los lista y aspChemBackup('AAAA-MM-DD') descarga el
+   que se quiera. Lo de localStorage se limpia solo la primera vez.
+   La red de seguridad de verdad no cambia y son tres capas: la nube
+   (aspen_spas/data en RTDB), el espejo del payload completo en IndexedDB, y
+   el boton manual "Backup" que baja el JSON. */
 const AUTO_BACKUP_PREFIX='aspen_autobackup_';
-function rotateAutoBackups(){
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith(AUTO_BACKUP_PREFIX)).sort();
-  while(keys.length>7){try{localStorage.removeItem(keys.shift());}catch(e){dbgWarn('rotate',e);}}
+const AUTO_BACKUP_KEEP=7;
+
+async function rotateAutoBackups(){
+  try{
+    const keys=(await idbKeys()).filter(k=>typeof k==='string'&&k.startsWith(AUTO_BACKUP_PREFIX)).sort();
+    while(keys.length>AUTO_BACKUP_KEEP){ await idbDel(keys.shift()); }
+  }catch(e){ dbgWarn('rotate',e); }
 }
-function maybeAutoBackup(){
+
+/* Limpieza unica de los snapshots viejos que quedaron en localStorage. No se
+   migran: el de hoy se vuelve a generar en IndexedDB en el primer guardado. */
+function _purgeLegacyAutoBackups(){
+  try{
+    var n=0,kb=0;
+    Object.keys(localStorage).filter(function(k){return k.startsWith(AUTO_BACKUP_PREFIX)}).forEach(function(k){
+      kb+=((k.length+(localStorage.getItem(k)||'').length)*2)/1024; localStorage.removeItem(k); n++;
+    });
+    if(n)dbg('auto-backup: '+n+' snapshot(s) viejos fuera del localStorage · '+Math.round(kb)+' KB liberados');
+  }catch(e){ dbgWarn('purgeLegacy',e); }
+}
+
+async function maybeAutoBackup(){
   try{
     const todayKey=AUTO_BACKUP_PREFIX+new Date().toISOString().slice(0,10);
-    if(localStorage.getItem(todayKey))return; // already snapshotted today
+    if(await idbGet(todayKey))return;                 // ya hay snapshot de hoy
     const payload=JSON.stringify(getBackupPayload());
-    // localStorage 5MB cap — only snapshot if under 1MB
-    if(payload.length<1_000_000){
-      localStorage.setItem(todayKey, payload);
-      rotateAutoBackups();
-      dbg('auto-backup saved',todayKey);
-    }
+    // Sin tope de 1 MB: IndexedDB no compite con las otras apps por la cuota.
+    await idbSet(todayKey,payload);
+    await rotateAutoBackups();
+    dbg('auto-backup saved',todayKey,Math.round(payload.length*2/1024)+' KB');
   }catch(e){dbgWarn('autoBackup',e);}
 }
+
+/* Para sacarlos desde la consola el dia que hagan falta. */
+window.aspChemBackups=async function(){
+  const keys=(await idbKeys()).filter(k=>typeof k==='string'&&k.startsWith(AUTO_BACKUP_PREFIX)).sort();
+  const rows=[];
+  for(const k of keys){ const v=await idbGet(k)||''; rows.push({fecha:k.replace(AUTO_BACKUP_PREFIX,''),KB:Math.round(v.length*2/1024)}); }
+  console.table(rows);
+  console.log('Para bajar uno:  aspChemBackup("'+(rows.length?rows[rows.length-1].fecha:'AAAA-MM-DD')+'")');
+  return rows;
+};
+window.aspChemBackup=async function(fecha){
+  const raw=await idbGet(AUTO_BACKUP_PREFIX+fecha);
+  if(!raw){ console.warn('No hay snapshot de '+fecha+'. Corre aspChemBackups() para ver cuales hay.'); return null; }
+  try{
+    const blob=new Blob([raw],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='AspenSpas_AutoBackup_'+fecha+'.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);
+  }catch(e){ dbgWarn('aspChemBackup',e); }
+  return JSON.parse(raw);
+};
 
 // ─── beforeunload guard (warn if unsaved local changes during cloud sync) ──
 let _hasUnsavedChanges=false;
@@ -9779,8 +9841,12 @@ const IDB_NAME='aspen_cm_idb', IDB_STORE='kv';
 function _idbOpen(){ return new Promise((res,rej)=>{ try{ const rq=indexedDB.open(IDB_NAME,1); rq.onupgradeneeded=()=>rq.result.createObjectStore(IDB_STORE); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }catch(e){ rej(e); } }); }
 function idbSet(key,val){ return _idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).put(val,key); tx.oncomplete=()=>{db.close();res(true);}; tx.onerror=()=>{db.close();rej(tx.error);}; })).catch(e=>{ dbgWarn('idbSet',e); return false; }); }
 function idbGet(key){ return _idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readonly'); const rq=tx.objectStore(IDB_STORE).get(key); rq.onsuccess=()=>{db.close();res(rq.result);}; rq.onerror=()=>{db.close();rej(rq.error);}; })).catch(e=>{ dbgWarn('idbGet',e); return null; }); }
+/* v1.6.14 — listar y borrar, que hacian falta para rotar los snapshots aqui. */
+function idbKeys(){ return _idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readonly'); const rq=tx.objectStore(IDB_STORE).getAllKeys(); rq.onsuccess=()=>{db.close();res(rq.result||[]);}; rq.onerror=()=>{db.close();rej(rq.error);}; })).catch(e=>{ dbgWarn('idbKeys',e); return []; }); }
+function idbDel(key){ return _idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).delete(key); tx.oncomplete=()=>{db.close();res(true);}; tx.onerror=()=>{db.close();rej(tx.error);}; })).catch(e=>{ dbgWarn('idbDel',e); return false; }); }
 async function _idbHydrateIfNeeded(){
   try{
+    _purgeLegacyAutoBackups();   // v1.6.14 — saca los snapshots viejos del localStorage
     const lsRaw=localStorage.getItem(LS_KEY);
     const idbRaw=await idbGet(LS_KEY);
     if(!idbRaw) return;
@@ -11798,7 +11864,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.13';
+const UI_VERSION='1.6.14';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
