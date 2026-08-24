@@ -1174,6 +1174,12 @@ body.role-admin .switch-user-btn,body.role-tech .switch-user-btn,body.role-organ
 .cc-tags-row{display:flex;flex-wrap:wrap;gap:3px;padding:2px 7px 4px;min-height:0}
 /* #9 retention badge */
 .cc-retention-flag{font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:2px;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;cursor:help}
+/* v1.7.0 — reminder badge: same shape as the WC/retention flags above so the
+   row reads as one family of signals. Amber = pending, red = overdue. */
+.cc-rem-flag{font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:2px;background:#FEF3C7;border:1px solid #FCD34D;color:#78350F;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;cursor:pointer;margin-left:3px}
+.cc-rem-flag.overdue{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+/* v1.7.0 — "pause scheduled" pill for a date that hasn't landed yet */
+.cc-pause-pill{font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;background:#EDE9FE;border:1px solid #C4B5FD;color:#5B21B6;border-radius:8px;padding:0 5px;line-height:1.6;flex-shrink:0;margin-left:3px}
 /* #10 offline sync banner */
 /* #15 Satisfaction survey modal */
 .survey-modal-star{font-size:32px;cursor:pointer;transition:transform .1s,filter .1s;filter:grayscale(1);line-height:1}
@@ -2346,14 +2352,16 @@ body.role-tech .ops-drop{display:none}
         <button class="chip" onclick="svf('missed',this)">C.A. vencido</button>
         <button class="chip" onclick="svf('wc',this)">Cambio pendiente</button>
         <button class="chip" onclick="svf('tech',this)">Visita técnica</button>
+        <button class="chip" onclick="svf('credit',this)">💵 Con crédito</button>
       </div>
       <div class="legend-row">
         <span class="legend-item"><span class="ldot" style="background:#16A34A"></span>Visitado</span>
         <span class="legend-item"><span class="ldot" style="background:#F59E0B;opacity:.5"></span>Programado</span>
+        <span class="legend-item"><span class="ldot" style="background:#EF4444"></span>No visitado</span>
       </div>
       <div class="tw">
         <table>
-          <thead><tr><th>Cliente</th><th>Día / Sem.</th><th>Visitas Q</th><th>Cambio de agua</th><th>Visita técnica</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Cliente</th><th>Día / Sem.</th><th>Visitas Q</th><th>Crédito</th><th>Cambio de agua</th><th>Visita técnica</th><th>Acciones</th></tr></thead>
           <tbody id="vtbody"></tbody>
         </table>
       </div>
@@ -2556,6 +2564,8 @@ body.role-tech .ops-drop{display:none}
   <div class="frow"><label>Trimestre</label><select id="iql" style="width:100%"></select></div>
   <div class="frow"><label>Número de factura *</label><input id="inum" placeholder="INV-2026-001"></div>
   <div class="frow"><label>Monto ($)</label><input id="iamt" type="number" step="0.01"></div>
+  <!-- v1.7.0 — credit carried in from a previous quarter, shown as an explicit subtraction -->
+  <div id="icredit" style="display:none;background:#FFF8EE;border:1px solid #F2DDCB;border-radius:9px;padding:9px 11px;margin:0 0 10px;font-size:12.6px"></div>
   <div class="frow"><label>Estado</label><select id="ist"><option value="pending">Pendiente</option><option value="paid">Pagado</option></select></div>
   <div class="frow"><label>Notas</label><textarea id="inotes" placeholder=""></textarea></div>
   <div class="mfoot"><button class="btn" onclick="cm('minv')">Cancelar</button><button class="btn btn-brand" onclick="sinv()">Guardar</button></div>
@@ -2569,12 +2579,39 @@ body.role-tech .ops-drop{display:none}
   <div class="frow"><label>Cliente</label><input id="vis-cname" disabled></div>
   <div class="frow"><label>Fecha</label><input id="vis-date-show" disabled></div>
   <div class="frow"><label>Estado</label>
-    <select id="vis-status">
+    <select id="vis-status" onchange="_visToggleReason()">
       <option value="done">&#10003; Visitado</option>
       <option value="pending">Pendiente</option>
       <option value="not_done">&#10007; No visitado (técnico)</option>
       <option value="skip">&#10007; Cancelado</option>
     </select>
+  </div>
+  <!-- v1.7.1 — why the visit didn't happen. Only shown for not_done / skip.
+       This is what makes a credit defensible in front of the client: "the
+       tech didn't come" and "the gate was locked" are the same red dot but
+       not the same conversation, and not necessarily the same refund. -->
+  <div class="frow" id="vis-reason-wrap" style="display:none">
+    <label>Motivo / Reason</label>
+    <div style="width:100%">
+      <select id="vis-reason" onchange="_visReasonOther()" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;background:#FFFFFF;color:var(--text);font-family:inherit">
+        <option value="">— Elegir motivo —</option>
+        <optgroup label="Nuestra responsabilidad">
+          <option value="tech_absent">Técnico no fue / ruta no cubierta</option>
+          <option value="tech_time">Sin tiempo en la ruta</option>
+          <option value="weather">Clima</option>
+          <option value="vehicle">Problema de vehículo o equipo</option>
+        </optgroup>
+        <optgroup label="Del lado del cliente">
+          <option value="no_access">Sin acceso (portón, perro, llave)</option>
+          <option value="client_cancel">El cliente canceló</option>
+          <option value="client_absent">Cliente no estaba / pidió otro día</option>
+          <option value="spa_down">Spa vacío, en reparación o cerrado</option>
+        </optgroup>
+        <option value="other">Otro...</option>
+      </select>
+      <input id="vis-reason-other" placeholder="Escribe el motivo" maxlength="90" style="width:100%;margin-top:6px;display:none;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;font-family:inherit">
+      <div id="vis-reason-hint" style="font-size:11.6px;color:var(--muted);margin-top:5px"></div>
+    </div>
   </div>
   <div class="frow"><label>Técnico</label>
     <select id="vis-tech" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:14.9px;background:#FFFFFF;color:var(--text);font-family:inherit"></select>
@@ -2872,6 +2909,39 @@ body.role-tech .ops-drop{display:none}
   <div class="edit-field"><label>Próximo C.A.</label><input id="edit-nwc" type="date"></div>
   <div class="edit-field"><label>Estado</label>
     <select id="edit-status"><option value="active">Activo</option><option value="paused">Pausado</option><option value="cancelled">Cancelado</option></select>
+  </div>
+  <!-- v1.7.0 — scheduled pause. Set the date and the app flips the client to
+       Paused by itself that day; the tech stops seeing them on the schedule. -->
+  <div class="edit-field" style="grid-column:1/-1;background:#F7F4FF;border:1px solid #DDD6FE;border-radius:9px;padding:10px 12px">
+    <label style="color:#5B21B6">&#9208; Pausa programada / Scheduled pause</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:130px">
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:3px">Pausar desde / Pause from</div>
+        <input id="edit-pausefrom" type="date" style="width:100%">
+      </div>
+      <div style="flex:1;min-width:130px">
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:3px">Reanudar el / Resume on</div>
+        <input id="edit-resumeon" type="date" style="width:100%">
+      </div>
+      <div style="flex:2;min-width:170px">
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:3px">Motivo / Reason</div>
+        <input id="edit-pausereason" maxlength="80" placeholder="viaje, venta de casa, temporada..." style="width:100%">
+      </div>
+      <button type="button" onclick="document.getElementById('edit-pausefrom').value='';document.getElementById('edit-resumeon').value='';document.getElementById('edit-pausereason').value='';" style="border:1px solid #DDD6FE;background:#FFFFFF;border-radius:6px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit;color:#5B21B6;font-weight:600">Limpiar</button>
+    </div>
+    <div style="font-size:11.3px;color:#6D28D9;margin-top:7px">La app lo pausa sola ese día y el técnico deja de verlo en la agenda. Si lo reactivas a mano después, no se vuelve a pausar.</div>
+  </div>
+  <div class="edit-field"><label>Tarifa trimestral / Quarterly rate <span style="font-weight:400;font-size:11px;color:var(--muted)">(vacío = tarifa estándar)</span></label>
+    <input id="edit-rateoverride" type="text" inputmode="decimal" placeholder="410">
+  </div>
+  <!-- v1.7.2 — opt-in, OFF by default. Nothing about money reaches the
+       customer's portal link until this is switched on for that client. -->
+  <div class="edit-field" style="grid-column:1/-1">
+    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600">
+      <input type="checkbox" id="edit-portalcredit" style="width:16px;height:16px;cursor:pointer">
+      <span>🔗 Mostrar el crédito en el portal del cliente</span>
+    </label>
+    <div style="font-size:11.4px;color:var(--muted);margin-top:5px">Apagado por defecto. Solo publica créditos que <b>ya aprobaste</b> con el botón Aplicar — nunca un cálculo pendiente. El motivo interno de cada visita fallida no se publica nunca.</div>
   </div>
   <div class="edit-field"><label>Notas</label><textarea id="edit-notes"></textarea></div>
   <div class="edit-field"><label>Tags <span style="font-weight:400;font-size:12px;color:var(--muted)">(vip, dog, access, key, ...)</span></label><input id="edit-tags" placeholder="vip, perro, llave en caja"></div>
@@ -3541,8 +3611,170 @@ function getPricing(){
     return {weekly:Number(p.weekly)||PRICING_DEFAULTS.weekly, biweekly:Number(p.biweekly)||PRICING_DEFAULTS.biweekly};
   }catch(e){dbgWarn('getPricing',e);return {...PRICING_DEFAULTS};}
 }
-function clientQRate(cl){const p=getPricing();return cl.week==='A&B'||cl.freq==='weekly'?p.weekly:p.biweekly;}
+function clientQRate(cl){
+  // v1.7.0 — a per-client override wins over the global weekly/biweekly rate.
+  if(cl && Number(cl.rateOverride) > 0) return Number(cl.rateOverride);
+  const p=getPricing();return cl.week==='A&B'||cl.freq==='weekly'?p.weekly:p.biweekly;
+}
 function clientAnnualRate(cl){return clientQRate(cl)*4;}
+
+/* ═══ BLOCK: VISIT CREDIT ENGINE (v1.7.0) ══════════════════════════════
+   "If we didn't show up, how much do we owe them next quarter?"
+
+     value per visit = quarterly rate / visits actually scheduled that quarter
+     credit          = missed visits * value per visit
+
+   The divisor is the REAL scheduled count for the quarter (12 or 13
+   depending on how the weekdays fall), not a fixed number.
+
+   Both causes count toward the credit but are reported separately, because
+   "the tech didn't come" (not_done) and "the client cancelled" (skip) are
+   different conversations even when the refund is the same.
+
+   Three edges that are easy to get wrong:
+     1. A scheduled date still in the future is not a missed visit.
+     2. A tombstone (v._deleted) is an UNDO, not a miss.
+     3. A paused client's quarter is cut short at pauseFrom — dates after it
+        are neither billed nor owed. Without this, pausing a client would
+        invent a credit for the whole rest of the quarter.
+   ══════════════════════════════════════════════════════════════════════ */
+const CREDIT_CAUSES = ['not_done','skip'];
+
+function computeQuarterCredit(c, q, todayKey){
+  const today = todayKey || _localDateKey();
+  const out = {
+    scheduled:0, missed:0, missedDates:[], byCause:{not_done:0, skip:0},
+    byFault:{us:0, client:0, unknown:0},
+    rate:0, perVisit:0, credit:0, quarter:q, cutoff:''
+  };
+  if(!c || !q) return out;
+
+  // 1. Every date scheduled for this client this quarter.
+  const dates = [];
+  try{
+    if(c.week === 'A' || c.week === 'A&B') dates.push(...getVisitDatesForWeek(c, q, 'A'));
+    if(c.week === 'B' || c.week === 'A&B') dates.push(...getVisitDatesForWeek(c, q, 'B'));
+  }catch(e){ dbgWarn('credit dates',e); return out; }
+  dates.sort();
+
+  // 2. A pause cuts the quarter short.
+  const cutoff = c.pauseFrom || '';
+  const live = cutoff ? dates.filter(dk => dk < cutoff) : dates;
+  out.cutoff = cutoff && dates.length !== live.length ? cutoff : '';
+  out.scheduled = live.length;
+
+  // 3. Missed = in the past, logged as not_done/skip, not a tombstone.
+  const vl = VL[c.id] || {};
+  live.forEach(dk => {
+    if(dk > today) return;                        // future — not missed yet
+    const v = vl[dk];
+    if(!v || v._deleted) return;                  // no record / undo
+    if(CREDIT_CAUSES.indexOf(v.status) === -1) return;
+    out.missed++;
+    out.byCause[v.status]++;
+    // v1.7.1 — carry the recorded reason so the credit can be defended, and
+    // tally which side it fell on. Both still count toward the refund.
+    const _f = (typeof visReasonFault === 'function') ? visReasonFault(v) : '';
+    if(_f === 'us') out.byFault.us++;
+    else if(_f === 'client') out.byFault.client++;
+    else out.byFault.unknown++;
+    out.missedDates.push({
+      date:dk, cause:v.status, tech:v.tech || '',
+      reason:v.reason || '', fault:_f,
+      reasonLabel: (typeof visReasonLabel === 'function') ? visReasonLabel(v) : ''
+    });
+  });
+
+  // 4. Money.
+  out.rate = clientQRate(c);
+  out.perVisit = out.scheduled > 0 ? out.rate / out.scheduled : 0;
+  out.credit = Math.round(out.perVisit * out.missed * 100) / 100;
+  return out;
+}
+
+function nextQuarter(q){                          // 'Q3 2026' -> 'Q4 2026'
+  const n = parseInt(q[1], 10), yr = parseInt(q.split(' ')[1], 10);
+  if(!n || !yr) return q;
+  return n === 4 ? ('Q1 ' + (yr + 1)) : ('Q' + (n + 1) + ' ' + yr);
+}
+
+/* An approved credit lives inside BL[cid][targetQuarter].cr — BL already
+   syncs whole (see getBackupPayload) and sits behind BILLING_ACCESS, so
+   money never leaks to a tech device. No new top-level node needed. */
+function _appliedCredit(cid, targetQ){
+  const b = BL[cid] && BL[cid][targetQ];
+  return (b && b.cr) ? b.cr : null;
+}
+function _creditAlreadyApplied(cid, targetQ, srcQ){
+  const cr = _appliedCredit(cid, targetQ);
+  return !!(cr && cr.src === srcQ);
+}
+
+async function applyQuarterCredit(cid, srcQ){
+  const c = C.find(x => x.id === cid); if(!c) return;
+  const es = LANG === 'es';
+  const r = computeQuarterCredit(c, srcQ);
+  if(r.credit <= 0){
+    showToast(es ? 'Sin cr\u00e9dito que aplicar' : 'No credit to apply','warn'); return;
+  }
+  const tq = nextQuarter(srcQ);
+  if(_creditAlreadyApplied(cid, tq, srcQ)){
+    showToast(es ? 'Ese cr\u00e9dito ya se aplic\u00f3 a ' + tq : 'That credit is already applied to ' + tq,'warn');
+    return;
+  }
+  const detail = r.byCause.not_done + (es ? ' no visitada(s)' : ' not visited')
+    + ' \u00b7 ' + r.byCause.skip + (es ? ' cancelada(s)' : ' cancelled');
+  // v1.7.1 — the reason breakdown, so Alberto sees whose fault it was before approving
+  const faultLine = (r.byFault.us || r.byFault.client)
+    ? '\n' + (es ? 'Nuestra falta: ' : 'On us: ') + r.byFault.us
+      + ' \u00b7 ' + (es ? 'del cliente: ' : 'client side: ') + r.byFault.client
+      + (r.byFault.unknown ? ' \u00b7 ' + (es ? 'sin motivo: ' : 'no reason: ') + r.byFault.unknown : '')
+    : '';
+  const reasonList = r.missedDates.map(m =>
+    '  \u2022 ' + m.date + (m.reasonLabel ? ' \u2014 ' + m.reasonLabel : (es ? ' \u2014 sin motivo' : ' \u2014 no reason'))
+  ).join('\n');
+  const msg = es
+    ? `Aplicar $${r.credit.toFixed(2)} de cr\u00e9dito a ${c.name} en ${tq}?\n\n`
+      + `${r.missed} de ${r.scheduled} visitas programadas (${detail})${faultLine}\n`
+      + `$${r.perVisit.toFixed(2)} por visita \u00b7 tarifa ${fmtUSD(r.rate)}\n\n${reasonList}`
+    : `Apply $${r.credit.toFixed(2)} credit to ${c.name} in ${tq}?\n\n`
+      + `${r.missed} of ${r.scheduled} scheduled visits (${detail})${faultLine}\n`
+      + `$${r.perVisit.toFixed(2)} per visit \u00b7 rate ${fmtUSD(r.rate)}\n\n${reasonList}`;
+  if(!await showConfirm(msg)) return;
+
+  if(!BL[cid]) BL[cid] = {};
+  if(!BL[cid][tq]) BL[cid][tq] = {i:'', a:'', s:'', n:''};
+  BL[cid][tq].cr = {
+    a: r.credit, src: srcQ, n: r.missed,
+    // v1.7.1 — the reason travels with the credit, so months later the record
+    // still explains itself without re-deriving it from VL.
+    dates: r.missedDates.map(m => m.date + ':' + m.cause + (m.reason ? ':' + m.reason : '')),
+    fault: {us:r.byFault.us, client:r.byFault.client, unknown:r.byFault.unknown},
+    at: Date.now(),
+    by: (CURRENT_ROLE === 'admin' ? 'Admin' : (CURRENT_TECH || CURRENT_ROLE || '?'))
+  };
+  BL[cid][tq]._timestamp = Date.now();
+  saveData();
+  try{ saveBillingToFirebase(BL); }catch(e){ dbgWarn('credit save',e); }
+  try{ logAudit('creditApplied', c.name + ' \u00b7 $' + r.credit.toFixed(2) + ' \u00b7 ' + srcQ + '\u2192' + tq); }
+  catch(e){ dbgWarn('credit audit',e); }
+  showToast('\uD83D\uDCB5 ' + (es ? 'Cr\u00e9dito aplicado a ' : 'Credit applied to ') + tq, 'ok');
+  try{ rv(); }catch(e){ dbgWarn('credit render',e); }
+}
+
+function removeQuarterCredit(cid, targetQ){
+  const b = BL[cid] && BL[cid][targetQ];
+  if(!b || !b.cr) return;
+  delete b.cr;
+  b._timestamp = Date.now();
+  saveData();
+  try{ saveBillingToFirebase(BL); }catch(e){ dbgWarn('credit remove',e); }
+  const c = C.find(x => x.id === cid);
+  try{ logAudit('creditRemoved', (c ? c.name : cid) + ' \u00b7 ' + targetQ); }catch(e){ dbgWarn('caught:',e); }
+  showToast(LANG === 'es' ? 'Cr\u00e9dito quitado' : 'Credit removed','ok');
+  try{ rv(); }catch(e){ dbgWarn('caught:',e); }
+}
+/* ═══ END BLOCK: VISIT CREDIT ENGINE ═══════════════════════════════════ */
 async function openPricingConfig(){
   const p=getPricing();
   const wkRaw=await showPrompt(LANG==='es'?`Tarifa trimestral SEMANAL (USD)\nActual: $${p.weekly}`:`Quarterly WEEKLY rate (USD)\nCurrent: $${p.weekly}`,String(p.weekly),{type:'number'});
@@ -4282,6 +4514,12 @@ function openEdit(id){
   document.getElementById("edit-day-b").value = c.dayB || c.day || "Mon";
   toggleEditDayFields();
   document.getElementById("edit-status").value=c.status;
+  // v1.7.0 — scheduled pause + per-client rate
+  const _pf=document.getElementById("edit-pausefrom"); if(_pf) _pf.value=c.pauseFrom||"";
+  const _ro=document.getElementById("edit-resumeon");  if(_ro) _ro.value=c.resumeOn||"";
+  const _pr=document.getElementById("edit-pausereason"); if(_pr) _pr.value=c.pauseReason||"";
+  const _rov=document.getElementById("edit-rateoverride"); if(_rov) _rov.value=c.rateOverride?String(c.rateOverride):"";
+  const _pc=document.getElementById("edit-portalcredit"); if(_pc) _pc.checked=!!c.portalCredit;
   // Sanitizer: try to match an existing dropdown option (case-insensitive, ignoring hyphens/spaces),
   // otherwise drop the raw text into the "Other" input
   const sanSel=document.getElementById("edit-san"), sanOther=document.getElementById("edit-san-other");
@@ -4437,6 +4675,40 @@ function saveEdit(){
   c.lwc=newLwc;
   c.nwc=resolvedNwc;
   c.status=document.getElementById("edit-status").value;
+  // v1.7.0 — scheduled pause. Clearing _pauseDone when the date CHANGES is what
+  // lets a new date fire while an old, already-executed one stays executed.
+  const _pfEl=document.getElementById("edit-pausefrom");
+  if(_pfEl){
+    const _pfv=_pfEl.value||"";
+    if(_pfv!==(c.pauseFrom||"")) c._pauseDone="";
+    c.pauseFrom=_pfv;
+  }
+  const _roEl=document.getElementById("edit-resumeon");
+  if(_roEl){
+    const _rov2=_roEl.value||"";
+    if(_rov2!==(c.resumeOn||"")) c._resumeDone="";
+    c.resumeOn=_rov2;
+  }
+  const _prEl=document.getElementById("edit-pausereason");
+  if(_prEl) c.pauseReason=_prEl.value.trim();
+  const _rovEl=document.getElementById("edit-rateoverride");
+  if(_rovEl){
+    // Money field: text + inputmode="decimal", sanitized here. type="number"
+    // silently rejects "$" and commas and looks broken.
+    const _clean=String(_rovEl.value||"").replace(/[^0-9.]/g,"");
+    c.rateOverride=_clean?Number(_clean):0;
+  }
+  const _pcEl=document.getElementById("edit-portalcredit");
+  if(_pcEl){
+    const _was=!!c.portalCredit;
+    c.portalCredit=!!_pcEl.checked;
+    // Turning this on/off must reach the live portal immediately, not on the
+    // next unrelated save — the link may already be in the client's hands.
+    if(_was!==c.portalCredit){
+      try{ logAudit(c.portalCredit?'portalCreditOn':'portalCreditOff', c.name); }catch(e){ dbgWarn('caught:',e); }
+      try{ _publishClientPortal(c); }catch(e){ dbgWarn('portal republish',e); }
+    }
+  }
   c.notes=document.getElementById("edit-notes").value;
   const _tagsEl=document.getElementById("edit-tags");if(_tagsEl)c.tags=_tagsEl.value.trim();
   c.lastModified=Date.now();
@@ -4487,6 +4759,9 @@ function saveEdit(){
   });
   saveData();
   cm("medit");ra();
+  // v1.7.0 — if the pause date entered is today or in the past, apply it now
+  // instead of waiting for the next boot or the 6 h tick.
+  try{ _applyPauseSweep(); }catch(e){ dbgWarn('pause after edit',e); }
   // Re-geocode if address changed so stats update with new location
   if(prev.addr !== c.addr && c.addr){
     _geocode(c.addr).then(co=>{
@@ -4673,7 +4948,7 @@ function rc(){
     return`<tr class="crow" onclick="if(event.target.closest('button,input,a,select'))return;vc(${c.id})" oncontextmenu="ctxMenu(event,${c.id})" style="box-shadow:inset 4px 0 0 ${strip}">
       <td style="text-align:center"><input type="checkbox" class="bulk-cb" data-id="${c.id}" onchange="bulkUpdate()" ${_bulkSel.has(c.id)?'checked':''}></td>
       <td style="font-size:12.6px;color:var(--muted);text-align:center">${st2+i+1}</td>
-      <td><div style="display:flex;align-items:center;gap:8px"><span class="cav">${_ini}</span><div><div style="${nameStyle}">${esc(c.name)}</div>${noteSub}</div></div></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><span class="cav">${_ini}</span><div><div style="${nameStyle}">${esc(c.name)}${_reminderBadgeHTML(c)}${(()=>{const pp2=_pendingPause(c);return pp2?`<span class="cc-pause-pill" title="${esc((LANG==='es'?'Pausa programada: ':'Pause scheduled: ')+pp2.date+(pp2.reason?' \u00b7 '+pp2.reason:''))}">\u23F8 ${pp2.days}d</span>`:'';})()}</div>${noteSub}</div></div></td>
       <td style="font-size:13.2px;white-space:nowrap">${esc(c.phone)}</td>
       <td class="tcell" style="font-size:12.6px;color:var(--muted);max-width:140px" title="${esc(c.email)}">${esc(c.email)||'—'}</td>
       <td class="tcell" style="font-size:12.6px;max-width:170px" title="${esc(c.addr)}">${esc(c.addr)}</td>
@@ -5982,9 +6257,33 @@ function oinv(id,q){
     const curQ=sel.value;
     const b=BL[id]&&BL[id][curQ];
     document.getElementById('inum').value=b?b.i:'';
-    document.getElementById('iamt').value=b?b.a:defAmt;
     document.getElementById('ist').value=b?b.s:'pending';
     document.getElementById('inotes').value=b?b.n||'':'';
+    /* v1.7.0 — a credit approved from a previous quarter lands here. Show the
+       subtraction explicitly and pre-fill the amount already net of it, so the
+       number typed into QuickBooks matches what the client actually owes. */
+    const cr=(b&&b.cr)?b.cr:null;
+    const box=document.getElementById('icredit');
+    if(cr && Number(cr.a)>0){
+      const es=LANG==='es';
+      const gross=Number(defAmt)||0;
+      const net=Math.round((gross-Number(cr.a))*100)/100;
+      document.getElementById('iamt').value = b&&b.a ? b.a : (net>0?net.toFixed(2):'0.00');
+      if(box){
+        box.style.display='block';
+        box.innerHTML='<div style="font-weight:700;color:#78350F;margin-bottom:3px">\uD83D\uDCB5 '
+          +(es?'Cr\u00e9dito de ':'Credit from ')+esc(cr.src)+'</div>'
+          +'<div style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#78350F">'
+          +'$'+gross.toFixed(2)+' \u2212 $'+Number(cr.a).toFixed(2)+' = <b>$'+(net>0?net.toFixed(2):'0.00')+'</b></div>'
+          +'<div style="font-size:11.3px;color:#92400E;margin-top:3px">'+cr.n
+          +(es?' visita(s) no hecha(s) \u00b7 aprobado por ':' missed visit(s) \u00b7 approved by ')+esc(cr.by||'?')
+          +' <a href="#" onclick="event.preventDefault();removeQuarterCredit('+id+',\''+curQ+'\');cm(\'minv\');">'
+          +(es?'quitar':'remove')+'</a></div>';
+      }
+    } else {
+      document.getElementById('iamt').value=b?b.a:defAmt;
+      if(box){ box.style.display='none'; box.innerHTML=''; }
+    }
   };
   sel.onchange=loadQ;
   loadQ();
@@ -6089,9 +6388,10 @@ function rv(){
   if(vf==='missed')f=f.filter(c=>od(c.nwc)&&!c.wcN);
   if(vf==='wc')f=f.filter(c=>c.wcN);
   if(vf==='tech')f=f.filter(c=>c.techP&&c.techS!=='done');
+  // v1.7.0 — only clients we owe money to this quarter
+  if(vf==='credit')f=f.filter(c=>{ try{ return computeQuarterCredit(c,q).credit>0; }catch(e){ return false; } });
   const ms=getQMonths(q);const qyr=getQYear(q);const tn2=new Date();
   document.getElementById('vtbody').innerHTML=f.map(c=>{
-    const vm=c.week==='A&B'?4:2;
     const allDates=[];
     if(c.week==='A'||c.week==='A&B')allDates.push(...getVisitDatesForWeek(c,q,'A'));
     if(c.week==='B'||c.week==='A&B')allDates.push(...getVisitDatesForWeek(c,q,'B'));
@@ -6104,15 +6404,44 @@ function rv(){
       const st = (vl && !isTombstone) ? vl.status : 'pending';
       const bg=st==='done'?'#16A34A':(st==='skip'||st==='not_done')?'#EF4444':isPast?'#EF4444':'#F59E0B';
       const op=st==='done'||st==='not_done'||st==='skip'||isPast?1:0.45;
-      const titleSuffix = st==='done' ? ' ✓' : (st==='not_done' ? ' ✗ no visitado' : '');
-      return`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bg};opacity:${op};margin:1px" title="${dk}${titleSuffix}"></span>`;
+      const titleSuffix = st==='done' ? ' ✓' : (st==='not_done' ? ' ✗ no visitado' : (st==='skip' ? ' ✗ cancelado' : ''));
+      // v1.7.1 — the recorded reason rides in the tooltip
+      const _rl = (vl && !isTombstone && typeof visReasonLabel==='function') ? visReasonLabel(vl) : '';
+      return`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bg};opacity:${op};margin:1px" title="${dk}${titleSuffix}${_rl?' — '+esc(_rl):''}"></span>`;
     }).join('');
     const wcs=c.wcN?`<span class="badge bwc">${t('statusPending')}</span>`:c.wcD?`<span class="badge bwcd">${t('statusDone')} ${c.lwc||''}</span>`:od(c.nwc)?`<span class="badge bwc">${t('overdue')}</span>`:`<span class="badge bwcd">OK ${c.nwc||''}</span>`;
     const tcs=c.techP&&c.techS!=='done'?`<span class="badge btech">${c.techS==='scheduled'?t('statusScheduled'):t('statusPending')}</span>`:c.techP&&c.techS==='done'?`<span class="badge bwcd">${t('statusDone')}</span>`:'<span style="font-size:11.5px;color:var(--muted)">—</span>';
+    /* v1.7.0 — the dots already say WHAT was missed; this says WHAT IT'S WORTH. */
+    const _es2=LANG==='es';
+    let credHtml='<span style="font-size:11.5px;color:var(--muted)">—</span>';
+    try{
+      const cr=computeQuarterCredit(c,q);
+      const tq=nextQuarter(q);
+      const applied=_creditAlreadyApplied(c.id,tq,q);
+      if(cr.missed>0){
+        credHtml='<div style="white-space:nowrap"><span style="font-weight:700;color:#991B1B;font-size:13px">$'+cr.credit.toFixed(2)+'</span>'
+          +'<div style="font-size:10.5px;color:var(--muted)" title="'+esc(cr.missedDates.map(m=>m.date+' \u00b7 '+(m.reasonLabel||(_es2?'sin motivo':'no reason'))).join('\n'))+'">'
+          +cr.missed+'/'+cr.scheduled+' \u00b7 $'+cr.perVisit.toFixed(2)+(_es2?' c/u':' ea')+'</div>'
+          /* v1.7.1 — whose fault, at a glance */
+          +((cr.byFault.us||cr.byFault.client||cr.byFault.unknown)?'<div style="font-size:10px;margin-top:1px">'
+            +(cr.byFault.us?'<span style="color:#991B1B;font-weight:700" title="'+esc(_es2?'Falta nuestra':'On us')+'">\u25CF '+cr.byFault.us+'</span> ':'')
+            +(cr.byFault.client?'<span style="color:#78350F;font-weight:700" title="'+esc(_es2?'Del lado del cliente':'Client side')+'">\u25CF '+cr.byFault.client+'</span> ':'')
+            +(cr.byFault.unknown?'<span style="color:var(--muted);font-weight:700" title="'+esc(_es2?'Sin motivo registrado':'No reason recorded')+'">? '+cr.byFault.unknown+'</span>':'')
+            +'</div>':'')
+          +(applied
+            ? '<span style="font-size:10.5px;color:#166534;font-weight:700">\u2713 '+(_es2?'aplicado a ':'applied to ')+tq+'</span>'
+            : '<button class="btn btn-brand" style="font-size:10.8px;padding:2px 8px;margin-top:3px" onclick="applyQuarterCredit('+c.id+',\''+q+'\')">'+(_es2?'Aplicar \u2192 '+tq:'Apply \u2192 '+tq)+'</button>')
+          +'</div>';
+      } else if(cr.scheduled>0){
+        credHtml='<span style="font-size:11px;color:var(--muted)" title="'+esc(fmtUSD(cr.rate)+' \u00f7 '+cr.scheduled)+'">$'+cr.perVisit.toFixed(2)+(_es2?'/visita':'/visit')+'</span>';
+      }
+      if(cr.cutoff) credHtml+='<div style="font-size:10px;color:#5B21B6;font-weight:700" title="'+esc(_es2?'Trimestre recortado por la pausa':'Quarter cut short by the pause')+'">\u23F8 '+esc(cr.cutoff)+'</div>';
+    }catch(e){ dbgWarn('credit cell',e); }
     return`<tr>
-      <td><strong style="font-weight:600;color:var(--brand)">${esc(c.name)}</strong></td>
+      <td><strong style="font-weight:600;color:var(--brand)">${esc(c.name)}</strong>${_reminderBadgeHTML(c)}</td>
       <td style="font-size:13.2px">${dln(c.day)} / ${c.week}</td>
       <td><div style="display:flex;gap:1px;flex-wrap:wrap">${dots}</div></td>
+      <td>${credHtml}</td>
       <td>${wcs} <button class="btn" style="font-size:11.5px;margin-left:4px" onclick="owc(${c.id})">${t('register')}</button></td>
       <td>${tcs} <button class="btn btn-red" style="font-size:11.5px;margin-left:4px" onclick="otc(${c.id})">${t('techBtn')}</button></td>
       <td><button class="btn" style="font-size:11.5px" onclick="vc(${c.id})">${t('detailBtn')}</button></td></tr>`;
@@ -6222,6 +6551,15 @@ function rcheckins(){
     else if(v.status==='not_done') statusPill=`<span style="background:#FEE2E2;color:#991B1B;padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:700">✗ ${LANG==='es'?'No visit.':'No visit'}</span>`;
     else if(v.status==='skip') statusPill=`<span style="background:#FEE2E2;color:#991B1B;padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:700">✗ ${LANG==='es'?'Cancelado':'Cancelled'}</span>`;
     else statusPill=`<span style="background:#F9F5F1;color:#81786E;padding:3px 9px;border-radius:5px;font-size:11.5px">${esc(v.status)}</span>`;
+    // v1.7.1 — the reason, right under the pill, so the Daily Report answers
+    // "why not?" without opening each visit.
+    try{
+      const _rl2=visReasonLabel(v);
+      if(_rl2){
+        const _f2=visReasonFault(v);
+        statusPill+=`<div style="font-size:10.3px;margin-top:2px;font-weight:600;color:${_f2==='us'?'#991B1B':_f2==='client'?'#78350F':'#81786E'}">${esc(_rl2)}</div>`;
+      }
+    }catch(e){ dbgWarn('ck reason',e); }
     // GPS link + distance
     let gpsCell=`<span style="color:#AEA79E;font-size:11.5px">—</span>`;
     let distCell=`<span style="color:#AEA79E;font-size:11.5px">—</span>`;
@@ -7670,7 +8008,7 @@ function buildWeekSection(wt,clients,q){
           ${hasTechAppt?'<span style="font-size:10.3px;color:#D48F53" title="Visita técnica agendada">&#865021;</span>':''}
           ${noteCount > 0 ? `<span class="cc-day-note-flag" title="${noteCount} ${LANG==='es'?'nota(s) del día':'day note(s)'}">📝${noteCount>1?'<sup style="font-size:8px">'+noteCount+'</sup>':''}</span>` : ''}
           ${techNoteCount > 0 ? `<span class="cc-tech-note-flag" title="${techNoteCount} ${LANG==='es'?'nota(s) del técnico':'tech note(s)'}">✎${techNoteCount>1?'<sup style="font-size:8px">'+techNoteCount+'</sup>':''}</span>` : ''}
-          ${wcBadge}${retentionFlag}${_chemAlertBadgeHtml(c.id)}
+          ${wcBadge}${retentionFlag}${_chemAlertBadgeHtml(c.id)}${_reminderBadgeHTML(c)}${(()=>{const pp=_pendingPause(c);return pp?`<span class="cc-pause-pill" title="${esc((LANG==='es'?'Pausa programada: ':'Pause scheduled: ')+pp.date+(pp.reason?' \u00b7 '+pp.reason:''))}">\u23F8 ${pp.days}d</span>`:'';})()}
           <span class="cc-prog" style="color:${progC}">${done}/${total}</span>
         </div>
         <div class="cc-body">
@@ -8095,6 +8433,14 @@ function openVisitModal(cid,dateKey){
   const dl=new Date(dateKey+'T12:00:00').toLocaleDateString(LANG==='es'?'es-MX':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   document.getElementById('vis-date-show').value=dl;
   document.getElementById('vis-status').value=vl?vl.status:'done';
+  // v1.7.1 — restore the recorded reason (and show/hide the picker to match)
+  try{
+    const _rs=document.getElementById('vis-reason');
+    const _ro=document.getElementById('vis-reason-other');
+    if(_rs) _rs.value = (vl && vl.reason) ? vl.reason : '';
+    if(_ro) _ro.value = (vl && vl.reasonTxt) ? vl.reasonTxt : '';
+    _visToggleReason();
+  }catch(e){ dbgWarn('vis reason populate',e); }
   document.getElementById('vis-notes').value=vl?vl.notes||'':'';
   document.getElementById('vis-tech').value=vl?vl.tech||'':TECHS.length?TECHS[0].name:'';
   // Show follow-up button only when the visit is done AND has tech notes to act on
@@ -8182,16 +8528,71 @@ function saveVisit(){
   // Preserve existing _location so admin edits don't wipe the tech's GPS evidence.
   // BUT bump _timestamp to now() so this edit wins over older tombstones / older cloud entries during merges.
   const prev = VL[cid][dk] || {};
+  const _st=document.getElementById('vis-status').value;
+  // v1.7.1 — reason, only meaningful for a missed visit. Cleared otherwise so a
+  // visit later marked done doesn't drag a stale excuse along with it.
+  let _rsn='', _rsnTxt='';
+  if(_st==='not_done'||_st==='skip'){
+    _rsn=document.getElementById('vis-reason').value||'';
+    _rsnTxt=_rsn==='other'?(document.getElementById('vis-reason-other').value||'').trim().slice(0,90):'';
+  }
   VL[cid][dk]={
-    status:document.getElementById('vis-status').value,
+    status:_st,
     notes:document.getElementById('vis-notes').value.trim(),
     tech:document.getElementById('vis-tech').value.trim(),
+    reason:_rsn,
+    reasonTxt:_rsnTxt,
     saved:new Date().toISOString(),
     _timestamp: Date.now(),
     _location: (prev && !prev._deleted) ? (prev._location || null) : null
   };
   saveData();
   cm('mvisit');rcal();
+  try{ rv(); }catch(e){ dbgWarn('saveVisit rv',e); }
+}
+
+/* v1.7.1 — reason picker plumbing ─────────────────────────────────────── */
+const VIS_REASONS = {
+  tech_absent:  {es:'T\u00e9cnico no fue',            en:'Tech did not go',        fault:'us'},
+  tech_time:    {es:'Sin tiempo en la ruta',          en:'No time on the route',   fault:'us'},
+  weather:      {es:'Clima',                          en:'Weather',                fault:'us'},
+  vehicle:      {es:'Veh\u00edculo o equipo',         en:'Vehicle or equipment',   fault:'us'},
+  no_access:    {es:'Sin acceso',                     en:'No access',              fault:'client'},
+  client_cancel:{es:'El cliente cancel\u00f3',        en:'Client cancelled',       fault:'client'},
+  client_absent:{es:'Cliente no estaba',              en:'Client not there',       fault:'client'},
+  spa_down:     {es:'Spa fuera de servicio',          en:'Spa out of service',     fault:'client'},
+  other:        {es:'Otro',                           en:'Other',                  fault:''}
+};
+function visReasonLabel(v){
+  if(!v || !v.reason) return '';
+  if(v.reason==='other') return v.reasonTxt || (LANG==='es'?'Otro':'Other');
+  const r=VIS_REASONS[v.reason];
+  return r ? (LANG==='es'?r.es:r.en) : v.reason;
+}
+function visReasonFault(v){
+  if(!v || !v.reason) return '';
+  const r=VIS_REASONS[v.reason];
+  return r ? r.fault : '';
+}
+function _visToggleReason(){
+  const st=document.getElementById('vis-status').value;
+  const wrap=document.getElementById('vis-reason-wrap');
+  if(!wrap) return;
+  wrap.style.display=(st==='not_done'||st==='skip')?'':'none';
+  _visReasonOther();
+}
+function _visReasonOther(){
+  const sel=document.getElementById('vis-reason');
+  const oth=document.getElementById('vis-reason-other');
+  const hint=document.getElementById('vis-reason-hint');
+  if(!sel||!oth) return;
+  oth.style.display=sel.value==='other'?'':'none';
+  if(!hint) return;
+  const es=LANG==='es';
+  const f=VIS_REASONS[sel.value]?VIS_REASONS[sel.value].fault:'';
+  if(f==='us')        hint.innerHTML='<span style="color:#991B1B;font-weight:700">'+(es?'Falta nuestra':'On us')+'</span> \u2014 '+(es?'esta visita genera cr\u00e9dito al cliente':'this visit credits the client');
+  else if(f==='client') hint.innerHTML='<span style="color:#78350F;font-weight:700">'+(es?'Del lado del cliente':'Client side')+'</span> \u2014 '+(es?'igual genera cr\u00e9dito, pero queda registrado el motivo':'still credits, but the reason is on record');
+  else hint.textContent='';
 }
 
 function toggleVisitQuick(cid,dk){
@@ -9315,6 +9716,88 @@ function _showDataIntegrityBanner(warnings){
   };
 }
 
+/* ═══ BLOCK: PAUSE SCHEDULER (v1.7.0) ═══════════════════════════════════
+   Admin sets a date ("last visit before the pause"); on that day the app
+   flips the client to `paused` by itself and the tech stops seeing them on
+   the schedule.
+
+   Why a sweep instead of teaching every view about pause dates: there are
+   ~45 `c.status==='active'` filters across this file (dashboard, A/B
+   schedule, route sheets, water change, billing, map). One sweep that flips
+   `status` makes all 45 correct for free, with zero risk to those filters.
+
+   `_pauseDone` records the pauseFrom value already acted on, so a MANUAL
+   reactivation is never undone by the next sweep — only a NEW date acts.
+   That's what keeps this from fighting the 5 places that set status by hand
+   (tp(), _ctxToggleStatus(), the bulk action, the edit form, activateClient()).
+   ══════════════════════════════════════════════════════════════════════ */
+function _sweepScheduledPauses(){
+  const today = _localDateKey();
+  const changed = [];
+  C.forEach(c => {
+    if(!c || c.status === 'cancelled') return;
+
+    // Pause: date reached, and this exact date hasn't been acted on yet.
+    if(c.pauseFrom && c.pauseFrom <= today && c._pauseDone !== c.pauseFrom){
+      if(c.status === 'active'){
+        c.status = 'paused';
+        c.lastModified = Date.now();
+        changed.push({cid:c.id, name:c.name, action:'paused', date:c.pauseFrom});
+      }
+      c._pauseDone = c.pauseFrom;   // marked even if already paused, so it never re-fires
+    }
+
+    // Resume: only clients the APP paused. Someone paused by hand ("stopped
+    // paying invoice") must never be reactivated automatically.
+    if(c.resumeOn && c.resumeOn <= today && c._resumeDone !== c.resumeOn){
+      if(c.status === 'paused' && c._pauseDone){
+        c.status = 'active';
+        c.lastModified = Date.now();
+        changed.push({cid:c.id, name:c.name, action:'resumed', date:c.resumeOn});
+      }
+      c._resumeDone = c.resumeOn;
+    }
+  });
+  return changed;
+}
+
+function _applyPauseSweep(){
+  let changed = [];
+  try{ changed = _sweepScheduledPauses(); }catch(e){ dbgWarn('pause sweep',e); return; }
+  if(!changed.length) return;
+  try{ saveData(); }catch(e){ dbgWarn('pause save',e); }
+  try{ rc(); rd(); }catch(e){ dbgWarn('pause render',e); }
+  changed.forEach(ch => {
+    try{ logAudit(ch.action === 'paused' ? 'autoPause' : 'autoResume', ch.name + ' \u00b7 ' + ch.date); }
+    catch(e){ dbgWarn('pause audit',e); }
+  });
+  const es = LANG === 'es';
+  const paused  = changed.filter(x => x.action === 'paused');
+  const resumed = changed.filter(x => x.action === 'resumed');
+  const bits = [];
+  if(paused.length)  bits.push('\u23F8 ' + paused.length  + (es ? ' pausado(s)'  : ' paused'));
+  if(resumed.length) bits.push('\u25B6 ' + resumed.length + (es ? ' reanudado(s)' : ' resumed'));
+  try{
+    showToast(bits.join(' \u00b7 ') + ' \u2014 ' + changed[0].name +
+      (changed.length > 1 ? (es ? ' y otros' : ' and others') : ''), 'ok');
+  }catch(e){ dbgWarn('pause toast',e); }
+}
+
+/* True when a pause is set but hasn't happened yet — drives the "⏸ Pausa
+   programada" pill so nobody is surprised the day it lands. */
+function _pendingPause(c){
+  if(!c || !c.pauseFrom) return null;
+  const today = _localDateKey();
+  if(c.pauseFrom <= today) return null;
+  const d = parseLocalDate(c.pauseFrom);
+  const days = d ? Math.ceil((d - todayLocal()) / 86400000) : null;
+  return {date:c.pauseFrom, days:days, reason:c.pauseReason || ''};
+}
+
+// Devices left open overnight: re-sweep every 6 h so the date lands without a reload.
+setInterval(() => { try{ _applyPauseSweep(); }catch(e){ dbgWarn('pause tick',e); } }, 6*3600*1000);
+/* ═══ END BLOCK: PAUSE SCHEDULER ═══════════════════════════════════════ */
+
 async function clearAllData(){
   if(!await showConfirm(t('confirmClear'),{danger:true,okText:LANG==='es'?'Borrar TODO':'DELETE ALL'}))return;
   // FIX — the old version cleared localStorage and reloaded… and the Firebase
@@ -9358,6 +9841,16 @@ function getBackupPayload(){
       // portal links, "notified" marks and tags vanished on the next merge.
       wcNoti:cl.wcNoti||'',portalToken:cl.portalToken||'',tags:cl.tags||'',
       reminders:cl.reminders||[],tapptTs:cl.tapptTs||0,
+      // v1.7.0 — scheduled pause + per-client rate override.
+      // MUST stay in this whitelist: applyCloudData() does Object.assign(cl, ov)
+      // with `ov` built from here, so a field missing above never reaches the
+      // cloud, never reaches another device, and is lost on backup/restore.
+      pauseFrom:cl.pauseFrom||'', resumeOn:cl.resumeOn||'',
+      pauseReason:cl.pauseReason||'',
+      _pauseDone:cl._pauseDone||'', _resumeDone:cl._resumeDone||'',
+      rateOverride:cl.rateOverride||0,
+      // v1.7.2 — opt-in: publish the approved credit on this client's portal
+      portalCredit:cl.portalCredit||false,
       lastModified:cl.lastModified||0
     }))
   };
@@ -9666,6 +10159,9 @@ function doInit(config){
         // else wrote to the cloud. Per-entry timestamp merges (VL, BL, clients)
         // make applying every snapshot safe; wholesale branches stay gated.
         _applySnap(d);
+        // v1.7.0 — re-sweep after the merge: this device may have booted with
+        // no signal and only now received the pause date from another device.
+        try{ _applyPauseSweep(); }catch(e){ dbgWarn('pause sweep post-merge',e); }
         // Self-heal: if this device holds entries the cloud doesn't have yet
         // (e.g. saved while offline), push them shortly after the snapshot.
         if(d){ clearTimeout(window._fbResyncT); window._fbResyncT=setTimeout(_fbResyncLocalExtras,3000); }
@@ -10204,6 +10700,26 @@ function _publishClientPortal(c){
       visits.push({ date:dk, status:v.status||'done', tech:v.tech||chk.tech||'', readings:chk.readings||null, chemicals:chk.chemicals||null, photos:photos });
     });
     const snap={ name:c.name, freq:c.freq||'', nextWaterChange:c.nwc||'', lastWaterChange:c.lwc||'', sanitizer:c.san||'', visits:visits, updatedAt:new Date().toISOString() };
+    /* v1.7.2 — credit on the customer-facing portal. Two deliberate guards:
+       1. OPT-IN per client (c.portalCredit). Off by default, so turning this
+          feature on changes nothing for anyone until Alberto flips a switch.
+       2. Only APPROVED credits are published — the ones that went through
+          applyQuarterCredit and live in BL[cid][q].cr. A computed-but-not-yet-
+          approved credit is an internal number; publishing it would promise
+          the client money Alberto hasn't agreed to give.
+       The internal reason codes (tech_absent, no_access...) are NEVER
+       published — whose fault it was is an internal conversation. */
+    if(c.portalCredit){
+      try{
+        const creds=[];
+        Object.keys(BL[c.id]||{}).forEach(q=>{
+          const b=BL[c.id][q];
+          if(b && b.cr && Number(b.cr.a)>0) creds.push({q:q, amount:Number(b.cr.a), n:b.cr.n||0, from:b.cr.src||''});
+        });
+        creds.sort((a,b2)=>String(b2.q).localeCompare(String(a.q)));
+        if(creds.length) snap.credits=creds.slice(0,4);
+      }catch(e){ dbgWarn('portal credit',e); }
+    }
     fbDB.ref('aspen_spas/portal/'+c.portalToken).set(snap).catch(e=>dbgWarn('portal publish',e));
   }catch(e){ dbgWarn('portal',e); }
 }
@@ -10265,12 +10781,31 @@ function _portalHtml(d){
       +readingsRow(v.readings)+chemRow(v.chemicals)+photoRow(v.photos)
       +'</div>';
   }).join('');
+  /* v1.7.2 — credit card, only present when the client is opted in and the
+     credit was actually approved. Written to read like a statement line, not
+     an apology: the amount, which quarter it comes off, and how many visits. */
+  const creditCard=(()=>{
+    const cs=(d.credits||[]).filter(x=>x&&Number(x.amount)>0);
+    if(!cs.length) return '';
+    const tot=cs.reduce((s,x)=>s+Number(x.amount),0);
+    return '<div style="background:#FFFFFF;border:1px solid #DFE9EC;border-left:4px solid #1C8FA8;border-radius:12px;padding:15px 17px;margin-bottom:16px">'
+      +'<div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:#5A6A72;font-weight:700">Service credit</div>'
+      +'<div style="font-size:24px;font-weight:700;color:#134A63;margin-top:2px">$'+tot.toFixed(2)+'</div>'
+      +cs.map(x=>'<div style="font-size:13px;color:#5A6A72;margin-top:5px">'
+        +'<strong style="color:#1F2A30">'+esc(x.q)+'</strong> \u2014 $'+Number(x.amount).toFixed(2)
+        +(x.n?' for '+x.n+' visit'+(x.n>1?'s':'')+' we were not able to complete':'')
+        +(x.from?' <span style="color:#8CA0A8">(from '+esc(x.from)+')</span>':'')+'</div>').join('')
+      +'<div style="font-size:12.5px;color:#5A6A72;margin-top:9px;padding-top:9px;border-top:1px solid #DFE9EC">'
+      +'This has already been applied to your invoice \u2014 no action needed on your part.</div>'
+      +'</div>';
+  })();
   return '<div style="background:#0D2B3D;margin:0 -16px;padding:26px 20px 22px;text-align:center">'
     +'<div style="color:#FFFFFF;font-size:22px;font-weight:300;letter-spacing:2px;font-family:Poppins,sans-serif">ASPEN SPAS</div>'
     +'<div style="color:#1C8FA8;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-top:3px">Your Spa Care Portal</div></div>'
     +'<div style="padding-top:18px"><h2 style="color:#1F2A30;font-size:20px;margin-bottom:2px;font-family:Poppins,sans-serif">'+esc(d.name||'')+'</h2>'
     +'<div style="color:#5A6A72;font-size:13px;margin-bottom:14px">Updated '+(d.updatedAt?new Date(d.updatedAt).toLocaleDateString('en-US',{month:'long',day:'numeric'}):'')+'</div>'
     +(d.nextWaterChange?'<div style="background:linear-gradient(135deg,#1C8FA8,#134A63);color:#FFF;border-radius:14px;padding:16px 18px;margin-bottom:16px"><div style="font-size:11.5px;text-transform:uppercase;letter-spacing:1px;opacity:.85;font-weight:700">Next water change</div><div style="font-size:21px;font-weight:700;margin-top:2px">'+fmtD(d.nextWaterChange)+'</div>'+(d.sanitizer?'<div style="font-size:12.5px;opacity:.85;margin-top:4px">Sanitizer: '+esc(d.sanitizer)+'</div>':'')+'</div>':'')
+    +creditCard
     +'<h3 style="color:#1F2A30;font-size:15px;margin:6px 0 10px;font-family:Poppins,sans-serif">Recent service visits</h3>'
     +(visits||'<div style="color:#5A6A72;font-size:14px">No visits recorded yet.</div>')
     +'<div style="text-align:center;color:#8CA0A8;font-size:12px;margin-top:24px">Questions? Call us at (314) 776-5050<br>Aspen Spas · 4609 McRee Ave, St. Louis, MO</div></div>';
@@ -11280,26 +11815,89 @@ function _updOfflineBar(){
     +(window._fbDirty?' <span style="background:rgba(255,255,255,.15);border-radius:12px;padding:1px 9px;font-size:11px">'+(LANG==='es'?'cambios en cola':'changes queued')+'</span>':'');
 }
 /* #14 — dated reminders (stored on the client → sync for free) */
+/* v1.7.0 — one modal with a real <input type="date"> and three shortcuts.
+   The old version chained two blocking prompt() calls and made you type
+   YYYY-MM-DD by hand, which is unusable on a phone. */
 function addClientReminder(cid){
+  _reminderModal(cid, '', _localDateKey(), (txt,due,rep)=>_saveClientReminder(cid,txt,due,rep), '');
+}
+/* v1.7.1 — one modal, shared by "new" and "edit". Takes the starting values
+   and a callback, so neither path can drift from the other. */
+function _reminderModal(cid, curTxt, curDue, onSave, curRep){
   const c=C.find(x=>x.id===cid); if(!c) return;
   const es=LANG==='es';
-  const txt=prompt(es?'Recordatorio para '+c.name+':':'Reminder for '+c.name+':'); if(!txt||!txt.trim()) return;
-  const due=prompt(es?'Fecha (YYYY-MM-DD):':'Due date (YYYY-MM-DD):',_localDateKey());
-  if(!due||!/^\d{4}-\d{2}-\d{2}$/.test(due.trim())){ showToast(es?'Fecha inv\u00e1lida':'Invalid date','warn'); return; }
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px';
+  const box=document.createElement('div');
+  box.style.cssText='background:#FFFFFF;border-radius:12px;padding:18px 20px;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:inherit';
+  const d7=new Date(); d7.setDate(d7.getDate()+7);
+  const d30=new Date(); d30.setDate(d30.getDate()+30);
+  box.innerHTML='<div style="font-size:14.5px;font-weight:700;color:#271B11;margin-bottom:12px">\u23F0 '
+    +(curTxt?(es?'Editar recordatorio \u2014 ':'Edit reminder \u2014 '):(es?'Recordatorio para ':'Reminder for '))+esc(c.name)+'</div>'
+    +'<input id="rm-txt" type="text" maxlength="140" placeholder="'+(es?'Ej: cancelar servicio despu\u00e9s del 9/28':'e.g. cancel service after 9/28')+'" style="width:100%;padding:9px 10px;border:1px solid #D8D6D3;border-radius:7px;font-family:inherit;font-size:14px;margin-bottom:12px;box-sizing:border-box">'
+    +'<div style="font-size:12px;font-weight:600;color:#81786E;margin-bottom:5px">'+(es?'Fecha':'Due date')+'</div>'
+    +'<input id="rm-due" type="date" value="'+esc(curDue||_localDateKey())+'" style="width:100%;padding:9px 10px;border:1px solid #D8D6D3;border-radius:7px;font-family:inherit;font-size:14px;margin-bottom:9px;box-sizing:border-box">'
+    +'<div style="display:flex;gap:6px;margin-bottom:15px">'
+    +'<button class="rm-q" data-d="'+_localDateKey()+'" style="flex:1;padding:6px;border:1px solid #E9C6A7;background:#FCF7F2;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600;color:#A46229">'+(es?'Hoy':'Today')+'</button>'
+    +'<button class="rm-q" data-d="'+_localDateKey(d7)+'" style="flex:1;padding:6px;border:1px solid #E9C6A7;background:#FCF7F2;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600;color:#A46229">+7 '+(es?'d\u00edas':'days')+'</button>'
+    +'<button class="rm-q" data-d="'+_localDateKey(d30)+'" style="flex:1;padding:6px;border:1px solid #E9C6A7;background:#FCF7F2;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600;color:#A46229">+30 '+(es?'d\u00edas':'days')+'</button>'
+    +'</div>'
+    +'<div style="font-size:12px;font-weight:600;color:#81786E;margin-bottom:5px">'+(es?'Repetir':'Repeat')+'</div>'
+    +'<select id="rm-rep" style="width:100%;padding:9px 10px;border:1px solid #D8D6D3;border-radius:7px;font-family:inherit;font-size:14px;margin-bottom:15px;box-sizing:border-box">'
+    +Object.keys(REMINDER_REPEATS).map(function(k){
+        return '<option value="'+k+'"'+((curRep||'')===k?' selected':'')+'>'+esc(es?REMINDER_REPEATS[k].es:REMINDER_REPEATS[k].en)+'</option>';
+      }).join('')
+    +'</select>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button id="rm-cancel" style="padding:8px 16px;border:1px solid #D8D6D3;background:#FFFFFF;border-radius:7px;cursor:pointer;font-weight:500;font-family:inherit">'+(es?'Cancelar':'Cancel')+'</button>'
+    +'<button id="rm-ok" style="padding:8px 16px;border:none;background:#CF8341;color:#FFFFFF;border-radius:7px;cursor:pointer;font-weight:600;font-family:inherit">'+(curTxt?(es?'Actualizar':'Update'):(es?'Guardar':'Save'))+'</button>'
+    +'</div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  const txtEl=box.querySelector('#rm-txt'), dueEl=box.querySelector('#rm-due');
+  setTimeout(()=>txtEl.focus(),40);
+  box.querySelectorAll('.rm-q').forEach(b=>b.onclick=()=>{ dueEl.value=b.dataset.d; });
+  const close=()=>{ try{document.body.removeChild(overlay);}catch(e){dbgWarn('caught:',e);} };
+  box.querySelector('#rm-cancel').onclick=close;
+  overlay.onclick=e=>{ if(e.target===overlay) close(); };
+  txtEl.onkeydown=e=>{ if(e.key==='Enter') box.querySelector('#rm-ok').click(); };
+  box.querySelector('#rm-ok').onclick=()=>{
+    const txt=txtEl.value, due=dueEl.value;
+    if(!txt||!txt.trim()){ showToast(es?'Escribe el recordatorio':'Type the reminder','warn'); return; }
+    if(!due||!/^\d{4}-\d{2}-\d{2}$/.test(due)){ showToast(es?'Fecha inv\u00e1lida':'Invalid date','warn'); return; }
+    const repEl=box.querySelector('#rm-rep');
+    close();
+    onSave(txt, due, repEl?repEl.value:'');
+  };
+}
+function _saveClientReminder(cid, txt, due, rep){
+  const c=C.find(x=>x.id===cid); if(!c) return;
+  const es=LANG==='es';
   c.reminders=c.reminders||[];
-  c.reminders.push({t:txt.trim().slice(0,140),due:due.trim(),who:CURRENT_ROLE==='admin'?'Admin':(CURRENT_TECH||CURRENT_ROLE||'?'),at:Date.now(),done:false});
+  c.reminders.push({t:txt.trim().slice(0,140),due:due.trim(),rep:rep||'',who:CURRENT_ROLE==='admin'?'Admin':(CURRENT_TECH||CURRENT_ROLE||'?'),at:Date.now(),done:false});
   c.lastModified=Date.now();
   saveData();
   try{ logAudit('reminder',c.name+' \u00b7 '+due.trim()); }catch(e){ dbgWarn('caught:',e); }
   showToast('\u23F0 '+(es?'Recordatorio guardado':'Reminder saved'),'ok');
+  try{ _updBellBadge(); rc(); }catch(e){ dbgWarn('caught:',e); }
   try{ if(typeof _cdRender==='function'&&document.body.classList.contains('drawer-open')) _cdRender(); }catch(e){ dbgWarn('caught:',e); }
 }
 function doneClientReminder(cid,idx){
   const c=C.find(x=>x.id===cid); if(!c||!c.reminders||!c.reminders[idx]) return;
-  c.reminders[idx].done=true;
+  const r=c.reminders[idx];
+  // v1.7.2 — a repeating reminder rolls forward instead of closing.
+  const nextDue = r.rep ? _advanceReminderDate(r.due, r.rep) : '';
+  if(nextDue){
+    r.due = nextDue;
+    r.done = false;
+    r.lastDoneAt = Date.now();
+    r.doneCount = (r.doneCount || 0) + 1;
+    showToast('\u23F0 '+(LANG==='es'?'Hecho \u2014 vuelve el ':'Done \u2014 back on ')+nextDue,'ok');
+  } else {
+    r.done=true;
+  }
   c.lastModified=Date.now();
   saveData();
-  try{ _updBellBadge(); }catch(e){ dbgWarn('caught:',e); }
+  try{ _updBellBadge(); rc(); }catch(e){ dbgWarn('caught:',e); }
   try{ if(typeof _cdRender==='function'&&document.body.classList.contains('drawer-open')) _cdRender(); }catch(e){ dbgWarn('caught:',e); }
 }
 function _dueReminders(){
@@ -11307,6 +11905,129 @@ function _dueReminders(){
   C.forEach(c=>(c.reminders||[]).forEach((r,i)=>{ if(!r.done&&r.due<=today) out.push({c:c,r:r,i:i}); }));
   return out.sort((a,b)=>String(a.r.due).localeCompare(String(b.r.due)));
 }
+
+/* ═══ BLOCK: REMINDERS v1.7.0 ══════════════════════════════════════════
+   Before this, a reminder was visible in the client sheet and nowhere else,
+   and only from its due date onward — so "cancel service after 9/28",
+   written in August, was invisible until the day it mattered.
+
+   Now: a 14-day look-ahead window feeds every surface that lists clients —
+   the Clients table, the A/B schedule card, the printed route sheet and the
+   notification bell.
+   ══════════════════════════════════════════════════════════════════════ */
+const REMINDER_WINDOW_DAYS = 14;
+
+function _remindersInWindow(days, todayKey){
+  const today = todayKey || _localDateKey();
+  const horizonD = new Date(today + 'T12:00:00');
+  horizonD.setDate(horizonD.getDate() + (days == null ? REMINDER_WINDOW_DAYS : days));
+  const horizon = _localDateKey(horizonD);
+  const out = [];
+  C.forEach(c => (c.reminders || []).forEach((r, i) => {
+    if(r.done) return;
+    if(r.due > horizon) return;                   // still too far out
+    out.push({c:c, r:r, i:i, overdue: r.due < today, due:r.due});
+  }));
+  // Overdue first, then by date.
+  return out.sort((a, b) =>
+    (a.overdue === b.overdue) ? String(a.due).localeCompare(String(b.due))
+                              : (a.overdue ? -1 : 1));
+}
+
+/* Compact flag for one client — used by the table row, the schedule card
+   and the printed route sheet. Returns null when there's nothing open. */
+function _clientReminderFlag(c, todayKey){
+  if(!c) return null;
+  const today = todayKey || _localDateKey();
+  const open = (c.reminders || []).filter(r => !r.done);
+  if(!open.length) return null;
+  open.sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  return {n:open.length, next:open[0], overdue: open[0].due < today};
+}
+
+/* The badge markup, shared by the Clients table and the schedule card so
+   the two can never drift apart. */
+function _reminderBadgeHTML(c){
+  const rf = _clientReminderFlag(c);
+  if(!rf) return '';
+  const es = LANG === 'es';
+  const tip = rf.next.t + ' \u00b7 ' + rf.next.due
+    + (rf.overdue ? (es ? ' (vencido)' : ' (overdue)') : '');
+  return '<span class="cc-rem-flag' + (rf.overdue ? ' overdue' : '') + '"'
+    + ' onclick="event.stopPropagation();vc(' + c.id + ')"'
+    + ' title="' + esc(tip) + '">\u23F0 ' + rf.n + '</span>';
+}
+
+/* v1.7.2 — recurrence. A reminder that repeats doesn't die when it's marked
+   done: its due date rolls forward. That's what turns "call before the water
+   change" from a note you rewrite four times a year into a standing one. */
+const REMINDER_REPEATS = {
+  '':          {es:'No se repite',   en:'Does not repeat'},
+  'weekly':    {es:'Cada semana',    en:'Weekly'},
+  'monthly':   {es:'Cada mes',       en:'Monthly'},
+  'quarterly': {es:'Cada trimestre', en:'Quarterly'},
+  'yearly':    {es:'Cada año',       en:'Yearly'}
+};
+function _advanceReminderDate(due, rep){
+  if(!rep || !REMINDER_REPEATS[rep]) return '';
+  const d = new Date(due + 'T12:00:00');
+  if(isNaN(d)) return '';
+  if(rep === 'weekly')         d.setDate(d.getDate() + 7);
+  else if(rep === 'monthly')   d.setMonth(d.getMonth() + 1);
+  else if(rep === 'quarterly') d.setMonth(d.getMonth() + 3);
+  else if(rep === 'yearly')    d.setFullYear(d.getFullYear() + 1);
+  // If the reminder was left sitting for a long time, roll forward until the
+  // next occurrence is actually in the future — otherwise marking it done just
+  // produces another overdue one and it never catches up.
+  const today = _localDateKey();
+  let guard = 0;
+  while(_localDateKey(d) <= today && guard++ < 400){
+    if(rep === 'weekly')         d.setDate(d.getDate() + 7);
+    else if(rep === 'monthly')   d.setMonth(d.getMonth() + 1);
+    else if(rep === 'quarterly') d.setMonth(d.getMonth() + 3);
+    else if(rep === 'yearly')    d.setFullYear(d.getFullYear() + 1);
+  }
+  return _localDateKey(d);
+}
+function repeatLabel(rep){
+  const r = REMINDER_REPEATS[rep || ''];
+  return r ? (LANG === 'es' ? r.es : r.en) : '';
+}
+
+function deleteClientReminder(cid, idx){
+  const c = C.find(x => x.id === cid);
+  if(!c || !c.reminders || !c.reminders[idx]) return;
+  c.reminders.splice(idx, 1);
+  c.lastModified = Date.now();
+  saveData();
+  try{ _updBellBadge(); }catch(e){ dbgWarn('caught:',e); }
+  try{ rc(); }catch(e){ dbgWarn('caught:',e); }
+  try{ if(typeof _cdRender==='function'&&document.body.classList.contains('drawer-open')) _cdRender(); }
+  catch(e){ dbgWarn('caught:',e); }
+  showToast(LANG === 'es' ? 'Recordatorio borrado' : 'Reminder deleted','ok');
+}
+
+/* v1.7.1 — edit an existing reminder. Reuses the same modal as the new one;
+   a typo in the text or a wrong date used to mean delete + retype. */
+function editClientReminder(cid, idx){
+  const c = C.find(x => x.id === cid);
+  if(!c || !c.reminders || !c.reminders[idx]) return;
+  const r = c.reminders[idx];
+  _reminderModal(cid, r.t, r.due, (txt, due, rep) => {
+    r.t = txt.trim().slice(0,140);
+    r.due = due.trim();
+    r.rep = rep || '';
+    r.editedAt = Date.now();
+    c.lastModified = Date.now();
+    saveData();
+    try{ logAudit('reminderEdit', c.name + ' \u00b7 ' + r.due); }catch(e){ dbgWarn('caught:',e); }
+    try{ _updBellBadge(); rc(); }catch(e){ dbgWarn('caught:',e); }
+    try{ if(typeof _cdRender==='function'&&document.body.classList.contains('drawer-open')) _cdRender(); }
+    catch(e){ dbgWarn('caught:',e); }
+    showToast('\u23F0 ' + (LANG==='es'?'Recordatorio actualizado':'Reminder updated'),'ok');
+  }, r.rep || '');
+}
+/* ═══ END BLOCK: REMINDERS v1.7.0 ══════════════════════════════════════ */
 /* #2 — tech performance insights (last 30 days, real VL data) */
 function _renderTechInsights(){
   const box=document.getElementById('insights-body'); if(!box) return;
@@ -11598,7 +12319,7 @@ function _cdRender(){
     +'<div style="font-size:11.8px;color:var(--muted)">'+esc(c.freq||'')+' \u00b7 '+(es?'Semana ':'Week ')+esc(c.week||'')+' \u00b7 <span style="color:'+wcState[0]+';font-weight:700">'+wcState[1]+'</span></div></div>'
     +'<button class="btn" onclick="closeClientDrawer()" style="font-size:15px;padding:4px 11px">\u2715</button></div>'
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:11px">'
-    +'<button class="btn btn-amber" onclick="openEdit('+c.id+')">\u270E '+(es?'Editar':'Edit')+'</button>'+'<button class="btn" onclick="openBrainModalC('+c.id+')">\U0001F9E0 '+(es?'Cerebro':'Brain')+'</button>'
+    +'<button class="btn btn-amber" onclick="openEdit('+c.id+')">\u270E '+(es?'Editar':'Edit')+'</button>'+'<button class="btn" onclick="openBrainModalC('+c.id+')">\uD83E\uDDE0 '+(es?'Cerebro':'Brain')+'</button>'
     +'<button class="btn" onclick="owc('+c.id+')">\uD83D\uDCA7 W.Change</button>'
     +'<button class="btn" onclick="oTechAppt('+c.id+')">\uD83D\uDD27 '+(es?'Cita':'Appt')+'</button>'
     +'<button class="btn" onclick="copyClientPortalLink('+c.id+')">\uD83D\uDD17 Portal</button>'
@@ -11628,7 +12349,7 @@ function _cdBody(c){
       +(rems.length?rems.map((r,ri)=>{
         const overdue=r.due<_localDateKey();
         const realIdx=(c.reminders||[]).indexOf(r);
-        return '<div style="display:flex;gap:8px;align-items:flex-start;background:'+(overdue?'#FEE2E2':'#FFF8EE')+';border:1px solid '+(overdue?'#FECACA':'#F2DDCB')+';border-radius:9px;padding:8px 10px;font-size:12.4px;margin-bottom:6px"><span>\u23F0</span><div style="flex:1"><b>'+esc(r.t)+'</b><br><small style="color:'+(overdue?'#991B1B':'var(--muted)')+'">'+(overdue?(es?'venci\u00f3 ':'overdue '):'')+esc(r.due)+' \u00b7 '+esc(r.who||'')+'</small></div><button class="btn btn-green" style="font-size:11px" onclick="doneClientReminder('+c.id+','+realIdx+')">\u2713</button></div>';
+        return '<div style="display:flex;gap:8px;align-items:flex-start;background:'+(overdue?'#FEE2E2':'#FFF8EE')+';border:1px solid '+(overdue?'#FECACA':'#F2DDCB')+';border-radius:9px;padding:8px 10px;font-size:12.4px;margin-bottom:6px"><span>\u23F0</span><div style="flex:1"><b>'+esc(r.t)+'</b><br><small style="color:'+(overdue?'#991B1B':'var(--muted)')+'">'+(overdue?(es?'venci\u00f3 ':'overdue '):'')+esc(r.due)+' \u00b7 '+esc(r.who||'')+(r.rep?' \u00b7 \u21BB '+esc(repeatLabel(r.rep)):'')+'</small></div><button class="btn" style="font-size:11px" onclick="editClientReminder('+c.id+','+realIdx+')" title="'+(es?'Editar':'Edit')+'">\u270E</button><button class="btn btn-green" style="font-size:11px" onclick="doneClientReminder('+c.id+','+realIdx+')" title="'+(es?'Marcar hecho':'Mark done')+'">\u2713</button><button class="btn btn-red" style="font-size:11px" onclick="deleteClientReminder('+c.id+','+realIdx+')" title="'+(es?'Borrar':'Delete')+'">\u2715</button></div>';
       }).join(''):'<div style="font-size:11.8px;color:var(--muted)">'+(es?'Sin recordatorios pendientes':'No pending reminders')+'</div>')+'</div>';
     return rows.map(r=>'<div style="padding:7px 0;border-bottom:1px dashed var(--border)">'+r[0]+' '+esc(r[1])+'</div>').join('')
       +remHtml
@@ -11655,7 +12376,28 @@ function _cdBody(c){
     if(document.body.classList.contains('no-billing')) return '<div class="empty-state"><h4>'+(es?'Sin acceso a facturaci\u00f3n en este dispositivo':'No billing access on this device')+'</h4></div>';
     const b=BL[c.id]||{};
     const qs=getCurrentYearQuarters();
-    return '<div style="margin-bottom:10px;font-size:13.5px"><b>'+(es?'Tarifa trimestral: ':'Quarterly rate: ')+'</b>'+fmtUSD(clientQRate(c))+' \u00b7 <b>'+(es?'Anual: ':'Annual: ')+'</b>'+fmtUSD(clientAnnualRate(c))+'</div>'
+    return '<div style="margin-bottom:10px;font-size:13.5px"><b>'+(es?'Tarifa trimestral: ':'Quarterly rate: ')+'</b>'+fmtUSD(clientQRate(c))
+      +(Number(c.rateOverride)>0?' <span style="font-size:11px;background:#FEF3C7;color:#78350F;border-radius:4px;padding:1px 5px;font-weight:700">'+(es?'especial':'custom')+'</span>':'')
+      +' \u00b7 <b>'+(es?'Anual: ':'Annual: ')+'</b>'+fmtUSD(clientAnnualRate(c))+'</div>'
+      /* v1.7.0 — credit for visits we didn't make, this quarter */
+      +(()=>{ try{
+        const curQ=document.getElementById('qsel')?document.getElementById('qsel').value:'';
+        if(!curQ) return '';
+        const cr=computeQuarterCredit(c,curQ);
+        if(!cr.scheduled) return '';
+        let h='<div style="background:#FFF8EE;border:1px solid #F2DDCB;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12.6px">'
+          +'<b style="color:var(--brand)">'+(es?'Valor por visita ':'Value per visit ')+curQ+':</b> $'+cr.perVisit.toFixed(2)
+          +' <span style="color:var(--muted)">('+fmtUSD(cr.rate)+' \u00f7 '+cr.scheduled+' '+(es?'visitas':'visits')+')</span>';
+        if(cr.missed>0){
+          h+='<div style="margin-top:5px;color:#991B1B;font-weight:700">\u2717 '+cr.missed+(es?' visita(s) no hecha(s) \u2014 cr\u00e9dito $':' missed visit(s) \u2014 credit $')+cr.credit.toFixed(2)+'</div>';
+        }
+        const applied=_appliedCredit(c.id,curQ);
+        if(applied){
+          h+='<div style="margin-top:5px;color:#166534;font-weight:700">\u2713 '+(es?'Cr\u00e9dito aplicado: \u2212$':'Credit applied: \u2212$')+Number(applied.a).toFixed(2)
+            +' <span style="font-weight:500;color:var(--muted)">('+esc(applied.src)+')</span></div>';
+        }
+        return h+'</div>';
+      }catch(e){ dbgWarn('credit sheet',e); return ''; } })()
       +qs.map(q=>{
         const e2=b[q];
         const st2=!e2||!e2.i?'<span style="color:var(--muted)">'+(es?'sin factura':'no invoice')+'</span>'
@@ -11864,7 +12606,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.6.14';
+const UI_VERSION='1.7.2';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -11978,10 +12720,19 @@ function _bellData(){
     }
   }catch(e){ dbgWarn('caught:',e); }
   try{
-    const due=_dueReminders();
-    if(due.length){
-      items.push({ic:'\u23F0',t:due.length+(es?' recordatorio(s) para hoy':' reminder(s) due'),s:due[0].c.name+': '+due[0].r.t.slice(0,42),go:()=>{vc(due[0].c.id);}});
-    }
+    // v1.7.0 — was: one aggregated line, and only for reminders already due.
+    // Now: each one by name, with a 14-day look-ahead so a reminder written in
+    // August for late September is actionable before the date arrives.
+    const due=_remindersInWindow();
+    due.slice(0,5).forEach(d=>{
+      items.push({
+        ic: d.overdue?'\uD83D\uDD34':'\u23F0',
+        t: d.c.name+' \u00b7 '+d.r.t.slice(0,46),
+        s: (d.overdue?(es?'venci\u00f3 ':'overdue '):'')+d.due,
+        go: ()=>{ vc(d.c.id); }
+      });
+    });
+    if(due.length>5) items.push({ic:'\u23F0',t:'+'+(due.length-5)+(es?' recordatorio(s) m\u00e1s':' more reminder(s)'),s:'',go:()=>_bnavGo('clients')});
   }catch(e){ dbgWarn('caught:',e); }
   try{
     const tk=_localDateKey();
@@ -13405,6 +14156,10 @@ function printWeek(weekOffset){
 
         // Build notes cell — reminder highlighted, then general note
         let notesHtml='';
+        // v1.7.0 — the client's own dated reminders, so the tech sees them
+        // on the printed sheet instead of only inside the client profile.
+        const _rf = _clientReminderFlag(c);
+        if(_rf) notesHtml+=`<div class="pct-reminder">⏰ ${esc(_rf.next.t)} (${esc(_rf.next.due)})${_rf.n>1?' +'+(_rf.n-1):''}</div>`;
         if(reminder) notesHtml+=`<div class="pct-reminder">📌 ${reminder}</div>`;
         if(generalNote) notesHtml+=`<div class="pct-general-note">${generalNote}</div>`;
         if(!notesHtml) notesHtml='—';
@@ -13636,6 +14391,10 @@ async function printWeekRoute(weekOffset, techName){
       const codePills=codes.length?codes.map(cd=>`<span class="pr-gate-pill">🔑 ${esc(cd)}</span>`).join(' '):'';
 
       let notesHtml='';
+      // v1.7.0 — client reminders on the printed sheet (see the other route
+      // sheet builder above; both must stay in sync).
+      const _rf2=_clientReminderFlag(c);
+      if(_rf2)notesHtml+=`<div class="pct-reminder">⏰ ${esc(_rf2.next.t)} (${esc(_rf2.next.due)})${_rf2.n>1?' +'+(_rf2.n-1):''}</div>`;
       if(reminder)notesHtml+=`<div class="pct-reminder">📌 ${esc(reminder)}</div>`;
       if(codePills)notesHtml+=`<div style="margin-bottom:2px">${codePills}</div>`;
       if(c.notes)notesHtml+=`<div class="pct-general-note">${esc(c.notes)}</div>`;
@@ -17857,6 +18616,9 @@ loadData();
 // Run data normalization (fix derived nwc, sanitizer drift, schedule name
 // mismatches, etc.) BEFORE the first render so the corrected data is used everywhere.
 const _DQ_WARNINGS = _normalizeData();
+// v1.7.0 — flip any client whose scheduled pause date has arrived, before
+// the first render, so the tech never sees a client who should be paused.
+_applyPauseSweep();
 refreshTechDataLists();
 renderTechsList();
 rebuildUI();
