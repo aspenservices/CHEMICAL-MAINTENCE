@@ -2238,6 +2238,8 @@ body.role-tech .ops-drop{display:none}
         <button class="btn" onclick="exportClientsCSV()" title="Export to CSV">📊 CSV</button>
         <button class="btn btn-amber" onclick="findDuplicates()" id="find-dupes-btn" title="Detectar clientes duplicados">🔍 <span id="find-dupes-label">Buscar duplicados</span></button>
         <button class="btn" onclick="openPricingConfig()" title="Pricing config">💲 <span id="pricing-btn-label">Precios</span></button>
+        <!-- MEJORA #10 — salud de la app en un clic, copiable para pegar en un mensaje -->
+        <button class="btn" onclick="copyDiag()" id="diag-btn" title="Copiar diagnóstico: arranque, guardados, errores y los últimos 50 eventos">🩺 <span id="diag-btn-label">Diagnóstico</span></button>
       </div>
     </div>
     <!-- #29 — active filter chips -->
@@ -3869,8 +3871,204 @@ const od=d=>{const dt=parseLocalDate(d);return dt && dt<todayLocal();};
 // Debug logging — toggle DEBUG=true in localStorage to silence in production
 const DEBUG=(()=>{try{return localStorage.getItem('aspen_debug')==='1';}catch(e){return false;}})();
 const dbg=DEBUG?console.log.bind(console,'[aspen]'):()=>{};
-const dbgWarn=(...a)=>{if(DEBUG)console.warn('[aspen]',...a);};
-const dbgErr=(...a)=>console.error('[aspen]',...a);  // errors always logged
+
+/* ═══ BLOCK: OBSERVABILITY (v1.8.0) ═════════════════════════════════════
+   MEJORAS #3, #4, #10 — measured 24 ago 2026 on v1.7.2:
+     · 271 dbgWarn/dbgErr call sites, ALL silenced in production unless
+       someone hand-sets aspen_debug=1. When a tech says "it didn't save",
+       there was no trace anywhere.
+     · window.onerror / unhandledrejection: 0 occurrences, against 115 long
+       DOM-touching functions with no try. A throw left the screen half
+       painted, with nobody the wiser.
+     · Not one timing mark in 19k lines. Every number in the audit had to be
+       reconstructed from an external bench.
+
+   This block is deliberately dependency-free and defined EARLY so anything
+   below it can report into it — including code that runs before the DOM,
+   Firebase, or the toast system exist.
+   ══════════════════════════════════════════════════════════════════════ */
+const _LOG_MAX = 50;
+const _LOG = [];            // ring buffer of the last 50 notable events
+const _PERF = {
+  bootStart: (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now(),
+  bootMs: 0, loadMs: 0, firstPaintMs: 0,
+  saves: 0, saveFails: 0, saveMsLast: 0, saveMsMax: 0,
+  lsBytes: 0, idbBytes: 0, lsPrunedVisits: 0,
+  errors: 0, warns: 0,
+  lastError: null, lastErrorAt: 0
+};
+function _logPush(level, args){
+  try{
+    const msg = Array.prototype.map.call(args, a => {
+      if(a instanceof Error) return (a.name||'Error')+': '+(a.message||'');
+      if(typeof a === 'object'){ try{ return JSON.stringify(a).slice(0,200); }catch(e){ return '[obj]'; } }
+      return String(a);
+    }).join(' ').slice(0, 300);
+    _LOG.push({t:Date.now(), lv:level, m:msg});
+    if(_LOG.length > _LOG_MAX) _LOG.shift();
+    if(level === 'err'){ _PERF.errors++; _PERF.lastError = msg; _PERF.lastErrorAt = Date.now(); }
+    else if(level === 'warn') _PERF.warns++;
+  }catch(e){ /* logging must never throw */ }
+}
+const dbgWarn=(...a)=>{ _logPush('warn',a); if(DEBUG)console.warn('[aspen]',...a); };
+const dbgErr =(...a)=>{ _logPush('err', a); console.error('[aspen]',...a); };  // errors always logged
+
+/* MEJORA #4 — the safety net that didn't exist. Catches everything the 115
+   unguarded functions can throw, plus every rejected promise. */
+(function _installErrorNet(){
+  try{
+    window.addEventListener('error', ev => {
+      try{
+        _logPush('err', [(ev.message||'error'),
+          '@'+String(ev.filename||'').split('/').pop()+':'+(ev.lineno||'?')]);
+      }catch(e){}
+    });
+    window.addEventListener('unhandledrejection', ev => {
+      try{
+        const r = ev && ev.reason;
+        _logPush('err', ['unhandled promise', (r && (r.message||r.name)) || String(r).slice(0,160)]);
+      }catch(e){}
+    });
+  }catch(e){ /* very old browser — the app still runs */ }
+})();
+
+/* MEJORA #10 — one place that answers "is this thing healthy?".
+   Callable from the console as aspenDiag(), and wired to a button in the
+   admin panel. Copyable, so a tech can paste it into a text message. */
+function aspenDiag(){
+  const es = (typeof LANG!=='undefined' && LANG==='es');
+  const kb = n => (n/1024).toFixed(0)+' KB';
+  const ago = ts => ts ? Math.round((Date.now()-ts)/1000)+'s' : '—';
+  const L = [];
+  L.push('ASPEN CHEMICAL — '+(typeof UI_VERSION!=='undefined'?('v'+UI_VERSION):'?'));
+  L.push('rol: '+(typeof CURRENT_ROLE!=='undefined'?CURRENT_ROLE:'?')
+        +' · nube: '+((typeof fbConnected!=='undefined'&&fbConnected)?'ok':'OFFLINE'));
+  L.push('arranque: '+_PERF.bootMs.toFixed(0)+' ms (carga '+_PERF.loadMs.toFixed(0)+' ms)');
+  L.push('guardados: '+_PERF.saves+' · fallidos: '+_PERF.saveFails
+        +' · ultimo '+_PERF.saveMsLast.toFixed(0)+' ms · peor '+_PERF.saveMsMax.toFixed(0)+' ms');
+  L.push('copia local: '+kb(_PERF.lsBytes)+(_PERF.idbBytes?(' · IndexedDB '+kb(_PERF.idbBytes)):'')
+        +(_PERF.lsPrunedVisits?(' · '+_PERF.lsPrunedVisits+' visitas antiguas solo en la nube'):''));
+  try{
+    L.push('datos: '+C.length+' clientes · '
+      +Object.keys(VL).reduce((n,k)=>n+Object.keys(VL[k]||{}).length,0)+' visitas');
+  }catch(e){}
+  L.push('errores: '+_PERF.errors+' · avisos: '+_PERF.warns);
+  if(_PERF.lastError) L.push('ultimo error ('+ago(_PERF.lastErrorAt)+'): '+_PERF.lastError);
+  L.push('');
+  L.push('--- ultimos '+_LOG.length+' eventos ---');
+  _LOG.slice().reverse().forEach(e=>{
+    const d=new Date(e.t);
+    L.push(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'
+      +String(d.getSeconds()).padStart(2,'0')+' ['+e.lv+'] '+e.m);
+  });
+  const txt = L.join('\n');
+  try{ console.log(txt); }catch(e){}
+  return txt;
+}
+function copyDiag(){
+  const txt = aspenDiag();
+  try{ copyText(txt); showToast(LANG==='es'?'Diagnostico copiado':'Diagnostics copied','ok'); }
+  catch(e){ try{ window.prompt('Copia esto:', txt); }catch(_){} }
+}
+/* MEJORA #5 (v1.8.0) — REGISTRO DE TEMPORIZADORES QUE SE PUEDEN DORMIR.
+   Medido: 54.240 tics al dia entre los intervalos permanentes, y NINGUNO se
+   detenia con la pestaña oculta (el unico visibilitychange del archivo servia
+   para vaciar un guardado pendiente). En el iPad del tecnico eso es bateria
+   que se va sin hacer nada.
+
+   _bgInterval() registra el trabajo en vez del id, para poder recrearlo:
+   clearInterval no se puede "reanudar", asi que guardamos fn y ms. */
+const _BG_TIMERS = {};
+function _bgInterval(name, fn, ms, tickOnResume){
+  try{
+    if(_BG_TIMERS[name] && _BG_TIMERS[name].id) clearInterval(_BG_TIMERS[name].id);
+    _BG_TIMERS[name] = {fn:fn, ms:ms, id:setInterval(fn, ms), tickOnResume:!!tickOnResume};
+  }catch(e){ /* si falla, el resto de la app sigue */ }
+}
+function _pauseBackgroundTimers(){
+  try{
+    Object.keys(_BG_TIMERS).forEach(k=>{
+      const t = _BG_TIMERS[k];
+      if(t && t.id){ clearInterval(t.id); t.id = null; }
+    });
+  }catch(e){ dbgWarn('pause timers',e); }
+}
+function _resumeBackgroundTimers(){
+  try{
+    Object.keys(_BG_TIMERS).forEach(k=>{
+      const t = _BG_TIMERS[k];
+      if(t && !t.id){
+        t.id = setInterval(t.fn, t.ms);
+        // REVISION v1.8.1 — solo los baratos se ejecutan al volver. Antes se
+        // disparaban TODOS, y eso convertia cada alt-tab en una rafaga de
+        // hasta 15 lecturas a Firebase por los badges de tickets. Ese trabajo
+        // puede esperar a su siguiente tic natural; el estado de conexion no.
+        if(t.tickOnResume){ try{ t.fn(); }catch(e){ dbgWarn('resume '+k,e); } }
+      }
+    });
+  }catch(e){ dbgWarn('resume timers',e); }
+}
+
+/* MEJORA #9 (v1.8.0) — MANTENIMIENTO UNA VEZ POR SESION.
+   Las cuatro tareas de arranque (migrar fotos, registrar dispositivo, reparar
+   fotos, limpiar la nube) se programaban en CADA carga de pestaña y en cada
+   rol. Tienen candados entre dispositivos —eso ya estaba bien hecho— pero no
+   habia nada que impidiera cuatro despertares por cada Cmd+R, que en un dia
+   de trabajo son decenas.
+   sessionStorage es exactamente el alcance correcto: se limpia al cerrar la
+   pestaña, asi que una sesion nueva de verdad si vuelve a hacer el trabajo. */
+function _onceThisSession(key){
+  try{
+    const k = 'aspen_cm_once_' + key;
+    if(sessionStorage.getItem(k)) return false;
+    sessionStorage.setItem(k, String(Date.now()));
+    return true;
+  }catch(e){ return true; }   // sin sessionStorage, comportamiento de antes
+}
+/* MEJORA #8 (v1.8.0) — CONSERVAR FOCO, CURSOR Y SCROLL AL REPINTAR.
+   Medido: activeElement / scrollTop= / selectionStart aparecian CERO veces en
+   19.000 lineas, contra 195 innerHTML= que reconstruyen tablas enteras.
+
+   Importa mas que antes justamente por una decision correcta: desde el FIX #2
+   se aplica CADA snapshot de la nube. Asi que si estas escribiendo en el
+   buscador de clientes y un tecnico guarda una visita en la calle, tu tabla se
+   reconstruye debajo y pierdes el cursor y la posicion.
+
+   _keepUI() envuelve un repintado: anota donde estabas, deja que pinte y te
+   devuelve donde estabas. Restaura en el mismo frame para que no parpadee. */
+function _keepUI(paint){
+  let st = null;
+  try{
+    const ae = document.activeElement;
+    if(ae && ae.id && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')){
+      st = {id:ae.id, s:null, e:null};
+      try{ st.s = ae.selectionStart; st.e = ae.selectionEnd; }catch(e){ /* type=date no lo soporta */ }
+    }
+    const scrolls = [];
+    document.querySelectorAll('.tw').forEach((el,i)=>{ if(el.scrollTop||el.scrollLeft) scrolls.push([i,el.scrollTop,el.scrollLeft]); });
+    const winY = window.scrollY || 0;
+    if(st) st.scrolls = scrolls, st.winY = winY;
+    else st = {id:null, scrolls:scrolls, winY:winY};
+  }catch(e){ dbgWarn('keepUI save',e); }
+
+  try{ paint(); }
+  catch(e){ dbgErr('render fallo dentro de _keepUI:', e); return; }   // MEJORA #4
+
+  try{
+    if(!st) return;
+    const tws = document.querySelectorAll('.tw');
+    (st.scrolls||[]).forEach(([i,top,left])=>{ if(tws[i]){ tws[i].scrollTop=top; tws[i].scrollLeft=left; } });
+    if(st.winY) window.scrollTo(0, st.winY);
+    if(st.id){
+      const el = document.getElementById(st.id);
+      if(el && el !== document.activeElement){
+        el.focus({preventScroll:true});
+        if(st.s != null){ try{ el.setSelectionRange(st.s, st.e); }catch(e){} }
+      }
+    }
+  }catch(e){ dbgWarn('keepUI restore',e); }
+}
+/* ═══ END BLOCK: OBSERVABILITY ═════════════════════════════════════════ */
 
 // ─── Toast / confirm system (replaces alert/confirm/prompt) ───────────────────
 function showToast(msg,type){
@@ -4674,6 +4872,7 @@ function saveEdit(){
   }
   c.lwc=newLwc;
   c.nwc=resolvedNwc;
+  try{ _touchClient(c.id); }catch(e){}                      // MEJORA #6
   c.status=document.getElementById("edit-status").value;
   // v1.7.0 — scheduled pause. Clearing _pauseDone when the date CHANGES is what
   // lets a new date fire while an old, already-executed one stays executed.
@@ -6291,6 +6490,7 @@ function oinv(id,q){
 }
 function sinv(){
   const id=parseInt(document.getElementById('iid').value);
+  try{ _touchClient(id); }catch(e){}                        // MEJORA #6
   const q=document.getElementById('iql').value;
   const num=document.getElementById('inum').value.trim();
   if(!num){showToast(t('enterInvoiceNum'));return;}
@@ -8523,6 +8723,7 @@ function scheduleFollowUpFromVisit(){
 
 function saveVisit(){
   const cid=parseInt(document.getElementById('vis-cid').value);
+  try{ _touchClient(cid); }catch(e){}                      // MEJORA #6
   const dk=document.getElementById('vis-date').value;
   if(!VL[cid])VL[cid]={};
   // Preserve existing _location so admin edits don't wipe the tech's GPS evidence.
@@ -8701,11 +8902,57 @@ function _vlWithoutHeavyPhotos(VLsrc, keepDays){
 }
 // Serialize the LS payload. keepDays===null → full (photos included);
 // otherwise photos are pruned per _vlWithoutHeavyPhotos.
+/* MEJORA #2 (v1.8.0) — RETENCION DE VISITAS EN LA COPIA LOCAL.
+   Medido el 24 ago 2026 con 66 clientes: la copia local pesaba 958 KB al año,
+   1.875 KB a los dos, 2.791 KB a los tres y 4.632 KB a los cinco — contra un
+   cupo de ~5 MB COMPARTIDO con todas las apps de aspenservices.github.io.
+   Antes solo se podaban las FOTOS; las visitas viejas nunca, así que el
+   número solo podía subir.
+
+   Es seguro tirarlas de aquí: _flattenForSync emite una clave POR ENTRADA
+   (VL/{cid}/{dk}) y _diffForSync solo manda las que cambiaron — una entrada
+   que falta localmente no genera clave y por tanto NO borra nada de la nube.
+   El registro completo sigue en Firebase y en el espejo de IndexedDB, que
+   además rehidrata en cada arranque.
+
+   Se guardan 18 meses: cubre el trimestre en curso, los cuatro anteriores y
+   el mismo trimestre del año pasado, que es lo que se compara de verdad. */
+const LS_KEEP_VISIT_DAYS = 548;   // ~18 meses
+function _vlWithinRetention(VLsrc, keepDays){
+  if(!(keepDays > 0)) return {src:VLsrc, pruned:0};
+  const cutoff = _localDateKey(new Date(Date.now() - keepDays*86400000));
+  const out = {}; let pruned = 0;
+  for(const cid in VLsrc){
+    const dates = VLsrc[cid]; if(!dates) continue;
+    out[cid] = {};
+    for(const dk in dates){
+      if(dk < cutoff){ pruned++; continue; }   // vive en la nube y en IndexedDB
+      out[cid][dk] = dates[dk];
+    }
+  }
+  return {src:out, pruned:pruned};
+}
+
 function _lsPayloadStr(keepDays){
   const p = getBackupPayload();
   p.savedAt = new Date().toISOString();
-  if(keepDays !== null) p.VL = _vlWithoutHeavyPhotos(VL, keepDays);
-  return JSON.stringify(p);
+  if(keepDays !== null){
+    const kept = _vlWithinRetention(VL, LS_KEEP_VISIT_DAYS);
+    _PERF.lsPrunedVisits = kept.pruned;
+    p.VL = _vlWithoutHeavyPhotos(kept.src, keepDays);
+    // Marca para que el arranque sepa que esta copia esta RECORTADA por
+    // politica y no confunda "no esta aqui" con "no existe".
+    p._vlRetentionDays = LS_KEEP_VISIT_DAYS;
+  }
+  const s = JSON.stringify(p);
+  // REVISION v1.8.1 — solo la llamada de localStorage (keepDays !== null) mide
+  // aqui. El espejo de IndexedDB usa _lsPayloadStr(null) con el VL COMPLETO y
+  // corre 4 s DESPUES de cada guardado, asi que sin esta guarda el diagnostico
+  // acababa mostrando siempre el tamaño de IndexedDB — un numero inflado y
+  // equivocado justo en la pantalla que existe para dar numeros correctos.
+  if(keepDays !== null) _PERF.lsBytes = s.length;
+  else _PERF.idbBytes = s.length;
+  return s;
 }
 // Persist to localStorage. Cloud (Firebase) is unaffected and always has full data.
 // Returns {ok, trimmed}; `trimmed` means "we had to go BEYOND the normal policy
@@ -9043,7 +9290,7 @@ function startAutoWcSync(){
   // primera pasada al poco de conectar (deja que la sesión anónima se asiente)
   setTimeout(function(){ autoSyncWaterChanges({loud:false}); }, 4000);
   if(_wcAutoTimer) return;
-  _wcAutoTimer = setInterval(function(){ autoSyncWaterChanges({loud:false}); }, 5*60*1000);
+  _wcAutoTimer = setInterval(function(){ if(document.hidden) return; autoSyncWaterChanges({loud:false}); }, 5*60*1000);   // MEJORA #5
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -9380,6 +9627,7 @@ function _scheduleNextVisit(cid,fromDate,type){
 // big schedule never floods Firestore reads. Click-to-refresh still works.
 function _autoPollVisibleSLBadges(){
   if(!slDB) return;
+  if(document.hidden) return;                       // MEJORA #5
   let n=0;
   document.querySelectorAll('.ta-sent-badge[data-slid]').forEach(el=>{
     const idd=el.getAttribute('data-slid');
@@ -9390,7 +9638,7 @@ function _autoPollVisibleSLBadges(){
   });
 }
 setTimeout(_autoPollVisibleSLBadges,1800);
-setInterval(_autoPollVisibleSLBadges,90*1000);
+_bgInterval('slBadges', _autoPollVisibleSLBadges, 90*1000);   // MEJORA #5
 
 // #3 (Jul 2026): deep link FROM TECH-TICKETS — opening ...#client=ID scrolls
 // to that client's card, expands it, and highlights it for a few seconds.
@@ -9452,21 +9700,70 @@ window.addEventListener('online',  () => { setTimeout(_updateOfflineBanner, 800)
 document.addEventListener('DOMContentLoaded', () => setTimeout(_checkSurveyParam, 500));
 window.addEventListener('offline', () => { _updateOfflineBanner(); });
 
+/* MEJORA #1 (v1.8.0) — EL GUARDADO LOCAL ERA EL UNICO SIN FRENO.
+   La nube esperaba 350 ms y el espejo de IndexedDB 4 s, pero persistLocal()
+   corria entero en cada saveData(): reconstruir el payload, recorrer todo VL
+   y JSON.stringify, sincronicamente, en el hilo que pinta.
+   Medido a 66 clientes: 3 ms a los 6 meses, 6 ms al año, 17 ms a los tres,
+   25 ms a los cinco — por cada uno de los 59 sitios que llaman saveData(),
+   y las acciones masivas iteran.
+
+   Ahora se agrupa en 400 ms, con tope duro de 2,5 s (ver _scheduleLocalSave).
+   _flushLocalSave() lo fuerza al ocultar la pestaña y al cerrar.
+   Exportar y hacer copia NO necesitan flush: downloadBackup() lee de
+   getBackupPayload(), o sea de memoria, no de localStorage. */
+let _plT = null, _plPending = false;
+function _flushLocalSave(){
+  if(!_plPending) return;
+  clearTimeout(_plT); _plT = null; _plPending = false; _plFirstAt = 0;
+  const t0 = (performance&&performance.now)?performance.now():Date.now();
+  let res;
+  try{ res = persistLocal(); }
+  catch(e){ dbgErr('Save error:',e); res = {ok:false,trimmed:false}; }
+  const ms = ((performance&&performance.now)?performance.now():Date.now()) - t0;
+  _PERF.saves++; _PERF.saveMsLast = ms;
+  if(ms > _PERF.saveMsMax) _PERF.saveMsMax = ms;
+  if(!res.ok) _PERF.saveFails++;
+  _afterLocalSave(res);
+}
+/* REVISION v1.8.1 — TOPE DURO (debounce con maxWait).
+   Sin esto, una rafaga CONTINUA de saveData() —arrastrar clientes por la
+   agenda, una accion masiva que itera— reiniciaba los 400 ms en cada vuelta y
+   localStorage no se escribia nunca hasta que la rafaga parase. Firebase
+   seguia recibiendo todo (es la fuente de verdad), pero la copia local, que
+   existe justamente para abrir sin señal, se quedaba atras.
+   Ahora: 400 ms tras el ultimo, pero nunca mas de 2,5 s desde el primero. */
+const _PL_MAX_WAIT = 2500;
+let _plFirstAt = 0;
+function _scheduleLocalSave(){
+  const now = Date.now();
+  if(!_plPending){ _plFirstAt = now; }
+  _plPending = true;
+  clearTimeout(_plT);
+  const waited = now - _plFirstAt;
+  const delay = Math.max(0, Math.min(400, _PL_MAX_WAIT - waited));
+  _plT = setTimeout(_flushLocalSave, delay);
+}
+
 function saveData(){
   // 1) Cloud FIRST — Firebase is the source of truth across devices and holds
   //    the full record (photos included). Doing this before the localStorage
   //    write means a full localStorage can never block a ticket from saving.
   try{ saveToFirebase(); }catch(e){ dbgErr('Firebase save error:',e); }
-  // 2) Local persistence with quota-safe photo pruning.
-  let res;
-  try{ res = persistLocal(); }catch(e){ dbgErr('Save error:',e); res = {ok:false,trimmed:false}; }
-  // FEATURE #8 — mirror the FULL payload to IndexedDB (no 5MB quota).
-  // FIX #6 — debounced: serializing the whole payload on EVERY save caused
-  // needless CPU work during bursts; the mirror now trails saves by 4s.
+  // 2) Local persistence — debounced (MEJORA #1). markDirty() runs now so the
+  //    UI shows unsaved state immediately; the actual write trails by 400 ms.
+  try{ markDirty(); }catch(e){ dbgWarn('markDirty',e); }
+  _scheduleLocalSave();
+  // 3) IndexedDB mirror — already debounced at 4 s.
   try{
     clearTimeout(window._idbT);
     window._idbT=setTimeout(()=>{ try{ idbSet(LS_KEY,_lsPayloadStr(null)); }catch(e){ dbgWarn('caught:',e); } },4000);
   }catch(e){ dbgWarn('caught:',e); }
+}
+
+/* Lo que antes era la segunda mitad de saveData(). Ahora corre cuando la
+   escritura local termina de verdad, no cuando se pide. */
+function _afterLocalSave(res){
   if(res.ok){
     flashSave();
     markClean();
@@ -9943,6 +10240,10 @@ let _hasUnsavedChanges=false;
 function markDirty(){_hasUnsavedChanges=true;}
 function markClean(){_hasUnsavedChanges=false;}
 window.addEventListener('beforeunload',e=>{
+  // MEJORA #1 — write the pending debounced save BEFORE deciding whether to
+  // warn. Otherwise a 400 ms window turned every quick close into a false
+  // "unsaved changes" prompt.
+  try{ _flushLocalSave(); }catch(err){ dbgWarn('flush on unload',err); }
   if(_hasUnsavedChanges){e.preventDefault();e.returnValue='';return '';}
 });
 
@@ -10150,7 +10451,7 @@ function doInit(config){
           clearTimeout(window._fbEchoT);
           window._fbEchoT=setTimeout(()=>{
             const dd=window._fbEchoSkip; window._fbEchoSkip=null;
-            if(dd&&!fbSyncing){ try{ _applySnap(dd); }catch(e){ dbgWarn('caught:',e); } }
+            if(dd&&!fbSyncing){ try{ _keepUI(()=>{ _applySnap(dd); }); }catch(e){ dbgWarn('caught:',e); } }
           },2300);
           return;
         }
@@ -10158,7 +10459,10 @@ function doInit(config){
         // device that had just saved wouldn't see a tech's visit until someone
         // else wrote to the cloud. Per-entry timestamp merges (VL, BL, clients)
         // make applying every snapshot safe; wholesale branches stay gated.
-        _applySnap(d);
+        // MEJORA #8 — este repintado llega SOLO, mientras el usuario puede
+        // estar escribiendo en un filtro. _keepUI() le devuelve el cursor y
+        // el scroll donde estaban.
+        _keepUI(()=>{ _applySnap(d); });
         // v1.7.0 — re-sweep after the merge: this device may have booted with
         // no signal and only now received the pause date from another device.
         try{ _applyPauseSweep(); }catch(e){ dbgWarn('pause sweep post-merge',e); }
@@ -10170,15 +10474,15 @@ function doInit(config){
       _initBillingSync();
       // Device registry — so admins can promote devices from inside the app
       try{ _registerDevice(); }catch(e){ dbgWarn('caught:',e); }
-      setTimeout(()=>{ try{ _registerDevice(); }catch(e){ dbgWarn('caught:',e); } },8000);
+      setTimeout(()=>{ try{ if(_onceThisSession('registerDevice')) _registerDevice(); }catch(e){ dbgWarn('caught:',e); } },8000);   // MEJORA #9
       // FEATURE #10 — live audit feed for the dashboard card
       try{ _attachAuditFeed(); }catch(e){ dbgWarn('caught:',e); }
       // FEATURE #2 — upgrade recent base64 photos to Storage URLs in the background
-      setTimeout(()=>{ try{ _migrateRecentPhotos(); }catch(e){ dbgWarn('caught:',e); } },6000);
+      setTimeout(()=>{ try{ if(_onceThisSession('migratePhotos')) _migrateRecentPhotos(); }catch(e){ dbgWarn('caught:',e); } },6000);   // MEJORA #9
       // F8 — auto-repair lost photo links from Storage (silent, cloud-locked)
-      setTimeout(()=>{ try{ _autoRepairPhotos(); }catch(e){ dbgWarn('caught:',e); } },9000);
+      setTimeout(()=>{ try{ if(_onceThisSession('repairPhotos')) _autoRepairPhotos(); }catch(e){ dbgWarn('caught:',e); } },9000);   // MEJORA #9
       // FIX #8 — cloud housekeeping (audit cap + stale devices), admin only
-      setTimeout(()=>{ try{ _gcCloudHousekeeping(); }catch(e){ dbgWarn('caught:',e); } },12000);
+      setTimeout(()=>{ try{ if(_onceThisSession('gcCloud')) _gcCloudHousekeeping(); }catch(e){ dbgWarn('caught:',e); } },12000);   // MEJORA #9
       fbConnected=true;
       updateCloudIndicator(true);
       console.log('☁️ Firebase connected');
@@ -10583,6 +10887,36 @@ async function _migrateRecentPhotos(){
   _photoMigrateRan=true;
   const cutoff=Date.now()-7*86400000;
   let upgraded=0;
+  /* MEJORA #7 (v1.8.0) — PRE-COMPROBACION LOCAL, COMO SU GEMELA.
+     _autoRepairPhotos() —escrita en la misma sesion— mira primero en memoria
+     y sale sin tocar la red si no hay nada que reparar. Esta hacia lo
+     contrario: tomaba el candado y se descargaba TODO el VL de la nube antes
+     de saber si tenia trabajo. Y no tiene guarda de rol, asi que tambien
+     corria en el iPad del tecnico: megabytes por datos moviles para descubrir
+     que no habia nada que migrar.
+
+     La copia local puede estar podada, asi que "no veo base64 aqui" no prueba
+     que no lo haya en la nube. Por eso la guarda es conservadora: solo se
+     salta la descarga cuando la copia local SI cubre la ventana de 7 dias
+     (retencion de 18 meses > 7 dias, siempre lo hace) y ahi no hay ni un
+     base64 reciente. En cualquier duda, se sigue como antes. */
+  try{
+    const cutKey=_localDateKey(new Date(cutoff));
+    let localB64=0, sawRecent=0;
+    for(const cid of Object.keys(VL)){
+      for(const dk of Object.keys(VL[cid]||{})){
+        if(dk<cutKey) continue;
+        sawRecent++;
+        const v=VL[cid][dk];
+        const ph=v&&!v._deleted&&v.checklist&&v.checklist.photos;
+        if(ph&&Object.values(ph).some(p=>typeof p==='string'&&p.indexOf('data:')===0)) localB64++;
+      }
+    }
+    if(sawRecent>0 && localB64===0){
+      dbg('photo migrate: nada base64 en los ultimos 7 dias ('+sawRecent+' visitas revisadas) — sin descargar VL');
+      return;
+    }
+  }catch(e){ dbgWarn('migrate pre-check (continuando)',e); }
   try{
     // FIX — cross-device lock: without it every admin device scanned and
     // re-uploaded the same photos concurrently (duplicate Storage files).
@@ -12606,7 +12940,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.7.2';
+const UI_VERSION='1.8.1';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -12842,10 +13176,26 @@ function _gcCloudHousekeeping(){
 }
 /* FIX #9 — keep client portals fresh when the ADMIN changes things (register
    WC, edit client). Before, portals only refreshed on tech visit commits. */
-function _portalRepublishSoon(){
+/* MEJORA #6 (v1.8.0) — antes republicaba los 66 clientes por editar UNO.
+   Estaba amortiguado a 8 s, asi que las rafagas se juntaban, pero el suelo
+   seguia siendo hasta 66 escrituras a Firebase por un cambio de telefono.
+   Ahora se acumulan los ids tocados y solo se republican esos. Sin id (por
+   ejemplo tras una importacion) se conserva el barrido completo. */
+const _prQueue = new Set();
+function _portalRepublishSoon(cid){
+  try{ if(cid != null) _prQueue.add(cid); else _prQueue.add('*'); }catch(e){ dbgWarn('caught:',e); }
   clearTimeout(window._prT);
   window._prT=setTimeout(()=>{
-    try{ C.filter(c=>c.portalToken).forEach(c=>_publishClientPortal(c)); }catch(e){ dbgWarn('portal republish',e); }
+    try{
+      const all = _prQueue.has('*');
+      const ids = Array.from(_prQueue);
+      _prQueue.clear();
+      const targets = all
+        ? C.filter(c=>c.portalToken)
+        : ids.map(id=>C.find(c=>c.id===id)).filter(c=>c&&c.portalToken);
+      targets.forEach(c=>_publishClientPortal(c));
+      if(targets.length) dbg('portal republish: '+targets.length+(all?' (todos)':''));
+    }catch(e){ dbgWarn('portal republish',e); }
   },8000);
 }
 /* ══════════ VISUAL PACK v1.2 — helpers ══════════ */
@@ -18581,7 +18931,30 @@ function loadFirebaseOnStartup(){
 }
 
 // Wrap all data-mutating functions to auto-save
-function wrapSave(fn,name){return function(){const r=fn.apply(this,arguments);saveData();try{logAudit(name||'change','');}catch(e){dbgWarn('caught:',e);}try{_portalRepublishSoon();}catch(e){dbgWarn('caught:',e);}return r;};}
+/* MEJORA #6 — pasarle a _portalRepublishSoon() QUE cliente cambio.
+   Muchas de las funciones envueltas reciben el id como primer argumento
+   (tp, activateClient, changeClientWeek/Day...). Las que no —saveEdit,
+   saveVisit, sinv— dejan una pista en _lastTouchedClient. Si no hay ninguna
+   de las dos, se conserva el barrido completo de antes: nunca menos correcto
+   que la version anterior, solo mas barato cuando se puede. */
+let _lastTouchedClient = null;
+function _touchClient(cid){ try{ _lastTouchedClient = (cid==null?null:Number(cid)); }catch(e){} }
+function wrapSave(fn,name){
+  return function(){
+    _lastTouchedClient = null;
+    const r=fn.apply(this,arguments);
+    saveData();
+    try{logAudit(name||'change','');}catch(e){dbgWarn('caught:',e);}
+    try{
+      const a0=arguments[0];
+      let cid=null;
+      if(typeof a0==='number' && C.some(c=>c.id===a0)) cid=a0;
+      else if(_lastTouchedClient!=null && C.some(c=>c.id===_lastTouchedClient)) cid=_lastTouchedClient;
+      _portalRepublishSoon(cid);
+    }catch(e){dbgWarn('caught:',e);}
+    return r;
+  };
+}
 // These will be wrapped after definition
 window.addEventListener('DOMContentLoaded',()=>{
   ['swc','stc','sinv','ac','saveEdit','saveVisit','activateClient',
@@ -18612,7 +18985,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   sel.value=`Q${curQ} ${curYear}`;
 })();
 
+// MEJORA #10 — marcas de tiempo del arranque. Antes no habia ni una en 19.000
+// lineas: cada numero de la auditoria hubo que reconstruirlo desde fuera.
+const _t0Load=(performance&&performance.now)?performance.now():Date.now();
 loadData();
+_PERF.loadMs=((performance&&performance.now)?performance.now():Date.now())-_t0Load;
 // Run data normalization (fix derived nwc, sanitizer drift, schedule name
 // mismatches, etc.) BEFORE the first render so the corrected data is used everywhere.
 const _DQ_WARNINGS = _normalizeData();
@@ -18626,6 +19003,8 @@ rd();
 // Show non-blocking banner if normalization surfaced any human-attention items.
 // Deferred slightly so the .body div is fully laid out.
 setTimeout(()=>{ try{ _showDataIntegrityBanner(_DQ_WARNINGS); }catch(e){ dbgWarn('dq-banner',e); } }, 100);
+_PERF.bootMs=((performance&&performance.now)?performance.now():Date.now())-_PERF.bootStart;
+dbg('arranque '+_PERF.bootMs.toFixed(0)+' ms (carga '+_PERF.loadMs.toFixed(0)+' ms)');
 updateBackupIndicator();
 loadFirebaseOnStartup();
 checkWeeklyBackupReminder();
@@ -18688,12 +19067,29 @@ document.addEventListener('keydown',e=>{
     if(e.key==='?'){ const k=document.getElementById('kbd-ov'); if(k) k.classList.add('open'); return; }
   }catch(err){ dbgWarn('kbd',err); }
 });
-// #20 — weather loads whenever the tech view paints
-setInterval(()=>{ try{ if(CURRENT_ROLE==='tech'&&document.getElementById('tech-wx')&&!document.getElementById('tech-wx').innerHTML) _loadTechWeather(); }catch(e){ dbgWarn('caught:',e); } },2500);
+// #20 — weather loads whenever the tech view paints.
+// MEJORA #5 (v1.8.0) — antes esto corria cada 2,5 s en TODOS los roles:
+// 34.560 comprobaciones diarias, y en un Mac de admin ninguna podia ser cierta
+// jamas. Ahora se registra en _BG_TIMERS (se detiene con la pestaña oculta) y
+// solo se arranca para el rol tecnico.
+_bgInterval('techWx', ()=>{
+  try{
+    if(CURRENT_ROLE!=='tech') return;
+    const el=document.getElementById('tech-wx');
+    if(el && !el.innerHTML) _loadTechWeather();
+  }catch(e){ dbgWarn('caught:',e); }
+}, 8000, true);   // barato: solo actua si el hueco esta vacio
 // #17 — offline bar
 window.addEventListener('offline',()=>{ try{ _updOfflineBar(); }catch(e){ dbgWarn('caught:',e); } });
 window.addEventListener('online',()=>{ try{ setTimeout(_updOfflineBar,800); }catch(e){ dbgWarn('caught:',e); } });
-setInterval(()=>{ try{ window._fbWasConnected=window._fbWasConnected||fbConnected; _updOfflineBar(); }catch(e){ dbgWarn('caught:',e); } },5000);
+// MEJORA #5 — era cada 5 s (17.280 tics/dia) como tirante de los listeners
+// online/offline de arriba, que ya cubren el caso. Se conserva un latido lento
+// para el estado de Firebase, que esos eventos no ven, y se detiene con la
+// pestaña oculta.
+_bgInterval('offlineBar', ()=>{
+  try{ window._fbWasConnected=window._fbWasConnected||fbConnected; _updOfflineBar(); }
+  catch(e){ dbgWarn('caught:',e); }
+}, 30000, true);   // el estado de conexion debe refrescar al volver
 // FIX — midnight rollover: a tech tab left open overnight kept recording
 // visits under YESTERDAY's dateKey. Check every minute; when the day flips,
 // jump the tech view back to "today". The cloud badge time also refreshes.
@@ -18729,9 +19125,22 @@ window.addEventListener('storage',ev=>{
   }catch(e){ dbgWarn('storage sync',e); }
 });
 // FIX #4 — flush a pending debounced write if the app is being closed
-window.addEventListener('pagehide',()=>{ try{ if(_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
+window.addEventListener('pagehide',()=>{
+  try{ _flushLocalSave(); }catch(e){ dbgWarn('flush local',e); }      // MEJORA #1
+  try{ if(_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); }
+});
 // FIX — iOS Safari doesn't always fire pagehide; visibilitychange does.
-document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='hidden'&&_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); } }catch(e){ dbgWarn('caught:',e); } });
+document.addEventListener('visibilitychange',()=>{
+  try{
+    if(document.visibilityState==='hidden'){
+      _flushLocalSave();                                              // MEJORA #1
+      if(_stfT){ clearTimeout(_stfT); _saveToFirebaseNow(); }
+      _pauseBackgroundTimers();                                       // MEJORA #5
+    } else {
+      _resumeBackgroundTimers();                                      // MEJORA #5
+    }
+  }catch(e){ dbgWarn('caught:',e); }
+});
 // PRO PACK boot
 try{ _initClientSort(); }catch(e){ dbgWarn('caught:',e); }
 try{ _wireClientTables(); }catch(e){ dbgWarn('caught:',e); }
