@@ -2295,6 +2295,8 @@ body.role-tech .ops-drop{display:none}
       <span class="cal-li"><span class="wb-b">B</span>Solo semana B</span>
       <span class="cal-li"><span class="wb-ab">A+B</span>Semanal</span>
     </div>
+    <!-- v1.8.2 — aviso de render fallido (oculto salvo que la agenda no se pueda construir) -->
+    <div id="cal-render-warn" style="display:none;align-items:flex-start;gap:8px;padding:9px 16px;background:#FEF3C7;border-bottom:1px solid #FDE68A;color:#92400E;font-size:12.8px;line-height:1.45"></div>
     <div style="overflow-x:auto"><div style="min-width:700px" id="cal-inner"></div></div>
   </div>
 </div>
@@ -8074,7 +8076,7 @@ function buildWeekSection(wt,clients,q){
       const ordNum=ci+1;
 
       // check tech appointments
-      const allTa=TAPPTS[c.id]||[];
+      const allTa=Array.isArray(TAPPTS[c.id])?TAPPTS[c.id]:_asArray(TAPPTS[c.id]);   // v1.8.2 — forma del RTDB
       const ta=allTa.map((a,i)=>({...a,_idx:i})).filter(a=>a.status!=='done');
       const hasTechAppt=ta.length>0;
 
@@ -8312,6 +8314,12 @@ function buildWeekSection(wt,clients,q){
 const CAL_ORDER={A:{Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]},B:{Mon:[],Tue:[],Wed:[],Thu:[],Fri:[]}};
 
 function getOrderedClients(weekClients, dayKey, wt){
+  // v1.8.2 — el RTDB puede devolver este arreglo como objeto {1:id,2:id};
+  // _asArray lo endereza y lo deja escrito, así el resto del archivo sigue
+  // pudiendo asumir un array de verdad.
+  if(CAL_ORDER[wt] && CAL_ORDER[wt][dayKey] && !Array.isArray(CAL_ORDER[wt][dayKey])){
+    CAL_ORDER[wt][dayKey]=_asArray(CAL_ORDER[wt][dayKey]);
+  }
   const order=CAL_ORDER[wt]&&CAL_ORDER[wt][dayKey]?CAL_ORDER[wt][dayKey]:[];
   // Use per-week day (dayA/dayB override) so A&B clients can sit in different
   // day-columns for week A vs week B (e.g., Matteson Thu-A / Wed-B).
@@ -8322,7 +8330,7 @@ function getOrderedClients(weekClients, dayKey, wt){
     const orderedNames=ORDER[dayKey]||[];
     const result=[];
     orderedNames.forEach(nm=>{
-      const found=dayC.find(x=>x.name.toLowerCase().includes(nm.toLowerCase().split(' ')[0].toLowerCase()));
+      const found=dayC.find(x=>String(x.name||'').toLowerCase().includes(nm.toLowerCase().split(' ')[0].toLowerCase()));   // v1.8.2 — un cliente sin nombre lanzaba aquí
       if(found&&!result.find(x=>x.id===found.id))result.push(found);
     });
     dayC.forEach(x=>{if(!result.find(r=>r.id===x.id))result.push(x);});
@@ -8535,6 +8543,35 @@ function editClientDayNote(id){
   );
 }
 
+/* v1.8.2 — aviso visible cuando la agenda no se puede construir. Sustituye
+   al fallo mudo de antes (pantalla en blanco sin explicación). Se muestra
+   una sola vez por fallo: nada de un toast por cada snapshot. */
+let _calRenderErrShown=false;
+function _calRenderFailed(err){
+  try{
+    const box=document.getElementById('cal-render-warn');
+    const es=LANG==='es';
+    if(box){
+      box.style.display='flex';
+      box.innerHTML='<span style="font-size:15px">⚠</span><span><b>'+
+        (es?'La agenda no se pudo redibujar':'The schedule could not be redrawn')+'</b> — '+
+        (es?'se conserva la última vista buena. Detalle: ':'showing the last good view. Detail: ')+
+        esc(String((err&&err.message)||err).slice(0,140))+
+        ' · <span style="opacity:.8">aspenDiag()</span></span>';
+    }
+    if(!_calRenderErrShown){
+      _calRenderErrShown=true;
+      showToast(LANG==='es'?'⚠ La agenda no se pudo redibujar — revisa el aviso':'⚠ Schedule redraw failed — see the notice','err');
+    }
+  }catch(e){ /* el aviso jamás debe tumbar el render */ }
+}
+function _calRenderOK(){
+  try{
+    const box=document.getElementById('cal-render-warn');
+    if(box&&box.style.display!=='none'){ box.style.display='none'; box.innerHTML=''; }
+    _calRenderErrShown=false;
+  }catch(e){}
+}
 function rcal(){
   // Save which cards are expanded
   const expanded=new Set();
@@ -8546,11 +8583,28 @@ function rcal(){
   document.getElementById('cal-q-label').textContent=q;
   const srch=(document.getElementById('cal-srch').value||'').toLowerCase();
   let clients=C.filter(c=>c.status==='active'&&c.day);
-  if(srch)clients=clients.filter(c=>c.name.toLowerCase().includes(srch));
-  const inner=document.getElementById('cal-inner');inner.innerHTML='';
-  if(calWeek==='AB'||calWeek==='A')inner.appendChild(buildWeekSection('A',clients,q));
-  if(calWeek==='AB'){const sep=document.createElement('div');sep.style.cssText='height:3px;background:var(--mid)';inner.appendChild(sep);}
-  if(calWeek==='AB'||calWeek==='B')inner.appendChild(buildWeekSection('B',clients,q));
+  if(srch)clients=clients.filter(c=>String(c.name||'').toLowerCase().includes(srch));
+  const inner=document.getElementById('cal-inner');
+  /* v1.8.2 — RENDER ATÓMICO. Antes esto era `inner.innerHTML=''` seguido de
+     los appendChild: si la construcción lanzaba a mitad (un reminders con
+     forma de objeto bastaba), la agenda ya estaba vacía y así se quedaba —
+     y con el repintado de cada snapshot, parpadeaba. Ahora se arma en un
+     fragmento aparte y el DOM solo se toca cuando TODO salió bien. Si falla,
+     el usuario conserva la agenda que ya tenía y ve por qué. */
+  let frag;
+  try{
+    frag=document.createDocumentFragment();
+    if(calWeek==='AB'||calWeek==='A')frag.appendChild(buildWeekSection('A',clients,q));
+    if(calWeek==='AB'){const sep=document.createElement('div');sep.style.cssText='height:3px;background:var(--mid)';frag.appendChild(sep);}
+    if(calWeek==='AB'||calWeek==='B')frag.appendChild(buildWeekSection('B',clients,q));
+  }catch(err){
+    dbgErr('rcal: la agenda no se pudo construir —', err);
+    _calRenderFailed(err);
+    return;   // el contenido anterior sigue en pantalla
+  }
+  inner.innerHTML='';
+  inner.appendChild(frag);
+  _calRenderOK();
   // Restore expanded cards
   if(expanded.size>0||allExp){
     document.querySelectorAll('.cal-cc').forEach(card=>{
@@ -9836,8 +9890,83 @@ function loadData(){
     4. WEEK_A/B_ORDER references to a client name that's not in C → fuzzy-match
        by last name and patch the schedule (was: Niekamp Marcie vs Scott bug)
    Returns a list of {text, cid} warnings for the data-integrity banner. */
+/* ═══ BLOCK: SHAPE NORMALIZATION (v1.8.2) ══════════════════════════════
+   MEDIDO 25 ago 2026 — la Agenda A/B se quedaba en blanco y parpadeaba.
+
+   Raíz: los clientes, TAPPTS y CAL_ORDER viajan al RTDB como objetos
+   NATIVOS (_diffForSync hace upd[k]=JSON.parse(...)), y el RTDB no guarda
+   arrays. Los devuelve así:
+     · claves 0,1,2 contiguas   → array (bien)
+     · falta la 0, o hay huecos → OBJETO  {1:{...}}      ← .filter no existe
+     · claves 0 y 2             → [obj, null, obj]       ← el null revienta
+   Con esa forma, (c.reminders||[]).filter(...) lanza DENTRO de rcal(), que
+   ya había vaciado #cal-inner → agenda en blanco. Y como cada snapshot
+   repinta, el contenido aparecía y desaparecía: eso era el parpadeo.
+
+   La cura va en la FRONTERA (aquí), no en los 20 sitios que consumen estos
+   campos: se normaliza al arrancar y después de cada merge de la nube, así
+   que el resto del archivo puede seguir asumiendo arrays.
+   ══════════════════════════════════════════════════════════════════════ */
+function _asArray(v){
+  // Camino rápido: si ya es un array limpio se devuelve TAL CUAL. Esta
+  // función se llama por cliente en cada repintado de la agenda; copiar
+  // siempre costaba un filter por tarjeta sin ganar nada.
+  if(Array.isArray(v)){
+    for(let i=0;i<v.length;i++){ if(v[i]===null||v[i]===undefined) return v.filter(x => x !== null && x !== undefined); }
+    return v;
+  }
+  if(v && typeof v === 'object'){
+    // Objeto tipo-array del RTDB: se ordena por clave numérica y se compacta
+    return Object.keys(v)
+      .sort((a,b) => (parseInt(a,10)||0) - (parseInt(b,10)||0))
+      .map(k => v[k])
+      .filter(x => x !== null && x !== undefined);
+  }
+  return [];
+}
+/* Devuelve cuántos campos hubo que enderezar (0 = los datos ya venían bien).
+   Barato: recorre clientes + TAPPTS + CAL_ORDER y solo escribe si cambia. */
+function _normalizeShapes(){
+  let fixed = 0;
+  try{
+    C.forEach(c => {
+      if(!c) return;
+      if(c.reminders !== undefined && !Array.isArray(c.reminders)){
+        c.reminders = _asArray(c.reminders); fixed++;
+      } else if(Array.isArray(c.reminders) && c.reminders.some(r => !r)){
+        c.reminders = c.reminders.filter(Boolean); fixed++;
+      }
+      // Una tarjeta sin nombre reventaba el render entero (esc(undefined))
+      if(typeof c.name !== 'string'){ c.name = String(c.name || ('#' + (c.id != null ? c.id : '?'))); fixed++; }
+      if(c.tags != null && typeof c.tags !== 'string'){
+        c.tags = Array.isArray(c.tags) ? c.tags.join(',') : String(c.tags); fixed++;
+      }
+    });
+    Object.keys(TAPPTS || {}).forEach(cid => {
+      const v = TAPPTS[cid];
+      if(v !== undefined && !Array.isArray(v)){ TAPPTS[cid] = _asArray(v); fixed++; }
+      else if(Array.isArray(v) && v.some(a => !a)){ TAPPTS[cid] = v.filter(Boolean); fixed++; }
+    });
+    ['A','B'].forEach(wt => {
+      const wk = CAL_ORDER[wt]; if(!wk) return;
+      Object.keys(wk).forEach(dk => {
+        const v = wk[dk];
+        if(v !== undefined && !Array.isArray(v)){ wk[dk] = _asArray(v); fixed++; }
+        else if(Array.isArray(v) && v.some(x => x === null || x === undefined)){
+          wk[dk] = v.filter(x => x !== null && x !== undefined); fixed++;
+        }
+      });
+    });
+  }catch(e){ dbgWarn('normalizeShapes', e); }
+  if(fixed) dbg('normalize: ' + fixed + ' campo(s) enderezado(s) desde la nube');
+  return fixed;
+}
+/* ═══ END BLOCK: SHAPE NORMALIZATION ═══════════════════════════════════ */
+
 function _normalizeData(){
   const warnings = [];
+  // v1.8.2 — antes que nada: enderezar las formas que devuelve el RTDB.
+  try{ _normalizeShapes(); }catch(e){ dbgWarn('shapes at boot', e); }
 
   // ── 1. Auto-derive nwc from lwc when missing ───────────────────────────
   let derived = 0;
@@ -10621,6 +10750,10 @@ function applyCloudData(d, cloudNewer){
   // Save merged result back to localStorage so the next reload starts from the correct state.
   // Uses the same quota-safe photo pruning as saveData() — the full copy (with
   // photos) already lives in Firebase, so dropping old photos locally is safe.
+  // v1.8.2 — la nube acaba de entrar: enderezar reminders / TAPPTS / CAL_ORDER
+  // ANTES de persistir y de repintar. Si esto se hace después del render, la
+  // vista ya habría lanzado (ver BLOCK: SHAPE NORMALIZATION).
+  try{ _normalizeShapes(); }catch(e){ dbgWarn('shapes post-merge', e); }
   try{ persistLocal(); }catch(e){ dbgWarn("caught:",e); }
   refreshTechDataLists();
   ra();
@@ -12206,7 +12339,7 @@ function _reminderModal(cid, curTxt, curDue, onSave, curRep){
 function _saveClientReminder(cid, txt, due, rep){
   const c=C.find(x=>x.id===cid); if(!c) return;
   const es=LANG==='es';
-  c.reminders=c.reminders||[];
+  c.reminders=_asArray(c.reminders);   // v1.8.2 — la nube puede haberlo devuelto como objeto
   c.reminders.push({t:txt.trim().slice(0,140),due:due.trim(),rep:rep||'',who:CURRENT_ROLE==='admin'?'Admin':(CURRENT_TECH||CURRENT_ROLE||'?'),at:Date.now(),done:false});
   c.lastModified=Date.now();
   saveData();
@@ -12236,7 +12369,7 @@ function doneClientReminder(cid,idx){
 }
 function _dueReminders(){
   const today=_localDateKey(), out=[];
-  C.forEach(c=>(c.reminders||[]).forEach((r,i)=>{ if(!r.done&&r.due<=today) out.push({c:c,r:r,i:i}); }));
+  C.forEach(c=>_asArray(c.reminders).forEach((r,i)=>{ if(r&&!r.done&&r.due<=today) out.push({c:c,r:r,i:i}); }));   // v1.8.2
   return out.sort((a,b)=>String(a.r.due).localeCompare(String(b.r.due)));
 }
 
@@ -12257,7 +12390,7 @@ function _remindersInWindow(days, todayKey){
   horizonD.setDate(horizonD.getDate() + (days == null ? REMINDER_WINDOW_DAYS : days));
   const horizon = _localDateKey(horizonD);
   const out = [];
-  C.forEach(c => (c.reminders || []).forEach((r, i) => {
+  C.forEach(c => _asArray(c.reminders).forEach((r, i) => {   // v1.8.2
     if(r.done) return;
     if(r.due > horizon) return;                   // still too far out
     out.push({c:c, r:r, i:i, overdue: r.due < today, due:r.due});
@@ -12273,7 +12406,9 @@ function _remindersInWindow(days, todayKey){
 function _clientReminderFlag(c, todayKey){
   if(!c) return null;
   const today = todayKey || _localDateKey();
-  const open = (c.reminders || []).filter(r => !r.done);
+  // v1.8.2 — antes era (c.reminders||[]).filter(): con la forma-objeto del
+  // RTDB lanzaba aquí y se llevaba por delante toda la Agenda A/B.
+  const open = _asArray(c.reminders).filter(r => r && !r.done);
   if(!open.length) return null;
   open.sort((a, b) => String(a.due).localeCompare(String(b.due)));
   return {n:open.length, next:open[0], overdue: open[0].due < today};
@@ -12330,7 +12465,9 @@ function repeatLabel(rep){
 
 function deleteClientReminder(cid, idx){
   const c = C.find(x => x.id === cid);
-  if(!c || !c.reminders || !c.reminders[idx]) return;
+  if(!c || !c.reminders) return;
+  c.reminders = _asArray(c.reminders);   // v1.8.2 — splice no existe en la forma-objeto del RTDB
+  if(!c.reminders[idx]) return;
   c.reminders.splice(idx, 1);
   c.lastModified = Date.now();
   saveData();
@@ -12678,7 +12815,7 @@ function _cdBody(c){
       ['\uD83D\uDCC5',(es?'D\u00eda: ':'Day: ')+(c.day||'\u2014')],
       ['\uD83D\uDCA7',(es?'\u00daltimo C.A.: ':'Last W.C.: ')+(c.lwc||'\u2014')+' \u00b7 '+(es?'Pr\u00f3ximo: ':'Next: ')+(c.nwc||'\u2014')]
     ];
-    const rems=(c.reminders||[]).filter(r=>!r.done);
+    const rems=_asArray(c.reminders).filter(r=>r&&!r.done);   // v1.8.2
     const remHtml='<div style="margin-top:12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b style="color:var(--brand);font-size:12.5px">\u23F0 '+(es?'Recordatorios':'Reminders')+'</b><button class="btn" style="font-size:11px;padding:2px 9px" onclick="addClientReminder('+c.id+')">\uFF0B</button></div>'
       +(rems.length?rems.map((r,ri)=>{
         const overdue=r.due<_localDateKey();
@@ -12940,7 +13077,7 @@ function openSystemStatus(){
 }
 /* ══════════ PRO PACK v1.3 — helpers (tanda 1) ══════════ */
 window._cSort={key:null,dir:1};
-const UI_VERSION='1.8.1';
+const UI_VERSION='1.8.2';
 function _initClientSort(){
   const th=document.getElementById('clients-thead');
   if(!th||th._sortInit) return;
@@ -19359,8 +19496,31 @@ document.addEventListener('click', function(e){
     if(reduce || isTech()) return;
     (root||document).querySelectorAll('.sum-kpi-num:not([data-ops-counted]), .kpi-big-num:not([data-ops-counted]), [data-countup]:not([data-ops-counted])').forEach(window.opsCountUp);
   }
+  /* v1.8.2 — antes: CUALQUIER nodo añadido en .app disparaba scanKPIs(document),
+     un querySelectorAll sobre TODO el documento. Pintar la Agenda A/B mete ~80
+     tarjetas → cientos de escaneos completos seguidos, y el propio count-up
+     reescribe textContent en cada frame, que vuelve a disparar el observer.
+     Ahora se escanean solo los nodos añadidos y se agrupa en un frame. */
+  let _kpiPending=null;
   const kpiObserver = new MutationObserver(muts=>{
-    for(const mu of muts){ if(mu.addedNodes.length){ scanKPIs(document); break; } }
+    const roots=[];
+    for(const mu of muts){
+      for(const n of mu.addedNodes){ if(n.nodeType===1) roots.push(n); }
+    }
+    if(!roots.length) return;
+    if(_kpiPending) return;
+    _kpiPending=requestAnimationFrame(()=>{
+      _kpiPending=null;
+      // Un repintado de la Agenda A/B mete ~80 tarjetas de golpe: ahí sale
+      // más barato UN escaneo del documento que 80 escaneos por subárbol.
+      if(roots.length>24){ try{ scanKPIs(document); }catch(e){} return; }
+      roots.forEach(n=>{
+        try{
+          if(n.matches&&n.matches('.sum-kpi-num,.kpi-big-num,[data-countup]')&&!n.dataset.opsCounted) window.opsCountUp(n);
+          scanKPIs(n);
+        }catch(e){}
+      });
+    });
   });
   function startObserver(){
     const app=document.querySelector('.app')||document.body;
